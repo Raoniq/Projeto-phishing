@@ -1,27 +1,84 @@
 name = "phishguard-api"
-main = "src/router.ts"
+main = "src/workers/router.ts"
 compatibility_date = "2026-04-21"
 
-[env.production]
-name = "phishguard-api"
-routes = [
-  { pattern = "api.phishguard.com.br", zone_name = "phishguard.com.br" }
-]
+# Cron trigger: runs scheduler every minute
+[triggers]
+crons = ["* * * * *"]
 
-[env.staging]
-name = "phishguard-api-staging"
-routes = [
-  { pattern = "api-staging.phishguard.com.br", zone_name = "phishguard.com.br" }
-]
-
+# Default KV namespaces (used when no env specified)
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "b9e9d9c9e9d9e9d9e9d9e9d9e9d9e9d9"
+id = "bde235170e1b4a7ba9329243f45944d7"
+
+[[kv_namespaces]]
+binding = "SCHEDULER_STATE"
+id = "2983ab919a644e0aa6ca27669386f7db"
 
 [vars]
 ENVIRONMENT = "development"
 API_VERSION = "1.0.0"
 
+# Default email rate limits
+EMAIL_MAX_PER_MINUTE = "100"
+EMAIL_MAX_PER_HOUR = "5000"
+EMAIL_MAX_PER_DAY = "50000"
+
+# Default business hours (Monday-Friday, 09:00-18:00)
+BUSINESS_HOURS_START = "09:00"
+BUSINESS_HOURS_END = "18:00"
+BUSINESS_DAYS = "1,2,3,4,5"
+
 [dev]
 port = 8787
 local_protocol = "http"
+
+# Production environment
+[env.production]
+name = "phishguard-api"
+
+[env.production.triggers]
+crons = ["* * * * *"]
+
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "bde235170e1b4a7ba9329243f45944d7"
+
+[[env.production.kv_namespaces]]
+binding = "SCHEDULER_STATE"
+id = "2983ab919a644e0aa6ca27669386f7db"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+API_VERSION = "1.0.0"
+EMAIL_MAX_PER_MINUTE = "100"
+EMAIL_MAX_PER_HOUR = "5000"
+EMAIL_MAX_PER_DAY = "50000"
+BUSINESS_HOURS_START = "09:00"
+BUSINESS_HOURS_END = "18:00"
+BUSINESS_DAYS = "1,2,3,4,5"
+
+# Staging environment
+[env.staging]
+name = "phishguard-api-staging"
+
+[env.staging.triggers]
+crons = ["* * * * *"]
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "ce953033a80b4017a0a144c89dd91c69"
+
+[[env.staging.kv_namespaces]]
+binding = "SCHEDULER_STATE"
+id = "15648daf4fa949698e168062e1ac2e86"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+API_VERSION = "1.0.0"
+EMAIL_MAX_PER_MINUTE = "100"
+EMAIL_MAX_PER_HOUR = "5000"
+EMAIL_MAX_PER_DAY = "50000"
+BUSINESS_HOURS_START = "09:00"
+BUSINESS_HOURS_END = "18:00"
+BUSINESS_DAYS = "1,2,3,4,5"

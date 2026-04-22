@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
+import { isMockMode } from '@/lib/auth/session';
 
 // Client logos for social proof (SVG placeholders representing company logos)
 const clientLogos = [
@@ -56,6 +58,22 @@ export default function LoginPage() {
       setMagicLinkSent(true);
     } catch (err) {
       setError('Erro ao enviar link mágico. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      if (isMockMode()) {
+        await mockSupabaseAuth.signIn({ email: 'demo@phishguard.com', name: 'Demo User' });
+      }
+      navigate('/app/dashboard');
+    } catch (err) {
+      setError('Erro ao entrar no modo demo. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -252,6 +270,18 @@ export default function LoginPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   <span className="font-medium">Entrar com link mágico</span>
+                </button>
+              </div>
+
+              {/* Demo Login Button */}
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-noir-800/20 hover:bg-noir-800/40 text-noir-400 hover:text-amber-500 transition-all duration-200 text-sm"
+                >
+                  Entrar como Demo
                 </button>
               </div>
             </>
