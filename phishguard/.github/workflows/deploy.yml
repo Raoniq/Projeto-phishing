@@ -87,7 +87,7 @@ jobs:
           npm ci
 
       - name: Build frontend
-        run: npm run build
+        run: cd phishguard && npx vite build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
