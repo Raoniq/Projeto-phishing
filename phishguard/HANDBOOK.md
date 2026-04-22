@@ -25,12 +25,56 @@ PhishGuard is a security awareness training platform that simulates phishing att
 
 ## 3. Deployment
 
+### Como o Deploy Funciona (CI/CD Pipeline)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DEPLOY FLOW                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────┐    git push     ┌───────────────┐
+  │  Developer│ ──────────────► │  GitHub       │
+  └──────────┘                 │  Actions      │
+                               └───────┬───────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+              ┌──────────┐   ┌──────────────┐   ┌──────────────┐
+              │ Deploy    │   │ Build        │   │ Validate     │
+              │ Workers   │   │ Frontend     │   │ (PR only)    │
+              │ (wrangler)│   │ (npm build)  │   │ (tsc + lint) │
+              └─────┬─────┘   └──────┬───────┘   └──────────────┘
+                    │                │
+                    │                ▼
+                    │         ┌──────────────┐
+                    │         │ Cloudflare    │
+                    │         │ Pages         │
+                    │         │ (upload dist) │
+                    │         └──────┬───────┘
+                    │                │
+                    ▼                ▼
+              ┌─────────────────────────────────┐
+              │      Cloudflare Workers/Pages    │
+              │   (deploy automático via API)    │
+              └─────────────────────────────────┘
+```
+
+**Passo a passo:**
+
+1. `git push` para GitHub (branch main ou develop)
+2. GitHub Actions detecta o push
+3. Workflow `.github/workflows/deploy.yml` é executado
+4. **Job 1 - Workers**: `wrangler deploy --env production|staging`
+5. **Job 2 - Pages**: `npm run build` + upload para Cloudflare Pages
+6. **Job 3 - Validate**: TypeScript + Lint (só em PRs)
+
 ### Cloudflare Endpoints
 
 | Environment | Branch | Workers (API) | Pages (Frontend) |
 |-------------|--------|---------------|------------------|
-| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://pages.raoni7249.workers.dev/phishguard |
-| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://staging-pages.raoni7249.workers.dev/phishguard |
+| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://phishguard-6s0.pages.dev |
+| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://develop.phishguard-6s0.pages.dev |
 | Local | - | http://localhost:8787 | http://localhost:3000 |
 
 ### GitHub Actions Configuration
@@ -43,41 +87,62 @@ PhishGuard is a security awareness training platform that simulates phishing att
 - `VITE_SUPABASE_URL` = `https://dqalvguekknmwrrkeibx.supabase.co`
 - `VITE_SUPABASE_ANON_KEY` = configurado no GitHub
 
-### CI/CD Workflow
+### CI/CD Workflow (deploy.yml)
 
-| Trigger | Action |
-|---------|--------|
-| Push to `main` | Deploy Workers (prod) + Pages (prod) |
-| Push to `develop` | Deploy Workers (staging) + Pages (staging) |
-| PR to main/develop | TypeScript + Lint validation |
+O workflow está em `.github/workflows/deploy.yml` e tem 3 jobs:
 
-### Deploy Flow
+| Job | Quando | Ação |
+|-----|--------|------|
+| `deploy-workers` | Push para main/develop | Executa `wrangler deploy` |
+| `deploy-pages` | Push para main/develop | Build + deploy para Cloudflare Pages |
+| `validate` | PR para main/develop | `tsc --noEmit` + `npm run lint` |
+
+### Fluxo de Deploy (Git Flow)
 
 ```bash
-# 1. Develop (staging)
+# ────────────────────────────────────────────────────────────────
+# 1. CRIAR/ATUALIZAR FEATURE
+# ────────────────────────────────────────────────────────────────
 git checkout develop
+# ... fazer alterações ...
+git add .
+git commit -m "feat: minha nova feature"
 git push origin develop
-# → Deploy automático para staging
 
-# 2. Main (production)
+# → GitHub Actions detecta push para develop
+# → Deploy automático para STAGING
+# → URL: https://develop.phishguard-6s0.pages.dev
+
+
+# ────────────────────────────────────────────────────────────────
+# 2. LIBERAR PARA PRODUCTION
+# ────────────────────────────────────────────────────────────────
 git checkout main
 git merge develop
 git push origin main
-# → Deploy automático para produção
+
+# → GitHub Actions detecta push para main
+# → Deploy automático para PRODUCTION
+# → URL: https://phishguard-6s0.pages.dev
 ```
 
-### Wrangler Commands (Manual Deploy)
+### Deploy Manual (via Wrangler CLI)
 
 ```bash
 cd phishguard
 
-# Deploy Workers
+# Build localmente
+npm run build
+
+# Deploy Workers manualmente
 npx wrangler deploy --env production
 npx wrangler deploy --env staging
 
-# Local dev
-npx wrangler dev              # Workers
-npm run dev                  # Frontend
+# Deploy Pages manualmente (direct upload)
+npx wrangler pages deploy dist --project-name=phishguard
+
+# Ver projetos Pages
+npx wrangler pages project list
 ```
 
 ### KV Namespaces
