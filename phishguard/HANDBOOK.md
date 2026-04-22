@@ -77,31 +77,13 @@ PhishGuard is a security awareness training platform that simulates phishing att
 | Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://develop.phishguard-6s0.pages.dev |
 | Local | - | http://localhost:8787 | http://localhost:3000 |
 
-### GitHub Actions Configuration
+### Deploy via GitHub Actions (Automático)
 
-**Secrets** (Settings → Secrets → Actions):
-- `CLOUDFLARE_API_TOKEN` = configurado no GitHub
-- `CLOUDFLARE_ACCOUNT_ID` = `e83057be23e726bea29bb787b9fdd941`
-
-**Variables** (Settings → Variables → Actions):
-- `VITE_SUPABASE_URL` = `https://dqalvguekknmwrrkeibx.supabase.co`
-- `VITE_SUPABASE_ANON_KEY` = configurado no GitHub
-
-### CI/CD Workflow (deploy.yml)
-
-O workflow está em `.github/workflows/deploy.yml` e tem 3 jobs:
-
-| Job | Quando | Ação |
-|-----|--------|------|
-| `deploy-workers` | Push para main/develop | Executa `wrangler deploy` |
-| `deploy-pages` | Push para main/develop | Build + deploy para Cloudflare Pages |
-| `validate` | PR para main/develop | `tsc --noEmit` + `npm run lint` |
-
-### Fluxo de Deploy (Git Flow)
+O deploy é disparado automaticamente ao fazer push para `main` ou `develop`:
 
 ```bash
 # ────────────────────────────────────────────────────────────────
-# 1. CRIAR/ATUALIZAR FEATURE
+# 1. DESENVOLVER NO DEVELOP (STAGING)
 # ────────────────────────────────────────────────────────────────
 git checkout develop
 # ... fazer alterações ...
@@ -109,37 +91,41 @@ git add .
 git commit -m "feat: minha nova feature"
 git push origin develop
 
-# → GitHub Actions detecta push para develop
 # → Deploy automático para STAGING
-# → URL: https://develop.phishguard-6s0.pages.dev
+# → Workers: https://phishguard-api-staging.raoni7249.workers.dev
+# → Pages: https://develop.phishguard-6s0.pages.dev
 
 
 # ────────────────────────────────────────────────────────────────
-# 2. LIBERAR PARA PRODUCTION
+# 2. LIBERAR PARA PRODUCTION (MAIN)
 # ────────────────────────────────────────────────────────────────
 git checkout main
 git merge develop
 git push origin main
 
-# → GitHub Actions detecta push para main
 # → Deploy automático para PRODUCTION
-# → URL: https://phishguard-6s0.pages.dev
+# → Workers: https://phishguard-api.raoni7249.workers.dev
+# → Pages: https://phishguard-6s0.pages.dev
 ```
 
+**Acompanhar deploy:** https://github.com/Raoniq/Projeto-phishing/actions
+
 ### Deploy Manual (via Wrangler CLI)
+
+Quando o GitHub Actions não estiver funcionando ou for necessário um deploy pontual:
 
 ```bash
 cd phishguard
 
 # Build localmente
-npm run build
+npx vite build
 
 # Deploy Workers manualmente
-npx wrangler deploy --env production
-npx wrangler deploy --env staging
+CLOUDFLARE_API_TOKEN=seu_token npx wrangler deploy --env production
+CLOUDFLARE_API_TOKEN=seu_token npx wrangler deploy --env staging
 
 # Deploy Pages manualmente (direct upload)
-npx wrangler pages deploy dist --project-name=phishguard
+CLOUDFLARE_API_TOKEN=seu_token npx wrangler pages deploy dist --project-name=phishguard
 
 # Ver projetos Pages
 npx wrangler pages project list
@@ -151,6 +137,16 @@ npx wrangler pages project list
 |-----------|---------------|------------|
 | RATE_LIMIT | `bde235170e1b4a7ba9329243f45944d7` | `ce953033a80b4017a0a144c89dd91c69` |
 | SCHEDULER_STATE | `2983ab919a644e0aa6ca27669386f7db` | `15648daf4fa949698e168062e1ac2e86` |
+
+### GitHub Actions Configuration (Secrets)
+
+**Secrets** (Settings → Secrets → Actions):
+- `CLOUDFLARE_API_TOKEN` = configurado no GitHub
+- `CLOUDFLARE_ACCOUNT_ID` = `e83057be23e726bea29bb787b9fdd941`
+
+**Variables** (Settings → Variables → Actions):
+- `VITE_SUPABASE_URL` = `https://dqalvguekknmwrrkeibx.supabase.co`
+- `VITE_SUPABASE_ANON_KEY` = configurado no GitHub
 
 ---
 
