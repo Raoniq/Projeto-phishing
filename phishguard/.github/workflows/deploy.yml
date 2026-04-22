@@ -87,9 +87,7 @@ jobs:
           npm ci
 
       - name: Build frontend
-        run: |
-          cd phishguard
-          npm run build
+        run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
@@ -102,10 +100,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: phishguard
           directory: phishguard/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
           wranglerVersion: '3'
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Deploy to Cloudflare Pages (Staging)
         if: github.ref == 'refs/heads/develop'
@@ -115,10 +111,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: phishguard-staging
           directory: phishguard/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: develop
           wranglerVersion: '3'
-        continue-on-error: true
+        continue-on-error: false
 
   # ============================================
   # JOB 3: Type check & lint (PR validation)
