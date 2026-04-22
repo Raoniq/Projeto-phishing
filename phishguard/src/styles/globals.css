@@ -1,0 +1,186 @@
+/* ============================================
+   PHISHGUARD - FORENSIC NOIR DESIGN SYSTEM
+   ============================================ */
+
+@theme {
+  /* Color Palette - Forensic Noir */
+  --color-noir-950: #0B0C0E;
+  --color-noir-900: #12141A;
+  --color-noir-800: #1A1D24;
+  --color-noir-700: #252A33;
+  --color-noir-600: #363C48;
+  --color-noir-500: #5C5852;
+  --color-noir-400: #9A968E;
+  --color-noir-300: #C7C2B8;
+  --color-noir-200: #E5E0D8;
+  --color-noir-100: #F2EFEA;
+  --color-noir-50: #F8F7F5;
+
+  --color-surface-0: #0B0C0E;
+  --color-surface-1: #12141A;
+  --color-surface-2: #1A1D24;
+  --color-surface-3: #252A33;
+
+  --color-fg-primary: #ECE8E1;
+  --color-fg-secondary: #9A968E;
+  --color-fg-muted: #5C5852;
+  --color-fg-tertiary: #5C5852;
+  --color-fg-quaternary: #363C48;
+
+  --color-amber-500: #D97757;
+  --color-amber-400: #E8886A;
+  --color-amber-300: #F0A08A;
+  --color-accent: #D97757;
+  --color-accent-hover: #E8886A;
+  --color-accent-subtle: rgba(217, 119, 87, 0.15);
+
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-danger: #F44336;
+  --color-green-500: #4CAF50;
+  --color-red-500: #F44336;
+  --color-blue-500: #2196F3;
+  --color-purple-500: #9C27B0;
+
+  /* Typography */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(217, 119, 87, 0.3);
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  font-family: var(--font-body);
+  background-color: var(--color-surface-0);
+  color: var(--color-fg-primary);
+}
+
+/* Grain Overlay - Applied globally */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Typography Classes */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Utility Classes */
+.text-accent {
+  color: var(--color-accent);
+}
+
+.bg-surface-0 {
+  background-color: var(--color-surface-0);
+}
+
+.bg-surface-1 {
+  background-color: var(--color-surface-1);
+}
+
+.bg-surface-2 {
+  background-color: var(--color-surface-2);
+}
+
+.bg-surface-3 {
+  background-color: var(--color-surface-3);
+}
+
+/* Focus States - Accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-surface-0);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 400ms ease-out forwards;
+}
+
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-surface-0);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-quaternary);
+}

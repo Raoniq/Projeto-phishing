@@ -1,0 +1,408 @@
+/**
+ * PhishGuard Print Stylesheet
+ * A4-optimized print layout with proper page breaks
+ */
+
+/* ============================================
+   A4 PAGE SETUP & MARGINS
+   ============================================ */
+
+@page {
+  size: A4;
+  margin: 20mm 15mm 20mm 15mm;
+}
+
+/* ============================================
+   RESET FOR PRINT
+   ============================================ */
+
+@media print {
+  /* Hide interactive elements */
+  .print\:hidden,
+  [data-print="hidden"],
+  .no-print,
+  .sidebar,
+  .mobile-drawer,
+  button:not([data-print-keep]),
+  .app-sidebar,
+  .app-topbar,
+  .mobile-nav,
+  nav,
+  .breadcrumb-nav {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Section breaks */
+  .section-break {
+    page-break-before: always;
+    padding-top: 20px;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  table, figure {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ============================================
+     TYPOGRAPHY FOR PRINT
+     ============================================ */
+
+  html {
+    font-size: 11pt;
+    color: #1a1a1a !important;
+    background: white !important;
+  }
+
+  body {
+    font-family: 'Georgia', serif;
+    line-height: 1.4;
+    background: white !important;
+    color: #1a1a1a !important;
+  }
+
+  .font-display {
+    font-family: 'Georgia', serif;
+  }
+
+  h1 {
+    font-size: 22pt;
+    font-weight: bold;
+    margin-bottom: 12pt;
+    color: #1a1a1a !important;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 8pt;
+    margin-top: 16pt;
+    color: #1a1a1a !important;
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin-bottom: 6pt;
+    color: #333 !important;
+  }
+
+  p {
+    font-size: 10pt;
+    margin-bottom: 8pt;
+  }
+
+  /* ============================================
+     SURFACES & CARDS
+     ============================================ */
+
+  .bg-\[var\(--color-surface-0\)\],
+  .bg-\[var\(--color-surface-1\)\],
+  .bg-\[var\(--color-surface-2\)\],
+  .surface-0,
+  .surface-1,
+  .surface-2 {
+    background: white !important;
+    color: #1a1a1a !important;
+  }
+
+  .border-\[var\(--color-noir-700\)\],
+  .border-noir-700,
+  [class*="border-noir"] {
+    border-color: #e0e0e0 !important;
+  }
+
+  .card,
+  [class*="Card"],
+  .rounded-\[var\(--radius-md\)\],
+  .rounded-lg {
+    background: white !important;
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* ============================================
+     TEXT COLORS FOR PRINT
+     ============================================ */
+
+  .text-\[var\(--color-fg-primary\)\],
+  .text-fg-primary {
+    color: #1a1a1a !important;
+  }
+
+  .text-\[var\(--color-fg-secondary\)\],
+  .text-\[var\(--color-fg-tertiary\)\],
+  .text-fg-secondary,
+  .text-fg-tertiary {
+    color: #666 !important;
+  }
+
+  .text-accent,
+  .text-\[var\(--color-accent\)\] {
+    color: #c65d3a !important;
+  }
+
+  /* ============================================
+     CHART PRINT OPTIMIZATION
+     ============================================ */
+
+  canvas,
+  svg,
+  img,
+  video,
+  [class*="chart"],
+  [class*="Chart"],
+  [data-chart] {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure high resolution for printed charts */
+  @media print and (resolution: 300dpi) {
+    canvas, svg {
+      max-width: 100%;
+    }
+  }
+
+  /* ============================================
+     TABLES FOR PRINT
+     ============================================ */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    page-break-inside: auto;
+  }
+
+  th {
+    background: #f5f5f5 !important;
+    font-weight: bold;
+    text-align: left;
+    padding: 6pt 8pt;
+    border-bottom: 2px solid #ccc;
+    color: #1a1a1a !important;
+  }
+
+  td {
+    padding: 5pt 8pt;
+    border-bottom: 1px solid #eee;
+    color: #1a1a1a !important;
+  }
+
+  tr:nth-child(even) {
+    background: #fafafa;
+  }
+
+  /* ============================================
+     UTILITIES
+     ============================================ */
+
+  .hidden {
+    display: none !important;
+  }
+
+  .flex {
+    display: flex !important;
+  }
+
+  .grid {
+    display: grid !important;
+  }
+
+  .w-full {
+    width: 100% !important;
+  }
+
+  .gap-4,
+  .gap-6 {
+    gap: 8pt !important;
+  }
+
+  .p-4,
+  .p-6 {
+    padding: 10pt !important;
+  }
+
+  .m-4,
+  .my-4,
+  .mx-4 {
+    margin: 8pt !important;
+  }
+
+  /* ============================================
+     METRIC CARDS
+     ============================================ */
+
+  .metric-card {
+    border: 1px solid #e0e0e0;
+    padding: 10pt;
+    background: white;
+    page-break-inside: avoid;
+  }
+
+  .metric-value {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #1a1a1a;
+  }
+
+  .metric-label {
+    font-size: 9pt;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+  }
+
+  /* ============================================
+     HEADER/FOOTER FOR PRINT
+     ============================================ */
+
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10pt;
+    margin-bottom: 15pt;
+    border-bottom: 2px solid #333;
+  }
+
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #999;
+    padding-top: 10pt;
+    border-top: 1px solid #eee;
+  }
+
+  /* ============================================
+     PROGRESS BARS
+     ============================================ */
+
+  .progress-bar {
+    height: 8pt;
+    background: #f0f0f0;
+    border-radius: 4pt;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4pt;
+  }
+
+  /* ============================================
+     BADGES
+     ============================================ */
+
+  .badge,
+  [class*="Badge"] {
+    font-size: 8pt;
+    padding: 2pt 6pt;
+    border-radius: 3pt;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background: #e8f5e9 !important;
+    color: #2e7d32 !important;
+  }
+
+  .badge-warning {
+    background: #fff3e0 !important;
+    color: #e65100 !important;
+  }
+
+  .badge-danger {
+    background: #ffebee !important;
+    color: #c62828 !important;
+  }
+
+  .badge-secondary {
+    background: #f5f5f5 !important;
+    color: #616161 !important;
+  }
+
+  /* ============================================
+     LOGO ON PRINT
+     ============================================ */
+
+  .print-logo {
+    display: block !important;
+    font-family: 'Georgia', serif;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #c65d3a;
+  }
+
+  .print-logo::before {
+    content: '🛡️ ';
+  }
+
+  /* ============================================
+     AVOID WIDOWS/ORPHANS
+     ============================================ */
+
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* ============================================
+     LINK STYLING FOR PRINT
+     ============================================ */
+
+  a {
+    color: #1a1a1a !important;
+    text-decoration: none !important;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+}
+
+/* ============================================
+   PRINT-ONLY CONTENT
+   ============================================ */
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+
+  .no-print-only {
+    display: none !important;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}

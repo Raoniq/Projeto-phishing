@@ -1,0 +1,579 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+
+  .wrap { padding: 16px 0 32px; }
+
+  .section { margin-bottom: 28px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--border-radius-lg);
+    margin-bottom: 12px; cursor: pointer; user-select: none;
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .section-header:hover { border-color: var(--color-border-secondary); }
+  .section-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
+  .section-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .chevron { font-size: 12px; color: var(--color-text-tertiary); transition: transform .2s; }
+  .chevron.open { transform: rotate(90deg); }
+
+  .section-body { display: none; padding: 0 4px; }
+  .section-body.open { display: block; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media(max-width:560px){ .grid, .grid-3 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md); padding: 12px 14px;
+  }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+  .card ul { padding-left: 14px; }
+  .card li { font-size: 12px; color: var(--color-text-secondary); line-height: 1.7; }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 20px; margin-bottom: 6px; }
+
+  /* phase colors */
+  .ph1 { background: #EAF3DE; color: #3B6D11; }
+  .ph2 { background: #FAEEDA; color: #854F0B; }
+  .ph3 { background: #FAECE7; color: #993C1D; }
+  .ph-dark .ph1 { background: #27500A; color: #C0DD97; }
+  .ph-dark .ph2 { background: #633806; color: #FAC775; }
+  .ph-dark .ph3 { background: #4A1B0C; color: #F0997B; }
+
+  /* section colors */
+  .s1 { background: #E6F1FB; } .s1 .section-title, .s1 .section-badge { color: #185FA5; } .s1 .section-badge { background: #B5D4F4; }
+  .s2 { background: #EAF3DE; } .s2 .section-title, .s2 .section-badge { color: #3B6D11; } .s2 .section-badge { background: #C0DD97; }
+  .s3 { background: #EEEDFE; } .s3 .section-title, .s3 .section-badge { color: #534AB7; } .s3 .section-badge { background: #CECBF6; }
+  .s4 { background: #FAEEDA; } .s4 .section-title, .s4 .section-badge { color: #854F0B; } .s4 .section-badge { background: #FAC775; }
+  .s5 { background: #E1F5EE; } .s5 .section-title, .s5 .section-badge { color: #0F6E56; } .s5 .section-badge { background: #9FE1CB; }
+  .s6 { background: #FBEAF0; } .s6 .section-title, .s6 .section-badge { color: #993556; } .s6 .section-badge { background: #F4C0D1; }
+  .s7 { background: #FAECE7; } .s7 .section-title, .s7 .section-badge { color: #993C1D; } .s7 .section-badge { background: #F5C4B3; }
+  .s8 { background: #F1EFE8; } .s8 .section-title, .s8 .section-badge { color: #5F5E5A; } .s8 .section-badge { background: #D3D1C7; }
+
+  @media(prefers-color-scheme:dark){
+    .s1{background:#042C53;} .s1 .section-title,.s1 .section-badge{color:#85B7EB;} .s1 .section-badge{background:#0C447C;}
+    .s2{background:#173404;} .s2 .section-title,.s2 .section-badge{color:#97C459;} .s2 .section-badge{background:#27500A;}
+    .s3{background:#26215C;} .s3 .section-title,.s3 .section-badge{color:#AFA9EC;} .s3 .section-badge{background:#3C3489;}
+    .s4{background:#412402;} .s4 .section-title,.s4 .section-badge{color:#EF9F27;} .s4 .section-badge{background:#633806;}
+    .s5{background:#04342C;} .s5 .section-title,.s5 .section-badge{color:#5DCAA5;} .s5 .section-badge{background:#085041;}
+    .s6{background:#4B1528;} .s6 .section-title,.s6 .section-badge{color:#ED93B1;} .s6 .section-badge{background:#72243E;}
+    .s7{background:#4A1B0C;} .s7 .section-title,.s7 .section-badge{color:#F0997B;} .s7 .section-badge{background:#712B13;}
+    .s8{background:#2C2C2A;} .s8 .section-title,.s8 .section-badge{color:#B4B2A9;} .s8 .section-badge{background:#444441;}
+  }
+
+  .divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 20px 0; }
+
+  .roadmap-phase { margin-bottom: 16px; }
+  .phase-label {
+    font-size: 13px; font-weight: 500; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .phase-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .item-pill {
+    font-size: 12px; color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  .core-box {
+    background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-lg); padding: 14px 18px;
+    margin-bottom: 20px; text-align: center;
+  }
+  .core-box p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+  .core-pillars { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+  .pillar {
+    font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px;
+    background: #EEEDFE; color: #534AB7;
+  }
+  @media(prefers-color-scheme:dark){ .pillar { background: #3C3489; color: #AFA9EC; } }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 6px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  td { padding: 6px 8px; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .plan-name { font-weight: 500; color: var(--color-text-primary); }
+</style>
+
+<div class="wrap">
+
+  <!-- Core -->
+  <div class="core-box">
+    <p style="font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;">A essência do produto</p>
+    <p>Não é "simular phishing" — é <strong>reduzir risco humano com evidência mensurável</strong>.<br>Cada feature deve responder: isso reduz risco? isso prova que reduziu? isso ajuda em compliance/auditoria?</p>
+    <div class="core-pillars">
+      <span class="pillar">Simular</span>
+      <span class="pillar">Medir</span>
+      <span class="pillar">Treinar</span>
+      <span class="pillar">Provar</span>
+      <span class="pillar">Defender</span>
+    </div>
+  </div>
+
+  <!-- 1. Simulação -->
+  <div class="section">
+    <div class="section-header s1" onclick="toggle(this)">
+      <div class="section-title">1 — Motor de simulação de ataques</div>
+      <div class="section-badge">Attack Simulation Engine</div>
+      <div class="chevron open">▶</div>
+    </div>
+    <div class="section-body open">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">📧 Campanhas de e-mail (phishing)</div>
+          <ul>
+            <li>Biblioteca de templates por setor (banco, RH, TI, gov, logística)</li>
+            <li>Editor drag-and-drop com personalização de marca</li>
+            <li>Domínios isca gerados automaticamente</li>
+            <li>Agendamento por data, hora e fuso horário</li>
+            <li>Segmentação por departamento, cargo, localização</li>
+            <li>Envio escalonado (anti-detecção em massa)</li>
+            <li>Landing pages ultra-realistas (clones de Microsoft, Google, bancos)</li>
+            <li>Credential harvesting controlado (hash — nunca senha real)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📱 Outros vetores de ataque</div>
+          <ul>
+            <li>Smishing — SMS phishing</li>
+            <li>Vishing — chamadas de voz automatizadas com IA</li>
+            <li>Quishing — QR codes rastreáveis em cartazes físicos</li>
+            <li>USB drops — arquivos com macro inofensiva de tracking</li>
+            <li>MFA fatigue — push falso de aprovação de login</li>
+            <li>Simulação de anexos (PDFs, DOCs com macro fake)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Rastreamento & analytics por usuário</div>
+          <ul>
+            <li>Abriu o e-mail (pixel invisível)</li>
+            <li>Clicou no link (link rastreado)</li>
+            <li>Preencheu formulário falso (senha, CPF)</li>
+            <li>Reportou como suspeito</li>
+            <li>Tempo até o clique</li>
+            <li>Dispositivo, SO, localização geográfica</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🧠 Simulação avançada</div>
+          <ul>
+            <li>Simulação multi-etapas (kill chain): email → login → download</li>
+            <li>Spear phishing — menciona nome do gestor, projeto, cargo</li>
+            <li>Phishing adaptativo — mais sofisticado para quem clica mais</li>
+            <li>Templates "Zero-Day" baseados em golpes atuais (notícias, IRPF, bancos)</li>
+            <li>Deepfake de voz — clone do CEO pedindo ação urgente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. IA -->
+  <div class="section">
+    <div class="section-header s4" onclick="toggle(this)">
+      <div class="section-title">2 — Inteligência artificial & motor de risco</div>
+      <div class="section-badge">AI + Risk Engine</div>
+      <div class="chevron open">▶</div>
+    </div>
+    <div class="section-body open">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">🤖 IA de geração de ataques</div>
+          <ul>
+            <li>Geração de phishing baseada no LinkedIn e site público da empresa</li>
+            <li>Personalização automática com nome, cargo, gestor da vítima</li>
+            <li>Sugestão automática de qual campanha lançar por perfil de risco</li>
+            <li>A/B testing de templates (qual tem maior taxa de clique?)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Perfil de risco holístico por usuário</div>
+          <ul>
+            <li>Score baseado em: comportamento em campanhas, cargo, acesso a sistemas críticos</li>
+            <li>Dados cruzados: padrão de login, viagens, histórico de reincidência</li>
+            <li>Classificação: 🟢 baixo / 🟡 médio / 🔴 alto risco</li>
+            <li>"Digital Twin" — previsão de comportamento futuro (ex.: 78% de chance de cair em spear)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">⚙️ Automação de campanhas</div>
+          <ul>
+            <li>Campanhas recorrentes automáticas por grupo</li>
+            <li>Regras: "se clicou → enrolar em treinamento X"</li>
+            <li>Escalada de dificuldade automática conforme melhora</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🌐 Threat Intel</div>
+          <ul>
+            <li>Monitoramento de notícias de cibersegurança</li>
+            <li>Geração de templates baseados nos golpes do momento</li>
+            <li>Benchmark: "empresas do seu setor no Brasil têm X% de risco"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Treinamento -->
+  <div class="section">
+    <div class="section-header s2" onclick="toggle(this)">
+      <div class="section-title">3 — Educação & conscientização</div>
+      <div class="section-badge">Human Layer</div>
+      <div class="chevron open">▶</div>
+    </div>
+    <div class="section-body open">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">🎬 Conteúdo educacional</div>
+          <ul>
+            <li>Vídeos curtos microlearning (2–5 min) por tipo de ameaça</li>
+            <li>Trilhas de aprendizado: básico, intermediário, avançado</li>
+            <li>Quizzes interativos ao final de cada módulo</li>
+            <li>Certificados em PDF com logo da empresa</li>
+            <li>Temas: engenharia social, senhas, MFA, links, QR code phishing</li>
+            <li>Atualizações mensais com ameaças novas</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📬 Teachable moment (automático)</div>
+          <ul>
+            <li>Usuário caiu → e-mail educativo disparado imediatamente</li>
+            <li>Página "você foi pescado!" com explicação do ataque</li>
+            <li>Link para módulo obrigatório relacionado ao tipo de ataque</li>
+            <li>Reincidência → trilha de treinamento mais intensa</li>
+            <li>Treinamento dinâmico (não fixo) baseado no erro cometido</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🎮 Gamificação avançada</div>
+          <ul>
+            <li>Pontos, badges e ranking entre funcionários</li>
+            <li>Ligas: bronze, prata, ouro por departamento</li>
+            <li>Times competindo entre si</li>
+            <li>"Security Champions" — usuários bons viram aliados</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 Cultura & comportamento humano</div>
+          <ul>
+            <li>Pesquisas de clima de segurança periódicas (5 min)</li>
+            <li>Mede: percepção de risco, conforto em reportar erros ao chefe</li>
+            <li>Infográficos e cartilhas para download</li>
+            <li>Política de segurança customizável da empresa</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Defesa real -->
+  <div class="section">
+    <div class="section-header s6" onclick="toggle(this)">
+      <div class="section-title">4 — Defesa real & resposta a incidentes</div>
+      <div class="section-badge">PhishER / SOAR</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">🚨 Botão de reporte & triagem</div>
+          <ul>
+            <li>Plugin no Outlook/Gmail para reportar e-mail suspeito</li>
+            <li>Simulação → parabeniza o usuário que reportou corretamente</li>
+            <li>E-mail real → IA analisa links, anexos e intenção</li>
+            <li>Classificação de risco: baixo / médio / crítico</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔥 Auto-remoção (Rip & Tear)</div>
+          <ul>
+            <li>E-mail classificado como malicioso → integração via API</li>
+            <li>Remove automaticamente da caixa de todos os funcionários</li>
+            <li>Antes que qualquer outro clique</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🎫 SOC-like features</div>
+          <ul>
+            <li>Inbox de incidentes (tipo ticket/fila)</li>
+            <li>Playbooks automáticos de resposta</li>
+            <li>Threat scoring automático</li>
+            <li>"Human Firewall Dashboard" — usuários ajudando ou atrapalhando?</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔄 Bidirectional SIEM</div>
+          <ul>
+            <li>Não só exporta dados — recebe sinais de risco de volta</li>
+            <li>Integração com Microsoft Defender e Google Security Center</li>
+            <li>Resposta automática cruzada com eventos do ambiente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Dashboard -->
+  <div class="section">
+    <div class="section-header s3" onclick="toggle(this)">
+      <div class="section-title">5 — Gestão & dashboards</div>
+      <div class="section-badge">Admin + Portal</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">🏢 Onboarding da empresa</div>
+          <ul>
+            <li>Cadastro de domínio corporativo (whitelist anti-spam)</li>
+            <li>Importação de funcionários: CSV, AD, Azure AD, Google Workspace</li>
+            <li>Criação de grupos e departamentos</li>
+            <li>SSO (Single Sign-On) integrado</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">👨‍💼 Dashboard C-Level (simples)</div>
+          <ul>
+            <li>Score de risco da empresa (ex.: "risco caiu de 42% → 18%")</li>
+            <li>ROI de segurança: "evitou X incidentes"</li>
+            <li>Evolução ao longo do tempo antes vs. depois das campanhas</li>
+            <li>Comparativo benchmark do setor</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">👨‍💻 Dashboard técnico (analista)</div>
+          <ul>
+            <li>Drill-down por usuário e departamento</li>
+            <li>Funcionários mais vulneráveis (configurável: anônimo ou não)</li>
+            <li>Log completo de todas as ações de campanha</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">👤 Portal do funcionário</div>
+          <ul>
+            <li>Score pessoal de segurança</li>
+            <li>Histórico de campanhas recebidas</li>
+            <li>Treinamentos pendentes e concluídos</li>
+            <li>Certificados baixáveis</li>
+            <li>Ranking opcional (gamificação)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📄 Relatórios</div>
+          <ul>
+            <li>Relatório executivo (PDF) com gráficos para C-level</li>
+            <li>Relatório técnico detalhado por usuário</li>
+            <li>Exportação CSV / Excel / PDF</li>
+            <li>Agendamento automático mensal por e-mail</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔐 Governança</div>
+          <ul>
+            <li>RBAC — roles bem definidos com permissões granulares</li>
+            <li>Multi-admin com workflow de aprovação de campanhas</li>
+            <li>Auditoria: log de tudo (quem criou, quem editou, quando)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Enterprise & Compliance -->
+  <div class="section">
+    <div class="section-header s5" onclick="toggle(this)">
+      <div class="section-title">6 — Enterprise, compliance & segurança</div>
+      <div class="section-badge">Camada enterprise</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">📜 Compliance pronto</div>
+          <ul>
+            <li>LGPD (dados sensíveis — prioridade Brasil)</li>
+            <li>GDPR (para expansão Europa)</li>
+            <li>ISO 27001 — relatórios auditáveis</li>
+            <li>SOC 2</li>
+            <li>Termos de uso: empresa assina consentimento explícito</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔐 Segurança da própria plataforma</div>
+          <ul>
+            <li>MFA obrigatório para admins</li>
+            <li>Multi-tenant com Row Level Security (RLS) rígido</li>
+            <li>Criptografia em repouso e em trânsito</li>
+            <li>Opção on-premise para setores regulados (banco, saúde)</li>
+            <li>WAF + Rate limiting nas APIs de disparo</li>
+            <li>KYC de clientes (anti-abuso)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Integrações -->
+  <div class="section">
+    <div class="section-header s7" onclick="toggle(this)">
+      <div class="section-title">7 — Integrações & ecossistema</div>
+      <div class="section-badge">API & connectors</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="card" style="padding:0;">
+        <table>
+          <tr><th>Integração</th><th>Função</th></tr>
+          <tr><td><span class="plan-name">Microsoft 365 / Outlook</span></td><td>Botão "Reportar phishing" no cliente; auto-remoção via API</td></tr>
+          <tr><td><span class="plan-name">Google Workspace / Gmail</span></td><td>Idem + sync de usuários</td></tr>
+          <tr><td><span class="plan-name">Active Directory / Azure AD / Okta</span></td><td>Sync automático bidirecional de usuários</td></tr>
+          <tr><td><span class="plan-name">Slack / Microsoft Teams</span></td><td>Notificações de campanhas e alertas de incidentes</td></tr>
+          <tr><td><span class="plan-name">SIEM (Splunk, QRadar)</span></td><td>Exportação de eventos + recepção de sinais de risco</td></tr>
+          <tr><td><span class="plan-name">Microsoft Defender / Google Security Center</span></td><td>Dados de telemetria cruzados com perfil de risco</td></tr>
+          <tr><td><span class="plan-name">SCORM / LMS (Moodle etc.)</span></td><td>Exportar cursos para plataformas existentes</td></tr>
+          <tr><td><span class="plan-name">API REST pública</span></td><td>Integração customizada com qualquer sistema</td></tr>
+          <tr><td><span class="plan-name">Webhooks</span></td><td>Disparar ações em ferramentas externas</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Infra -->
+  <div class="section">
+    <div class="section-header s8" onclick="toggle(this)">
+      <div class="section-title">8 — Infraestrutura crítica</div>
+      <div class="section-badge">Deliverability & scale</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">📧 Deliverability (maior desafio técnico)</div>
+          <ul>
+            <li>Aquecimento de domínio (domain warming)</li>
+            <li>Rotação de IPs dedicados</li>
+            <li>SPF, DKIM, DMARC configurados automaticamente por cliente</li>
+            <li>E-mails não podem cair no spam — a simulação falha se cair</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">☁️ Arquitetura</div>
+          <ul>
+            <li>Multi-tenant com isolamento forte (RLS no banco de dados)</li>
+            <li>Filas assíncronas (Kafka ou RabbitMQ) para envio em escala</li>
+            <li>Escalável para milhões de e-mails por campanha</li>
+            <li>Segregação total de dados por cliente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Modelos de negócio -->
+  <div class="section">
+    <div class="section-header s3" onclick="toggle(this)">
+      <div class="section-title">Modelos de negócio</div>
+      <div class="section-badge">Planos & GTM</div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="section-body">
+      <div class="card" style="padding:0;margin-bottom:12px;">
+        <table>
+          <tr><th>Plano</th><th>Para quem</th><th>O que inclui</th></tr>
+          <tr><td><span class="plan-name">Starter</span></td><td>PMEs até 50 funcionários</td><td>Templates básicos, tracking, teachable moment, dashboard simples</td></tr>
+          <tr><td><span class="plan-name">Business</span></td><td>50–500 funcionários</td><td>Automação, AD/Google sync, treinamentos, gamificação, relatórios PDF</td></tr>
+          <tr><td><span class="plan-name">Enterprise</span></td><td>500+ funcionários</td><td>IA + spear phishing, SOAR, SIEM, compliance completo, SLA, suporte dedicado</td></tr>
+          <tr><td><span class="plan-name">White Label</span></td><td>Revendedores / MSPs</td><td>Plataforma com marca do parceiro, gestão multi-cliente</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 ICP — Cliente ideal (Brasil)</div>
+        <ul>
+          <li>Empresas com +100 funcionários, LGPD relevante</li>
+          <li>Prioridade: setor financeiro, jurídico, saúde, e-commerce</li>
+          <li>Modelo de receita: SaaS por colaborador (R$/mês)</li>
+          <li>Upsell: IA avançada, SIEM, white label, consultoria</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Roadmap -->
+  <div style="padding: 0 4px;">
+    <div style="font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:14px;">Roadmap de lançamento</div>
+
+    <div class="roadmap-phase">
+      <div class="phase-label"><span class="tag ph1">Fase 1 — MVP (venda possível)</span></div>
+      <div class="phase-items">
+        <span class="item-pill">Campanha de e-mail com tracking</span>
+        <span class="item-pill">Pixel + link rastreado</span>
+        <span class="item-pill">Teachable moment automático</span>
+        <span class="item-pill">Dashboard admin básico</span>
+        <span class="item-pill">20 templates prontos por setor</span>
+        <span class="item-pill">Relatório simples</span>
+        <span class="item-pill">Domínios isca</span>
+        <span class="item-pill">Agendamento de campanhas</span>
+      </div>
+    </div>
+
+    <div class="roadmap-phase">
+      <div class="phase-label"><span class="tag ph2">Fase 2 — Product-Market Fit</span></div>
+      <div class="phase-items">
+        <span class="item-pill">Biblioteca de vídeos & quizzes</span>
+        <span class="item-pill">AD + Azure AD + Google Workspace</span>
+        <span class="item-pill">Relatórios PDF executivos</span>
+        <span class="item-pill">Gamificação e certificados</span>
+        <span class="item-pill">Smishing (SMS)</span>
+        <span class="item-pill">Botão "Reportar" no Outlook/Gmail</span>
+        <span class="item-pill">Score de risco por usuário</span>
+        <span class="item-pill">Automação por regras</span>
+        <span class="item-pill">Pesquisas de clima</span>
+        <span class="item-pill">Benchmark do setor</span>
+        <span class="item-pill">Compliance LGPD</span>
+      </div>
+    </div>
+
+    <div class="roadmap-phase">
+      <div class="phase-label"><span class="tag ph3">Fase 3 — Líder de mercado / Enterprise</span></div>
+      <div class="phase-items">
+        <span class="item-pill">IA para spear phishing</span>
+        <span class="item-pill">Geração de ataques via LinkedIn/site</span>
+        <span class="item-pill">PhishER / SOAR (resposta real)</span>
+        <span class="item-pill">Auto-remoção de e-mails maliciosos</span>
+        <span class="item-pill">SIEM bidirecional</span>
+        <span class="item-pill">Deepfake de voz</span>
+        <span class="item-pill">USB drops & QR quishing</span>
+        <span class="item-pill">Digital Twin do funcionário</span>
+        <span class="item-pill">Kill chain multi-etapas</span>
+        <span class="item-pill">White label</span>
+        <span class="item-pill">API pública</span>
+        <span class="item-pill">ISO 27001 / SOC 2</span>
+        <span class="item-pill">On-premise</span>
+        <span class="item-pill">Threat Intel automático</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(header) {
+  const chevron = header.querySelector('.chevron');
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+</script>

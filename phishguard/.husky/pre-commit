@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Husky pre-commit hook
+
+echo "Running pre-commit checks..."
+
+# Run lint-staged
+npx lint-staged
+
+echo "Pre-commit checks complete!"

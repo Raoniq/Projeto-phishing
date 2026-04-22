@@ -1,0 +1,6 @@
+# Husky
+# https://typicode.github.io/husky/
+
+.node_modules
+dist
+*.local
