@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { 
-  Shield, 
-  Users, 
-  Target, 
+import {
+  Shield,
+  Users,
+  Target,
   Heart,
   Award,
   Clock,
   Globe,
   Mail,
-  Linkedin,
+  Link,
   ArrowRight,
 } from "lucide-react";
 

@@ -1,121 +1,70 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Marketing pages
+import HomePage from './routes/marketing/Home'
+import AboutPage from './routes/marketing/About'
+import PricingPage from './routes/marketing/Pricing'
+import SecurityPage from './routes/marketing/Security'
+import LgpdPage from './routes/marketing/Lgpd'
 
+// Auth pages
+import LoginPage from './routes/auth/Login'
+import RegisterPage from './routes/auth/Register'
+import ForgotPasswordPage from './routes/auth/ForgotPassword'
+import ChangePasswordPage from './routes/auth/ChangePassword'
+import EmailVerificationPage from './routes/auth/EmailVerification'
+
+// App pages (protected)
+import DashboardPage from './routes/app/Dashboard'
+import CampanhasPage from './routes/app/Campanhas'
+import UsuariosPage from './routes/app/Usuarios'
+import ConfiguracoesPage from './routes/app/Configuracoes'
+
+// Learner pages
+import LearnerDashboard from './routes/learner/Dashboard'
+import TrilhasPage from './routes/learner/Trilhas'
+import CertificadoPage from './routes/learner/Certificado'
+
+// Public pages
+import VoceFoiPescado from './routes/pescado/VoceFoiPescado'
+import LandingTemplates from './routes/pescado/LandingTemplates'
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <BrowserRouter>
+      <Routes>
+        {/* Marketing - public */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/lgpd" element={<LgpdPage />} />
 
-      <div className="ticks"></div>
+        {/* Auth */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* App - protected (requires auth) */}
+        <Route path="/app/dashboard" element={<DashboardPage />} />
+        <Route path="/app/campanhas" element={<CampanhasPage />} />
+        <Route path="/app/usuarios" element={<UsuariosPage />} />
+        <Route path="/app/configuracoes" element={<ConfiguracoesPage />} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* Learner portal */}
+        <Route path="/learner/dashboard" element={<LearnerDashboard />} />
+        <Route path="/learner/trilhas" element={<TrilhasPage />} />
+        <Route path="/learner/certificado" element={<CertificadoPage />} />
+
+        {/* Public - phishing landing */}
+        <Route path="/pescado" element={<VoceFoiPescado />} />
+        <Route path="/templates" element={<LandingTemplates />} />
+
+        {/* Fallback */}
+        <Route path="*" element={<HomePage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
-
-export default App
