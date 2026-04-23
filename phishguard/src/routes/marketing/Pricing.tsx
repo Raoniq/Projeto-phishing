@@ -221,7 +221,7 @@ export default function PricingPage() {
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
           
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Planos e Preços
             </span>
@@ -230,7 +230,7 @@ export default function PricingPage() {
               <span className="text-amber-500">preço de um café</span>{' '}
               por dia
             </h1>
-            <p className="text-xl text-noir-300 max-w-4xl mx-auto">
+            <p className="text-xl text-noir-300 max-w-prose md:max-w-3xl mx-auto">
               Escolha o plano ideal para sua empresa. Comece com 14 dias grátis
               e cancele quando quiser.
             </p>
@@ -250,12 +250,12 @@ export default function PricingPage() {
         
         {/* Comparison note */}
         <section className="relative py-16">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-4xl px-4 w-full">
             <Card className="p-8 text-center bg-noir-900/50 border-noir-700">
               <h3 className="font-display text-2xl font-bold mb-4">
                 Não sabe qual plano escolher?
               </h3>
-              <p className="text-noir-400 mb-6 max-w-4xl mx-auto">
+              <p className="text-noir-400 mb-6 max-w-prose md:max-w-3xl mx-auto">
                 Nossa equipe pode ajudar você a encontrar a melhor solução
                 para as necessidades da sua organização.
               </p>
@@ -275,7 +275,7 @@ export default function PricingPage() {
         <section className="relative py-24">
           <div className="absolute inset-0 bg-noir-900/50" />
           
-          <div className="relative mx-auto max-w-4xl px-4">
+          <div className="relative mx-auto max-w-4xl px-4 w-full">
             <div className="text-center mb-16">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Perguntas Frequentes
@@ -283,7 +283,7 @@ export default function PricingPage() {
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
                 Tiramos suas dúvidas
               </h2>
-              <p className="text-noir-400">
+              <p className="text-noir-400 max-w-prose md:max-w-3xl mx-auto">
                 Não encontrou o que procurava?{' '}
                 <a href="/contact" className="text-amber-500 hover:underline">
                   Entre em contato
@@ -306,11 +306,11 @@ export default function PricingPage() {
           <div className="absolute inset-0 bg-noir-950" />
           <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 via-transparent to-transparent" />
           
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
               Pronto para começar?
             </h2>
-            <p className="text-xl text-noir-400 mb-10 max-w-4xl mx-auto">
+            <p className="text-xl text-noir-400 mb-10 max-w-prose md:max-w-3xl mx-auto">
               Teste gratuito por 14 dias. Sem cartão de crédito.
               Configuração em menos de 5 minutos.
             </p>
