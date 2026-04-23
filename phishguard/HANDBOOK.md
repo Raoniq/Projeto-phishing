@@ -6,6 +6,8 @@ PhishGuard is a security awareness training platform that simulates phishing att
 
 **Target audience**: Security awareness teams, CISOs, IT administrators managing 50-5000 seat organizations.
 
+**Repository structure**: Monorepo com frontend em `phishguard/` e dependências compartilhadas na raiz.
+
 ---
 
 ## 2. Tech Stack
@@ -74,12 +76,13 @@ PhishGuard is a security awareness training platform that simulates phishing att
 | Environment | Branch | Workers (API) | Pages (Frontend) |
 |-------------|--------|---------------|------------------|
 | Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://<hash>.phishguard-6s0.pages.dev |
-| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://<hash>.phishguard-6s0.pages.dev |
+| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://<hash>.phishguard-staging.raoni7249.workers.dev |
 | Local | - | http://localhost:8787 | http://localhost:3000 |
 
 > **Nota**: O URL do Pages muda a cada deploy (hash único). Para descobrir o URL atual:
 > - Veja o último commit no GitHub Actions
 > - Ou faça deploy manual e use o URL retornado
+> - Acesse via Cloudflare Dashboard → Workers & Pages → seu projeto → View Details
 
 ### Deploy via GitHub Actions (Automático)
 
@@ -135,6 +138,41 @@ npx wrangler pages deploy dist --project-name=phishguard
 ```
 
 > **Importante**: O token da Cloudflare está configurado localmente. Solicite ao dono do projeto se não tiver acesso.
+
+### Configuração do Cloudflare Pages Dashboard
+
+O projeto usa **dois métodos de deploy** em paralelo:
+
+1. **Cloudflare Pages Dashboard** (build automático)
+2. **GitHub Actions** (build via CI/CD)
+
+**Configurações obrigatórias no Dashboard** (se usar build automático):
+
+| Setting | Valor |
+|---------|-------|
+| **Build command** | `npm run build` |
+| **Build output directory** | `phishguard/dist` |
+| **Root directory** | `.` (raiz do repositório) |
+
+> **Atenção**: O repositório tem estrutura de monorepo (`phishguard/` é o subdiretório do app). O build output vai para `phishguard/dist`, não para `dist` na raiz.
+
+**Se preferir usar apenas GitHub Actions**:
+1. Vá em **Settings** → **Builds & Deployments**
+2. Ative **Disable automatic builds**
+3. O GitHub Actions handles everything via `.github/workflows/deploy.yml`
+
+---
+
+### Troubleshooting Deploy
+
+**Problema: `dist not found`**
+- Solução: Verifique se **Build output directory** está como `phishguard/dist`
+
+**Problema: `vite: not found`**
+- Solução: Certifique-se que o **Build command** executa `npm install` antes do build
+
+**Problema: ERESOLVE peer dependency**
+- Solução: Adicione `NPM_CONFIG_LEGACY_PEER_DEPS=true` nas Environment Variables do projeto
 
 ### KV Namespaces
 
