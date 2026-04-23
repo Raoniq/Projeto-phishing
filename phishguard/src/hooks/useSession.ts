@@ -35,7 +35,7 @@ export function useSession(): UseSessionReturn {
         const currentSession = await getSession()
         setSession(currentSession)
         setIsExpired(false)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[useSession] Error loading session:', error)
         setSession(null)
       } finally {

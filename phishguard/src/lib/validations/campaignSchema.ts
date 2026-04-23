@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod'
 
 export const campaignSchema = z.object({
   name: z
@@ -24,3 +24,4 @@ export const campaignSchema = z.object({
 })
 
 export type CampaignFormData = z.infer<typeof campaignSchema>
+export const campaignSchemaZod: ZodSchema<CampaignFormData> = campaignSchema

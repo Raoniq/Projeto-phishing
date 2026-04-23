@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod'
 
 export const userSchema = z.object({
   name: z
@@ -20,3 +20,4 @@ export const userSchema = z.object({
 })
 
 export type UserFormData = z.infer<typeof userSchema>
+export const userSchemaZod: ZodSchema<UserFormData> = userSchema

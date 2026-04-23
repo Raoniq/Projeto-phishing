@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod'
 
 export const registerSchema = z.object({
   name: z
@@ -23,3 +23,4 @@ export const registerSchema = z.object({
 })
 
 export type RegisterFormData = z.infer<typeof registerSchema>
+export const registerSchemaZod: ZodSchema<RegisterFormData> = registerSchema

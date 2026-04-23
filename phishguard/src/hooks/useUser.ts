@@ -56,7 +56,7 @@ export function useUser(): UseUserReturn {
         }
 
         setProfile(profileData ?? null)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[useUser] Error:', error)
         setProfile(null)
       } finally {
@@ -79,7 +79,7 @@ export function useUser(): UseUserReturn {
         .single()
 
       setProfile(profileData ?? null)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[useUser] Refetch error:', error)
     } finally {
       setIsLoading(false)

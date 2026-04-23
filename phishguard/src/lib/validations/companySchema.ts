@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod'
 
 export const companySchema = z.object({
   name: z
@@ -19,3 +19,4 @@ export const companySchema = z.object({
 })
 
 export type CompanyFormData = z.infer<typeof companySchema>
+export const companySchemaZod: ZodSchema<CompanyFormData> = companySchema

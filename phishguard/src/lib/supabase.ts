@@ -8,7 +8,7 @@
  * in supabase/migrations/0002_rls_policies.sql
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -23,7 +23,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * Main Supabase client for frontend use.
  * Uses ANON key - RLS policies enforce security.
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase: SupabaseClient<Database> = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Auto-refresh session before expiry
     autoRefreshToken: true,

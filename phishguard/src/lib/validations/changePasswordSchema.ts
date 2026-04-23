@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodSchema } from 'zod'
 
 export const changePasswordSchema = z.object({
   currentPassword: z
@@ -15,3 +15,4 @@ export const changePasswordSchema = z.object({
 })
 
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
+export const changePasswordSchemaZod: ZodSchema<ChangePasswordFormData> = changePasswordSchema
