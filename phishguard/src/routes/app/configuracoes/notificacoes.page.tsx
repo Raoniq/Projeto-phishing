@@ -8,7 +8,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Slack,
+  Hash,
   MessageSquare,
   TestTube,
   Save,
