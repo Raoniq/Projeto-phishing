@@ -102,7 +102,7 @@ export default function DemoPage() {
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
+          <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Demonstração
             </span>
@@ -110,7 +110,7 @@ export default function DemoPage() {
               Veja o PhishGuard{' '}
               <span className="text-amber-500">em ação</span>
             </h1>
-            <p className="text-xl text-noir-300 max-w-4xl mx-auto">
+            <p className="text-xl text-noir-300 max-w-prose md:max-w-3xl mx-auto">
               Agende uma demonstração personalizada e descubra como podemos proteger
               sua empresa contra phishing.
             </p>
@@ -119,7 +119,7 @@ export default function DemoPage() {
 
         {/* Demo request section */}
         <section className="relative py-16">
-          <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-6xl px-4 w-full">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Demo form */}
               <div className="lg:col-span-2">
@@ -262,12 +262,12 @@ export default function DemoPage() {
 
         {/* CTA section */}
         <section className="relative py-16">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-4xl px-4 w-full">
             <Card className="p-8 text-center bg-noir-900/50 border-noir-700">
               <h3 className="font-display text-2xl font-bold mb-4">
                 Ainda deciding?
               </h3>
-              <p className="text-noir-400 mb-6 max-w-4xl mx-auto">
+              <p className="text-noir-400 mb-6 max-w-prose mx-auto">
                 Comece com nosso teste gratuito de 14 dias. Sem cartão de crédito.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
