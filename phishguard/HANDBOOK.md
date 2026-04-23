@@ -84,14 +84,29 @@ PhishGuard is a security awareness training platform that simulates phishing att
 > - Ou faça deploy manual e use o URL retornado
 > - Acesse via Cloudflare Dashboard → Workers & Pages → seu projeto → View Details
 
-### Deploy via GitHub Actions (Automático)
+### Workflow de Deploy (develop → main)
 
-O deploy é disparado automaticamente ao fazer push para `main` ou `develop`:
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DEPLOY WORKFLOW                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   1. DEVELOP (Staging)              2. TESTE MANUAL              3. MAIN (Production)
+   ┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
+   │ git push develop    │   ──►  │ Testar no Cloudflare │   ──►  │ Mergear + push main │
+   │                     │        │ (URL preview)        │        │                     │
+   │ Deploy automático  │        │                     │        │ Deploy automático   │
+   │ URL preview único  │        │ Se OK → avise o     │        │ PRODUCTION          │
+   │                     │        │ Sisyphus para       │        │                     │
+   │                     │        │ fazer o merge       │        │                     │
+   └─────────────────────┘        └─────────────────────┘        └─────────────────────┘
+```
+
+#### Passo a Passo
+
+**1. Desenvolver no develop (default):**
 
 ```bash
-# ────────────────────────────────────────────────────────────────
-# 1. DESENVOLVER NO DEVELOP (STAGING)
-# ────────────────────────────────────────────────────────────────
 git checkout develop
 # ... fazer alterações ...
 git add .
@@ -99,13 +114,17 @@ git commit -m "feat: minha nova feature"
 git push origin develop
 
 # → Deploy automático para STAGING
-# → Workers: https://phishguard-api-staging.raoni7249.workers.dev
-# → Pages: https://develop.phishguard-6s0.pages.dev
+# → Acompanhe em: https://dash.cloudflare.com/
+# → Teste manualmente o URL de preview
+```
 
+**2. Após testar e aprovar no develop:**
 
-# ────────────────────────────────────────────────────────────────
-# 2. LIBERAR PARA PRODUCTION (MAIN)
-# ────────────────────────────────────────────────────────────────
+Avise o Sisyphus (me) que está tudo ok e quer subir para production.
+
+**3. Sisyphus faz o merge (ou você mesmo):**
+
+```bash
 git checkout main
 git merge develop
 git push origin main
@@ -114,6 +133,9 @@ git push origin main
 # → Workers: https://phishguard-api.raoni7249.workers.dev
 # → Pages: https://phishguard-6s0.pages.dev
 ```
+
+> **⚠️ Regra importante:** Só fazer merge para `main` após testar no `develop`.
+> O Sisyphus não vai fazer merge para main se você não aprovar o teste no develop primeiro.
 
 **Acompanhar deploy:** https://github.com/Raoniq/Projeto-phishing/actions
 
