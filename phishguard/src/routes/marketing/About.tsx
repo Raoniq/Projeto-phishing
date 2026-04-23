@@ -218,7 +218,7 @@ export default function AboutPage() {
       <section className="relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
@@ -229,7 +229,7 @@ export default function AboutPage() {
                 <span className="text-amber-500">brasileiras</span>{' '}
                 desde 2019
               </h1>
-              <p className="text-xl text-noir-300 leading-relaxed mb-8">
+              <p className="text-xl text-noir-300 leading-relaxed mb-8 max-w-prose">
                 Somos uma equipe apasionada por segurança corporativa. Acreditamos 
                 que treinamento eficaz pode transformar qualquer equipe em sua 
                 primeira linha de defesa contra phishing.
@@ -267,7 +267,7 @@ export default function AboutPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-900/50" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
             <div>
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
@@ -277,12 +277,12 @@ export default function AboutPage() {
                 Democratizar a segurança{' '}
                 <span className="text-amber-500">no Brasil</span>
               </h2>
-              <p className="text-lg text-noir-300 leading-relaxed mb-6">
+              <p className="text-lg text-noir-300 leading-relaxed mb-6 max-w-prose">
                 Acreditamos que proteção contra phishing não deve ser luxo de grandes 
                 corporações. Pequenas e médias empresas precisam de ferramentas 
                 acessíveis e eficazes.
               </p>
-              <p className="text-lg text-noir-300 leading-relaxed">
+              <p className="text-lg text-noir-300 leading-relaxed max-w-prose">
                 Nossa missão é reduzir o cybercrime causado por phishing em 50% 
                 nas empresas brasileiras até 2030. Cada treinamento realizado é um 
                 passo nessa direção.
@@ -319,12 +319,12 @@ export default function AboutPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-950" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Nossos valores
             </span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 w-full">
               O que nos move
             </h2>
           </div>
@@ -341,7 +341,7 @@ export default function AboutPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-900/50" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Time
@@ -366,7 +366,7 @@ export default function AboutPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-950" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
             <div>
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
@@ -376,7 +376,7 @@ export default function AboutPage() {
                 De startup a líder{' '}
                 <span className="text-amber-500">no Brasil</span>
               </h2>
-              <p className="text-lg text-noir-300 leading-relaxed">
+              <p className="text-lg text-noir-300 leading-relaxed max-w-prose">
                 Evoluímos de uma ideia em 2019 para a plataforma preferida de 
                 empresas brasileiras que levam segurança a sério.
               </p>
