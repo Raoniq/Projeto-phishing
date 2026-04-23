@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd phishguard
-          npm ci
+          bun install
 
       - name: Deploy to Cloudflare Workers (Production)
         if: github.ref == 'refs/heads/main'
@@ -80,7 +80,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd phishguard
-          npm ci
+          bun install
 
       - name: Build frontend
         run: cd phishguard && npx vite build
@@ -132,7 +132,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd phishguard
-          npm ci
+          bun install
 
       - name: TypeScript check
         run: |
