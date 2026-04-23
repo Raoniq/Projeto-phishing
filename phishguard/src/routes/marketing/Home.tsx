@@ -53,7 +53,7 @@ function HeroSection() {
       <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-amber-500/20 rounded-full animate-float-slow" />
       <div className="absolute bottom-1/3 left-1/3 w-2 h-2 bg-amber-500/25 rounded-full animate-float" />
 
-      <div className="relative z-10 mx-auto max-w-5xl px-4 text-center">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 w-full text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-500/30 bg-amber-500/10 mb-8 opacity-0 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
           <Shield className="w-4 h-4 text-amber-500" />
@@ -67,7 +67,7 @@ function HeroSection() {
           <span className="text-gradient-animated">humano à prova de phishing</span>
         </h1>
 
-        <p className="text-xl md:text-2xl text-noir-300 max-w-3xl mx-auto mb-10 leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+        <p className="text-xl md:text-2xl text-noir-300 max-w-prose md:max-w-3xl mx-auto mb-10 leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: "400ms" }}>
           Treinamento gamificado que modifica comportamentos e cria uma cultura de segurança robusta.
           Sem módulos cansativos. Com resultados mensuráveis.
         </p>
@@ -117,7 +117,7 @@ function ProblemSection() {
       <div className="absolute inset-0 bg-noir-950" />
       <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-transparent" />
 
-      <div className="relative mx-auto max-w-6xl px-4">
+      <div className="relative w-full mx-auto max-w-6xl px-4">
         {/* Section header */}
         <div className="text-center mb-16 reveal">
           <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
@@ -163,7 +163,7 @@ function ProblemSection() {
         </div>
 
         {/* Quote */}
-        <blockquote className="mt-16 text-center p-8 rounded-2xl bg-noir-900/50 border border-noir-700 max-w-3xl mx-auto reveal">
+        <blockquote className="mt-16 text-center p-8 rounded-2xl bg-noir-900/50 border border-noir-700 max-w-prose md:max-w-3xl mx-auto w-full reveal">
           <p className="text-xl md:text-2xl text-noir-200 italic leading-relaxed">
             "Não é questão de SE sua empresa será alvo, mas de QUANDO."
           </p>
@@ -209,7 +209,7 @@ function HowItWorksSection() {
     <section className="relative py-32 overflow-hidden" ref={useScrollReveal()}>
       <div className="absolute inset-0 bg-noir-900" />
 
-      <div className="relative mx-auto max-w-6xl px-4">
+      <div className="relative w-full mx-auto max-w-6xl px-4">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left column - text */}
           <div className="reveal">
@@ -306,7 +306,7 @@ function ProofSection() {
     <section className="relative py-32 overflow-hidden" ref={useScrollReveal()}>
       <div className="absolute inset-0 bg-noir-950" />
 
-      <div className="relative mx-auto max-w-6xl px-4">
+      <div className="relative w-full mx-auto max-w-6xl px-4">
         <div className="text-center mb-16 reveal">
           <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
             Resultados reais
@@ -315,7 +315,7 @@ function ProofSection() {
             Empresas que confiam no{' '}
             <span className="text-gradient-animated">PhishGuard</span>
           </h2>
-          <p className="text-lg text-noir-400 max-w-2xl mx-auto">
+          <p className="text-lg text-noir-400 max-w-prose md:max-w-2xl mx-auto w-full">
             Dos nossos clientes, 89% relatam redução significativa em clics em tentativas de phishing após 6 meses.
           </p>
         </div>
@@ -400,7 +400,7 @@ function FeaturesSection() {
     <section className="relative py-32 overflow-hidden" ref={useScrollReveal()}>
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900 via-noir-950 to-noir-900" />
 
-      <div className="relative mx-auto max-w-6xl px-4">
+      <div className="relative w-full mx-auto max-w-6xl px-4">
         <div className="text-center mb-16 reveal">
           <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
             Funcionalidades
@@ -440,12 +440,12 @@ function CtaSection() {
       {/* Decorative glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[150px] animate-pulse-glow" />
 
-      <div className="relative mx-auto max-w-4xl px-4 text-center">
+      <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
         <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight reveal">
           Comece a proteger sua empresa{' '}
           <span className="text-gradient-animated">hoje</span>
         </h2>
-        <p className="text-xl text-noir-300 mb-10 max-w-2xl mx-auto reveal">
+        <p className="text-xl text-noir-300 mb-10 max-w-prose md:max-w-2xl mx-auto w-full reveal">
           Teste gratuito por 14 dias. Sem cartão de crédito.
           Configuração em menos de 5 minutos.
         </p>
