@@ -303,3 +303,94 @@ Set up Cloudflare alerts:
    - Worker error rate > 1%
    - Worker CPU time > 50ms
    - KV operation failures
+
+---
+
+## Automated Deployment via GitHub Actions
+
+O projeto usa GitHub Actions para deploy automático para Cloudflare Workers e Pages.
+
+### Workflow Structure
+
+O workflow está em `.github/workflows/deploy.yml` e contém 3 jobs:
+
+1. **deploy-workers**: Deploy da API (Cloudflare Workers)
+2. **deploy-pages**: Deploy do frontend (Cloudflare Pages)
+3. **validate**: TypeScript + Lint (só em pull requests)
+
+### Branch Strategy
+
+| Branch | Ambiente | Destino |
+|--------|----------|---------|
+| `develop` | Staging | Cloudflare Pages staging + Workers staging |
+| `main` | Production | Cloudflare Pages production + Workers production |
+
+### Configuração Necessária no GitHub
+
+#### 1. Secrets (em Settings > Secrets and variables > Actions)
+
+```
+CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
+CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id
+```
+
+#### 2. Variables (em Settings > Secrets and variables > Actions > Variables)
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Como Obter os Tokens
+
+#### Cloudflare API Token
+
+1. Acesse [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
+2. Click "Create Token"
+3. Use template "Edit Workers" para workers ou crie custom com:
+   - `Zone:Edit` para Pages
+   - `Account:Workers:Edit` para Workers deployment
+
+#### Cloudflare Account ID
+
+1. Acesse o dashboard da Cloudflare
+2. Vá em Workers & Pages
+3. O Account ID aparece no canto direito da URL
+
+### Troubleshooting
+
+#### Error: `bun: command not found`
+**Solução**: O workflow já inclui `oven-sh/setup-bun@v2` para instalar bun automaticamente.
+
+#### Error: `npm ci` fails with lockfile error
+**Solução**: O workflow usa `bun install` ao invés de `npm ci` pois não há `package-lock.json`.
+
+#### Error: Cache path not found
+**Solução**: Removido cache do setup-node para evitar erros de path resolution.
+
+### Fluxo de Deploy
+
+```
+1. Push para develop/main
+       ↓
+2. GitHub Actions detecta push
+       ↓
+3. Job: Checkout + Setup Node + Setup Bun
+       ↓
+4. Job: npm install / bun install
+       ↓
+5. Paralelo:
+   ├── deploy-workers: npx wrangler deploy
+   ├── deploy-pages: cloudflare/pages-action
+   └── validate: tsc --noEmit + lint (só PR)
+       ↓
+6. Cloudflare detecta novo deploy
+       ↓
+7. Deploy automático em produção/staging
+```
+
+### Links Úteis
+
+- **GitHub Actions**: https://github.com/Raoniq/Projeto-phishing/actions
+- **Cloudflare Pages**: https://dash.cloudflare.com/pages
+- **Cloudflare Workers**: https://dash.cloudflare.com/workers
