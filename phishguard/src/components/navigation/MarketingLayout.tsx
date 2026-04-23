@@ -11,6 +11,7 @@ export default function MarketingLayout() {
   const isActive = (path: string) => location.pathname === path
 
   const navLinks = [
+    { to: '/', label: 'Início' },
     { to: '/pricing', label: 'Preços' },
     { to: '/about', label: 'Sobre' },
     { to: '/security', label: 'Segurança' },
