@@ -312,36 +312,49 @@ O projeto usa GitHub Actions para deploy automático para Cloudflare Workers e P
 
 ### Workflow Structure
 
-O workflow está em `.github/workflows/deploy.yml` e contém 3 jobs:
+O workflow está em `.github/workflows/deploy.yml` e contém 2 jobs:
 
-1. **deploy-workers**: Deploy da API (Cloudflare Workers)
-2. **deploy-pages**: Deploy do frontend (Cloudflare Pages)
-3. **validate**: TypeScript + Lint (só em pull requests)
+1. **validate**: TypeScript + Lint (só em pull requests)
+2. **github-push**: Log do push (Cloudflare faz deploy automaticamente)
 
-### Branch Strategy
+### Como Funciona
+
+```
+1. Push para develop/main no GitHub
+       ↓
+2. GitHub Actions notifica o Cloudflare
+       ↓
+3. Cloudflare detecta mudança e faz auto-deploy
+       ↓
+4. Deploy em produção (main) ou staging (develop)
+```
+
+**Importante**: O Cloudflare Pages deve estar configurado com **GitHub Integration** para detectar pushes automaticamente. Se não estiver, configure em:
+- Cloudflare Dashboard > Pages > seu projeto > Settings > Builds and deployments > GitHub
 
 | Branch | Ambiente | Destino |
 |--------|----------|---------|
 | `develop` | Staging | Cloudflare Pages staging + Workers staging |
 | `main` | Production | Cloudflare Pages production + Workers production |
 
-### Configuração Necessária no GitHub
+### Cloudflare GitHub Integration
 
-#### 1. Secrets (em Settings > Secrets and variables > Actions)
+O deploy automático funciona via **GitHub Integration** no Cloudflare Pages:
 
-```
-CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
-CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id
-```
+1. Acesse [dash.cloudflare.com/pages](https://dash.cloudflare.com/pages)
+2. Selecione seu projeto **phishguard**
+3. Vá em **Settings** > **Builds and deployments** > **GitHub**
+4. Clique em **Configure** e conecte ao repositório `Raoniq/Projeto-phishing`
+5. Configure para deploy em `main` (produção) e `develop` (staging)
 
-#### 2. Variables (em Settings > Secrets and variables > Actions > Variables)
+### Variáveis de Ambiente
 
-```
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
+Para variáveis como `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, configure diretamente no Cloudflare Pages:
 
-### Como Obter os Tokens
+1. Vá em Settings > Environment variables
+2. Adicione as variáveis para produção e staging
+
+### Como Obter Tokens (para outras necessidades)
 
 #### Cloudflare API Token
 
@@ -368,25 +381,16 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 #### Error: Cache path not found
 **Solução**: Removido cache do setup-node para evitar erros de path resolution.
 
-### Fluxo de Deploy
+### Fluxo de Deploy (Simplificado)
 
 ```
-1. Push para develop/main
+1. Push para develop/main no GitHub
        ↓
-2. GitHub Actions detecta push
+2. GitHub Actions loga o push
        ↓
-3. Job: Checkout + Setup Node + Setup Bun
+3. Cloudflare detecta via GitHub Integration
        ↓
-4. Job: npm install / bun install
-       ↓
-5. Paralelo:
-   ├── deploy-workers: npx wrangler deploy
-   ├── deploy-pages: cloudflare/pages-action
-   └── validate: tsc --noEmit + lint (só PR)
-       ↓
-6. Cloudflare detecta novo deploy
-       ↓
-7. Deploy automático em produção/staging
+4. Cloudflare faz build e deploy automático
 ```
 
 ### Links Úteis
