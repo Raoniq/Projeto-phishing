@@ -84,7 +84,7 @@ PhishGuard is a security awareness training platform that simulates phishing att
 > - Ou faça deploy manual e use o URL retornado
 > - Acesse via Cloudflare Dashboard → Workers & Pages → seu projeto → View Details
 
-### Workflow de Deploy (develop → main)
+### Workflow de Deploy
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -93,51 +93,75 @@ PhishGuard is a security awareness training platform that simulates phishing att
 
    1. DEVELOP (Staging)              2. TESTE MANUAL              3. MAIN (Production)
    ┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
-   │ git push develop    │   ──►  │ Testar no Cloudflare │   ──►  │ Mergear + push main │
-   │                     │        │ (URL preview)        │        │                     │
-   │ Deploy automático  │        │                     │        │ Deploy automático   │
-   │ URL preview único  │        │ Se OK → avise o     │        │ PRODUCTION          │
-   │                     │        │ Sisyphus para       │        │                     │
-   │                     │        │ fazer o merge       │        │                     │
+   │ git push origin     │   ──►  │ Testar no URL      │   ──►  │ Mergear + push main │
+   │ develop            │        │ do Cloudflare       │        │                     │
+   │                     │        │ Pages              │        │ Deploy automático   │
+   │ Deploy automático  │        │                    │        │ PRODUCTION          │
+   │ URL preview único  │        │ Se OK → avise o    │        │                     │
+   │                     │        │ Sisyphus para      │        │                     │
+   │                     │        │ fazer o merge      │        │                     │
    └─────────────────────┘        └─────────────────────┘        └─────────────────────┘
 ```
 
-#### Passo a Passo
-
-**1. Desenvolver no develop (default):**
+### Deploy para Staging (develop) - TODO DIA
 
 ```bash
+# 1. Estar na branch develop
 git checkout develop
-# ... fazer alterações ...
+
+# 2. Fazer alterações e commitar
 git add .
 git commit -m "feat: minha nova feature"
-git push origin develop
 
-# → Deploy automático para STAGING
-# → Acompanhe em: https://dash.cloudflare.com/
-# → Teste manualmente o URL de preview
+# 3. Push para trigger deploy automático
+git push origin develop
 ```
 
-**2. Após testar e aprovar no develop:**
+**Resultado:** Deploy automático para Staging. Aguarde ~2-3 min e teste no URL do Cloudflare Pages.
 
-Avise o Sisyphus (me) que está tudo ok e quer subir para production.
+**Acompanhar:** https://dash.cloudflare.com/ → Workers & Pages → phishguard-staging
 
-**3. Sisyphus faz o merge (ou você mesmo):**
+---
+
+### Deploy para Production (main) - APÓS TESTE
 
 ```bash
-git checkout main
-git merge develop
-git push origin main
+# 1. Estar na branch develop (já testou no staging)
+git checkout develop
 
-# → Deploy automático para PRODUCTION
-# → Workers: https://phishguard-api.raoni7249.workers.dev
-# → Pages: https://phishguard-6s0.pages.dev
+# 2. Trocar para main
+git checkout main
+
+# 3. Mergear develop para main
+git merge develop
+
+# 4. Push para trigger deploy automático
+git push origin main
 ```
 
-> **⚠️ Regra importante:** Só fazer merge para `main` após testar no `develop`.
-> O Sisyphus não vai fazer merge para main se você não aprovar o teste no develop primeiro.
+**Resultado:** Deploy automático para Production.
 
-**Acompanhar deploy:** https://github.com/Raoniq/Projeto-phishing/actions
+**Acompanhar:** https://dash.cloudflare.com/ → Workers & Pages → phishguard
+
+---
+
+### Como Encontrar o URL de Preview
+
+O URL do Cloudflare Pages muda a cada deploy (hash único):
+
+1. **Cloudflare Dashboard**: https://dash.cloudflare.com/
+2. Vá em **Workers & Pages** → seu projeto
+3. Clique em **View Details** do último deployment
+4. O URL está no campo **Custom Domain** ou **Preview**
+
+---
+
+> **⚠️ Regra importante:**
+> - **develop** = ambiente de teste (deploy automático a cada push)
+> - **main** = ambiente de produção (só fazer merge após testar no develop)
+> - **Sempre testar primeiro no develop** antes de subir para main
+
+**Acompanhar todos os deploys:** https://github.com/Raoniq/Projeto-phishing/actions
 
 ### Deploy Manual (via Wrangler CLI)
 
