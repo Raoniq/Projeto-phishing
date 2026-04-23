@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "cd phishguard && npm run build"
+    "build": "cd phishguard && npm install && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
