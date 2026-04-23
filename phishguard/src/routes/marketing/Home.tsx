@@ -163,7 +163,7 @@ function ProblemSection() {
         </div>
 
         {/* Quote */}
-        <blockquote className="mt-16 text-center p-8 rounded-2xl bg-noir-900/50 border border-noir-700 max-w-prose md:max-w-3xl mx-auto w-full reveal">
+        <blockquote className="mt-16 text-center p-8 rounded-2xl bg-noir-900/50 border border-noir-700 max-w-none mx-auto w-full reveal">
           <p className="text-xl md:text-2xl text-noir-200 italic leading-relaxed">
             "Não é questão de SE sua empresa será alvo, mas de QUANDO."
           </p>
@@ -315,7 +315,7 @@ function ProofSection() {
             Empresas que confiam no{' '}
             <span className="text-gradient-animated">PhishGuard</span>
           </h2>
-          <p className="text-lg text-noir-400 max-w-prose md:max-w-2xl mx-auto w-full">
+          <p className="text-lg text-noir-400 max-w-none mx-auto w-full">
             Dos nossos clientes, 89% relatam redução significativa em clics em tentativas de phishing após 6 meses.
           </p>
         </div>
@@ -445,7 +445,7 @@ function CtaSection() {
           Comece a proteger sua empresa{' '}
           <span className="text-gradient-animated">hoje</span>
         </h2>
-        <p className="text-xl text-noir-300 mb-10 max-w-prose md:max-w-2xl mx-auto w-full reveal">
+        <p className="text-xl text-noir-300 mb-10 max-w-none mx-auto w-full reveal">
           Teste gratuito por 14 dias. Sem cartão de crédito.
           Configuração em menos de 5 minutos.
         </p>
