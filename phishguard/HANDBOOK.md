@@ -73,9 +73,13 @@ PhishGuard is a security awareness training platform that simulates phishing att
 
 | Environment | Branch | Workers (API) | Pages (Frontend) |
 |-------------|--------|---------------|------------------|
-| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://phishguard-6s0.pages.dev |
-| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://develop.phishguard-6s0.pages.dev |
+| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://<hash>.phishguard-6s0.pages.dev |
+| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://<hash>.phishguard-6s0.pages.dev |
 | Local | - | http://localhost:8787 | http://localhost:3000 |
+
+> **Nota**: O URL do Pages muda a cada deploy (hash único). Para descobrir o URL atual:
+> - Veja o último commit no GitHub Actions
+> - Ou faça deploy manual e use o URL retornado
 
 ### Deploy via GitHub Actions (Automático)
 
@@ -120,16 +124,17 @@ cd phishguard
 # Build localmente
 npx vite build
 
-# Deploy Workers manualmente
-CLOUDFLARE_API_TOKEN=seu_token npx wrangler deploy --env production
-CLOUDFLARE_API_TOKEN=seu_token npx wrangler deploy --env staging
+# Deploy Workers para Production
+$env:CLOUDFLARE_API_TOKEN='seu_token'
+npx wrangler deploy --env production
 
-# Deploy Pages manualmente (direct upload)
-CLOUDFLARE_API_TOKEN=seu_token npx wrangler pages deploy dist --project-name=phishguard
+# Deploy Pages para Production (direct upload - sem Git)
+npx wrangler pages deploy dist --project-name=phishguard
 
-# Ver projetos Pages
-npx wrangler pages project list
+# Ver o URL do deploy no output (ex: https://abc123.phishguard-6s0.pages.dev)
 ```
+
+> **Importante**: O token da Cloudflare está configurado localmente. Solicite ao dono do projeto se não tiver acesso.
 
 ### KV Namespaces
 
