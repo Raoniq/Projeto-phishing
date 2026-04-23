@@ -11,6 +11,25 @@ import type {
 } from './types';
 import type { EmailJob, EmailSendResult } from '../email/types';
 
+// Cloudflare types - defined inline since @cloudflare/workers-types may not be installed
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+  getWithMetadata(key: string): Promise<{ value: string | null; metadata: unknown }>;
+  list(options?: { prefix?: string; limit?: number }): Promise<{ keys: { name: string }[] }>;
+}
+
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
+}
+
+interface ExecutionContext {
+  waitUntil(promise: Promise<void>): void;
+  passThroughOnException(): void;
+}
+
 // Default config
 const DEFAULT_CONFIG: SchedulerConfig = {
   maxEmailsPerMinute: 100,
@@ -40,6 +59,7 @@ interface Env {
 
 // Scheduler state
 let schedulerState: 'idle' | 'running' | 'paused' = 'idle';
+let currentCampaignId: string | null = null;
 const metrics: SchedulerMetrics = {
   status: 'idle',
   emailsProcessed: 0,
@@ -49,6 +69,19 @@ const metrics: SchedulerMetrics = {
   nextScheduledRun: null,
   currentCampaign: null,
 };
+
+// Supabase client - initialized lazily on first use
+let supabase: ReturnType<typeof createAdminClient> | null = null;
+
+function getSupabase(env: Env): ReturnType<typeof createAdminClient> {
+  if (!supabase) {
+    supabase = createAdminClient({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+  }
+  return supabase;
+}
 
 /**
  * Main scheduler worker
@@ -166,7 +199,7 @@ async function processCampaign(
   currentCampaignId = campaign.id;
   metrics.currentCampaign = campaign.id;
 
-  // supabase client deferred
+  const supabase = getSupabase(env);
 
   // Get pending targets for this campaign
   const { data: targets, error } = await supabase
@@ -259,7 +292,7 @@ async function sendEmail(
   env: Env
 ): Promise<EmailSendResult> {
   try {
-    // supabase client deferred
+    const supabase = getSupabase(env);
 
     // Get campaign template and content
     const { data: campaign } = await supabase
@@ -392,11 +425,11 @@ async function countPendingTargets(
 /**
  * Find campaigns that need processing
  */
-async function findScheduledCampaigns(_env: Env): Promise<Array<{ id: string; company_id: string; scheduled_at: string }>> {
-  // supabase client deferred
+async function findScheduledCampaigns(env: Env): Promise<Array<{ id: string; company_id: string; scheduled_at: string }>> {
+  const supabase = getSupabase(env);
 
   const now = new Date();
-  const五分钟前 = new Date(now.getTime() - 5 * 60 * 1000); // 5 min early window
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // 5 min early window
 
   // Find campaigns that:
   // 1. Are scheduled for now or past
@@ -407,7 +440,7 @@ async function findScheduledCampaigns(_env: Env): Promise<Array<{ id: string; co
     .select('id, company_id, scheduled_at')
     .in('status', ['scheduled', 'running'])
     .lte('scheduled_at', now.toISOString())
-    .gte('scheduled_at', 五分钟前.toISOString())
+    .gte('scheduled_at', fiveMinutesAgo.toISOString())
     .limit(10);
 
   return campaigns ?? [];
@@ -422,7 +455,7 @@ async function logScheduleEvent(
   env: Env,
   error?: string
 ): Promise<void> {
-  // supabase client deferred
+  const supabase = getSupabase(env);
 
   const log: ScheduleLog = {
     id: crypto.randomUUID(),
@@ -534,7 +567,6 @@ async function handleResume(request: Request, env: Env): Promise<Response> {
 async function handleManualTrigger(request: Request, env: Env): Promise<Response> {
   // Allow manual trigger even if not cron
   const config = parseConfig(env);
-  // supabase client deferred
 
   const campaigns = await findScheduledCampaigns(env);
 
@@ -576,9 +608,9 @@ async function handleManualTrigger(request: Request, env: Env): Promise<Response
 async function handlePauseCampaign(
   campaignId: string,
   _request: Request,
-  _env: Env
+  env: Env
 ): Promise<Response> {
-  // supabase client deferred
+  const supabase = getSupabase(env);
 
   const { data: campaign } = await supabase
     .from('campaigns')
@@ -612,9 +644,9 @@ async function handlePauseCampaign(
 async function handleResumeCampaign(
   campaignId: string,
   _request: Request,
-  _env: Env
+  env: Env
 ): Promise<Response> {
-  // supabase client deferred
+  const supabase = getSupabase(env);
 
   const { data: campaign } = await supabase
     .from('campaigns')

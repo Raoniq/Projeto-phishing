@@ -77,7 +77,7 @@ export function getCurrentTimeInTimezone(_timezone: string): Date {
   // normalized timezone deferred
   // Use Intl.DateTimeFormat to get current time in timezone
   // Cloudflare Workers doesn't support full TZ database, so we calculate offset manually
-  const offsetMinutes = getTimezoneOffset(normalized);
+  const offsetMinutes = getTimezoneOffset(normalizeTimezone(_timezone));
   const now = Date.now();
   const localNow = now + (offsetMinutes * 60 * 1000);
   return new Date(localNow);
@@ -137,7 +137,7 @@ export function getTimezoneOffset(timezone: string): number {
  */
 export function localToUtc(localTime: string, _timezone: string): Date {
   // normalized timezone deferred
-  const offsetMinutes = getTimezoneOffset(normalized);
+  const offsetMinutes = getTimezoneOffset(normalizeTimezone(_timezone));
 
   // Parse local time (format: "YYYY-MM-DDTHH:mm" or "HH:mm")
   const now = new Date();
@@ -161,7 +161,7 @@ export function localToUtc(localTime: string, _timezone: string): Date {
  */
 export function utcToLocal(utcTime: Date, _timezone: string): { time: string; offset: number } {
   // normalized timezone deferred
-  const offsetMinutes = getTimezoneOffset(normalized);
+  const offsetMinutes = getTimezoneOffset(normalizeTimezone(_timezone));
   const localTime = utcTime.getTime() + (offsetMinutes * 60 * 1000);
   const date = new Date(localTime);
 

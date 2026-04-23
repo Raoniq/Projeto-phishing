@@ -1,4 +1,11 @@
 // workers/scheduler/types.ts — Scheduler types
+// KVNamespace type for Cloudflare Workers KV binding
+type KVNamespace = {
+  get: (key: string) => Promise<string | null>;
+  put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
+  delete: (key: string) => Promise<void>;
+  list: (options?: { prefix?: string }) => Promise<{ keys: { name: string }[] }>;
+};
 
 // Scheduler state
 export type SchedulerStatus = 'idle' | 'running' | 'paused' | 'error';
