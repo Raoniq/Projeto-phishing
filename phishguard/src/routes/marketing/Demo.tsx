@@ -110,7 +110,7 @@ export default function DemoPage() {
               Veja o PhishGuard{' '}
               <span className="text-amber-500">em ação</span>
             </h1>
-            <p className="text-xl text-noir-300 max-w-prose md:max-w-3xl mx-auto">
+            <p className="text-xl text-noir-300 max-w-none mx-auto">
               Agende uma demonstração personalizada e descubra como podemos proteger
               sua empresa contra phishing.
             </p>
