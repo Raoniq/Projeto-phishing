@@ -230,7 +230,7 @@ export default function PricingPage() {
               <span className="text-amber-500">preço de um café</span>{' '}
               por dia
             </h1>
-            <p className="text-xl text-noir-300 max-w-prose md:max-w-3xl mx-auto">
+            <p className="text-xl text-noir-300 max-w-none mx-auto">
               Escolha o plano ideal para sua empresa. Comece com 14 dias grátis
               e cancele quando quiser.
             </p>
@@ -255,7 +255,7 @@ export default function PricingPage() {
               <h3 className="font-display text-2xl font-bold mb-4">
                 Não sabe qual plano escolher?
               </h3>
-              <p className="text-noir-400 mb-6 max-w-prose md:max-w-3xl mx-auto">
+              <p className="text-noir-400 mb-6 max-w-none mx-auto">
                 Nossa equipe pode ajudar você a encontrar a melhor solução
                 para as necessidades da sua organização.
               </p>
@@ -283,7 +283,7 @@ export default function PricingPage() {
               <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
                 Tiramos suas dúvidas
               </h2>
-              <p className="text-noir-400 max-w-prose md:max-w-3xl mx-auto">
+              <p className="text-noir-400 max-w-none mx-auto">
                 Não encontrou o que procurava?{' '}
                 <a href="/contact" className="text-amber-500 hover:underline">
                   Entre em contato
@@ -310,7 +310,7 @@ export default function PricingPage() {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
               Pronto para começar?
             </h2>
-            <p className="text-xl text-noir-400 mb-10 max-w-prose md:max-w-3xl mx-auto">
+            <p className="text-xl text-noir-400 mb-10 max-w-none mx-auto">
               Teste gratuito por 14 dias. Sem cartão de crédito.
               Configuração em menos de 5 minutos.
             </p>
