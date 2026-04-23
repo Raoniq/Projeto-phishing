@@ -67,7 +67,7 @@ function HeroSection() {
           <span className="text-gradient-animated">humano à prova de phishing</span>
         </h1>
 
-        <p className="text-xl md:text-2xl text-noir-300 max-w-prose md:max-w-3xl mx-auto mb-10 leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+        <p className="text-xl md:text-2xl text-noir-300 max-w-none mx-auto mb-10 leading-relaxed opacity-0 animate-fade-in-up" style={{ animationDelay: "400ms" }}>
           Treinamento gamificado que modifica comportamentos e cria uma cultura de segurança robusta.
           Sem módulos cansativos. Com resultados mensuráveis.
         </p>
