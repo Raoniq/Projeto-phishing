@@ -102,8 +102,8 @@ export default function SecurityPage() {
       {/* Hero Section */}
       <section className="relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
-        
-        <div className="relative mx-auto max-w-4xl px-4 text-center">
+
+        <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-500/30 bg-amber-500/10 mb-8">
             <Shield className="w-4 h-4 text-amber-500" />
             <span className="text-sm text-amber-400 font-medium">Segurança em primeiro lugar</span>
@@ -124,7 +124,7 @@ export default function SecurityPage() {
       <section className="relative py-16">
         <div className="absolute inset-0 bg-noir-900/50" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Infraestrutura
@@ -208,8 +208,8 @@ export default function SecurityPage() {
       {/* Technical Specifications */}
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-950" />
-        
-        <div className="relative mx-auto max-w-4xl px-4">
+
+        <div className="relative mx-auto max-w-4xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Especificações técnicas
@@ -259,7 +259,7 @@ export default function SecurityPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-900/50" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Certificações
@@ -332,7 +332,7 @@ export default function SecurityPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-950" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
             <div>
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
@@ -406,7 +406,7 @@ export default function SecurityPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-900/50" />
         
-        <div className="relative mx-auto max-w-6xl px-4">
+        <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Privacidade
@@ -462,7 +462,7 @@ export default function SecurityPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-noir-950" />
         
-        <div className="relative mx-auto max-w-4xl px-4">
+        <div className="relative mx-auto max-w-4xl px-4 w-full">
           <div className="text-center mb-16">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Resposta a incidentes
@@ -536,8 +536,8 @@ export default function SecurityPage() {
       <section className="relative py-24">
         <div className="absolute inset-0 bg-gradient-to-t from-noir-900 to-noir-950" />
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent" />
-        
-        <div className="relative mx-auto max-w-4xl px-4 text-center">
+
+        <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
             Tem dúvidas específicas sobre segurança?
           </h2>
