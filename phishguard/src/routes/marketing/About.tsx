@@ -349,7 +349,7 @@ export default function AboutPage() {
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
               Pessoas por trás do PhishGuard
             </h2>
-            <p className="text-noir-400 max-w-2xl mx-auto">
+            <p className="text-noir-400 max-w-none mx-auto">
               Uma equipe diversa com experiência em segurança, produto e design.
             </p>
           </div>
@@ -400,7 +400,7 @@ export default function AboutPage() {
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
             Quer fazer parte da nossa história?
           </h2>
-          <p className="text-xl text-noir-400 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-noir-400 mb-10 max-w-none mx-auto">
             Estamos sempre buscando pessoas apasionadas por segurança e tecnologia.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
