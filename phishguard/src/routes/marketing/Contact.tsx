@@ -107,7 +107,7 @@ export default function ContactPage() {
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Fale conosco
             </span>
@@ -124,7 +124,7 @@ export default function ContactPage() {
 
         {/* Contact section */}
         <section className="relative py-16">
-          <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-6xl px-4 w-full">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Contact form */}
               <div className="lg:col-span-2">
@@ -242,7 +242,7 @@ export default function ContactPage() {
 
         {/* FAQ mini section */}
         <section className="relative py-16">
-          <div className="mx-auto max-w-4xl px-4">
+          <div className="mx-auto max-w-4xl px-4 w-full">
             <Card className="p-8 text-center bg-noir-900/50 border-noir-700">
               <h3 className="font-display text-2xl font-bold mb-4">
                 Prefere explorar sozinho?
