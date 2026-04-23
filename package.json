@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "cd phishguard && npm run build"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.104.0",
