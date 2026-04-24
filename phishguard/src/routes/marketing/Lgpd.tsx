@@ -400,7 +400,7 @@ export default function LgpdPage() {
               <h3 className="text-xl font-semibold text-fg-primary mb-4">
                 Como exercer seus direitos?
               </h3>
-              <p className="text-noir-400 mb-6 max-w-md">
+              <p className="text-noir-400 mb-6 max-w-none">
                 Envie um email para privacy@phishguard.com.br com sua solicitação. 
                 Responderemos em até 15 dias úteis.
               </p>
