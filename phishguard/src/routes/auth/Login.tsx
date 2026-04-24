@@ -88,10 +88,10 @@ export default function LoginPage() {
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-none">
           <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent rounded-3xl blur-xl" />
-          
-          <div className="relative rounded-2xl border border-noir-700/50 bg-noir-900/80 backdrop-blur-sm p-8 shadow-2xl">
+
+          <div className="relative w-full rounded-2xl border border-noir-700/50 bg-noir-900/80 backdrop-blur-sm p-8 shadow-2xl">
             {/* Success Icon */}
             <div className="flex justify-center mb-6">
               <div className="relative">
@@ -115,12 +115,12 @@ export default function LoginPage() {
               Enviamos um link de acesso para{' '}
               <span className="text-amber-500 font-medium">{email}</span>
             </p>
-            <p className="mt-2 text-noir-500 text-center text-xs">
+            <p className="mt-2 text-noir-500 text-center text-xs max-w-none">
               Clique no link recebido por email para fazer login. O link expira em 15 minutos.
             </p>
 
             <div className="mt-8 p-4 rounded-xl bg-noir-800/50 border border-noir-700/50">
-              <p className="text-xs text-noir-400 text-center">
+              <p className="text-xs text-noir-400 text-center max-w-none">
                 Não recebeu o email? Verifique sua caixa de spam ou{' '}
                 <button 
                   onClick={() => setMagicLinkSent(false)}
@@ -157,8 +157,8 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Glow effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent rounded-3xl blur-xl" />
-        
-        <div className="relative rounded-2xl border border-noir-700/50 bg-noir-900/80 backdrop-blur-sm p-8 shadow-2xl">
+
+        <div className="relative w-full rounded-2xl border border-noir-700/50 bg-noir-900/80 backdrop-blur-sm p-8 shadow-2xl">
           {/* Logo */}
           <div className="flex justify-center mb-2">
             <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center">
