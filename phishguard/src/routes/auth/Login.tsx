@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
+import { supabase } from '@/lib/supabase';
 import { isMockMode } from '@/lib/auth/session';
+import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
 
 // Client logos for social proof (SVG placeholders representing company logos)
 const clientLogos = [
@@ -14,6 +15,38 @@ const clientLogos = [
   { name: 'SecureSys', initials: 'SS', color: '#4A5568' },
   { name: 'NetWise', initials: 'NW', color: '#2D3748' },
 ];
+
+/**
+ * Translates Supabase auth errors to Portuguese messages
+ */
+function translateAuthError(error: { message?: string }): string {
+  const message = error.message?.toLowerCase() || '';
+
+  if (message.includes('invalid login credentials') || message.includes('invalid credentials')) {
+    return 'Email ou senha incorretos';
+  }
+  if (message.includes('email not confirmed')) {
+    return 'Confirme seu email antes de fazer login';
+  }
+  if (message.includes('too many requests')) {
+    return 'Muitas tentativas. Aguarde um momento.';
+  }
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Erro de conexão. Verifique sua internet.';
+  }
+  if (message.includes('invalid email')) {
+    return 'Email inválido';
+  }
+  if (message.includes('user not found')) {
+    return 'Usuário não encontrado';
+  }
+  if (message.includes('password') && message.includes('invalid')) {
+    return 'Senha incorreta';
+  }
+
+  // Default fallback
+  return 'Erro ao fazer login. Tente novamente.';
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -30,16 +63,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Integrate with Supabase auth
-      // For now, simulate login
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Check demo credentials or proceed
-      if (email && password) {
+      if (isMockMode()) {
+        await mockSupabaseAuth.signIn({ email, name: email.split('@')[0] });
         navigate('/app/dashboard');
-      } else {
-        setError('Preencha email e senha');
+        return;
       }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(translateAuthError(error));
+        return;
+      }
+      navigate('/app/dashboard');
     } catch (err) {
       setError('Erro ao fazer login. Tente novamente.');
     } finally {
@@ -53,8 +88,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Integrate with Supabase magic link
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isMockMode()) {
+        await mockSupabaseAuth.signIn({ email, name: email.split('@')[0] });
+        setMagicLinkSent(true);
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) {
+        setError(translateAuthError(error));
+        return;
+      }
       setMagicLinkSent(true);
     } catch (err) {
       setError('Erro ao enviar link mágico. Tente novamente.');

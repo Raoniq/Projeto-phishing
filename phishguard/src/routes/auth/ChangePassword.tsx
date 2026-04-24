@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { supabase } from '@/lib/supabase';
+import { isMockMode } from '@/lib/auth/session';
 
 export default function ChangePasswordPage() {
   const [searchParams] = useSearchParams();
@@ -36,9 +38,21 @@ export default function ChangePasswordPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Integrate with Supabase
-      // Verify token and reset password
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isMockMode()) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      } else {
+        const { error } = await supabase.auth.updateUser({ password });
+
+        if (error) {
+          const message = error.message.toLowerCase();
+          if (message.includes('expired') || message.includes('invalid')) {
+            setError('Link inválido ou expirado. Solicite um novo link.');
+          } else {
+            setError('Erro ao redefinir senha. Tente novamente.');
+          }
+          return;
+        }
+      }
       setSuccess(true);
     } catch {
       setError('Erro ao redefinir senha. Tente novamente.');

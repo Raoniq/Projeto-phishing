@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { supabase } from '@/lib/supabase';
+import { isMockMode } from '@/lib/auth/session';
+import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
 
 export default function EmailVerificationPage() {
   const [searchParams] = useSearchParams();
@@ -15,9 +18,33 @@ export default function EmailVerificationPage() {
     setStatus('verifying');
 
     try {
-      // TODO: Integrate with Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setStatus('success');
+      if (isMockMode()) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setStatus('success');
+        return;
+      }
+
+      // In Supabase, email verification happens automatically via the email link
+      // The token in URL hash contains the verification token
+      // For OTP-based verification, we would use verifyOtp, but signup uses email links
+      // If we have a token in the URL, it means the user clicked the email link
+      const hash = window.location.hash;
+      if (hash.includes('token=') || hash.includes('access_token=')) {
+        // Email link was clicked - Supabase handles this automatically on page load
+        // The session should now be established
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          setStatus('error');
+          setErrorMessage('Não foi possível verificar o email. O link pode ter expirado.');
+          return;
+        }
+        setStatus('success');
+        return;
+      }
+
+      // If we reach here without a session, the verification link may have issues
+      setStatus('error');
+      setErrorMessage('Link de verificação inválido ou expirado.');
     } catch {
       setStatus('error');
       setErrorMessage('Não foi possível verificar o email. O link pode ter expirado.');
@@ -42,13 +69,31 @@ export default function EmailVerificationPage() {
 
   const handleResend = async () => {
     if (resendCountdown > 0 || !email) return;
-    
+
     setStatus('pending');
     setErrorMessage('');
-    
+
     try {
-      // TODO: Integrate with Supabase
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isMockMode()) {
+        await mockSupabaseAuth.signIn({ email, name: 'User' });
+        setResendCountdown(60);
+        return;
+      }
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+
+      if (error) {
+        const message = error.message.toLowerCase();
+        if (message.includes('email not found') || message.includes('user not found')) {
+          setErrorMessage('Este email não está cadastrado');
+        } else {
+          setErrorMessage('Erro ao reenviar. Tente novamente.');
+        }
+        return;
+      }
       setResendCountdown(60);
     } catch {
       setErrorMessage('Erro ao reenviar. Tente novamente.');

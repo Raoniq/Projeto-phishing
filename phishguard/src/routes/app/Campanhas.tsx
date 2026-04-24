@@ -85,44 +85,58 @@ export default function CampanhasPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-noir-800">
-              {campaigns.map((campaign) => (
-                <tr
-                  key={campaign.id}
-                  className="hover:bg-noir-900/50 cursor-pointer"
-                >
-                  <td className="px-6 py-4 font-medium">{campaign.name}</td>
-                  <td className="px-6 py-4 text-noir-400">
-                    {campaign.template}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                        campaign.status === 'active'
-                          ? 'bg-green-500/20 text-green-400'
-                          : campaign.status === 'draft'
-                          ? 'bg-noir-600 text-noir-300'
-                          : campaign.status === 'scheduled'
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-noir-700 text-noir-400'
-                      }`}
-                    >
-                      {campaign.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-noir-400">
-                    {campaign.stats.sent}
-                  </td>
-                  <td className="px-6 py-4 text-noir-400">
-                    {campaign.stats.opened}
-                  </td>
-                  <td className="px-6 py-4 text-noir-400">
-                    {campaign.stats.clicked}
-                  </td>
-                  <td className="px-6 py-4 text-noir-400">
-                    {campaign.stats.reported}
-                  </td>
-                </tr>
-              ))}
+              {campaigns.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="px-6 py-16 text-center">
+                <div className="flex flex-col items-center justify-center text-noir-400">
+                  <svg className="w-12 h-12 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <p className="text-sm font-medium">Nenhuma campanha encontrada</p>
+                  <p className="text-xs mt-1 text-noir-500">Crie sua primeira campanha para começar</p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            campaigns.map((campaign) => (
+              <tr
+                key={campaign.id}
+                className="hover:bg-noir-900/50 cursor-pointer"
+              >
+                <td className="px-6 py-4 font-medium">{campaign.name}</td>
+                <td className="px-6 py-4 text-noir-400">
+                  {campaign.template}
+                </td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                      campaign.status === 'active'
+                        ? 'bg-green-500/20 text-green-400'
+                        : campaign.status === 'draft'
+                        ? 'bg-noir-600 text-noir-300'
+                        : campaign.status === 'scheduled'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : 'bg-noir-700 text-noir-400'
+                    }`}
+                  >
+                    {campaign.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-noir-400">
+                  {campaign.stats.sent}
+                </td>
+                <td className="px-6 py-4 text-noir-400">
+                  {campaign.stats.opened}
+                </td>
+                <td className="px-6 py-4 text-noir-400">
+                  {campaign.stats.clicked}
+                </td>
+                <td className="px-6 py-4 text-noir-400">
+                  {campaign.stats.reported}
+                </td>
+              </tr>
+            ))
+          )}
             </tbody>
           </table>
         </div>
