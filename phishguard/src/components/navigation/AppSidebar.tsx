@@ -141,47 +141,11 @@ function TenantSwitcher({ tenant }: TenantSwitcherProps) {
   );
 }
 
-interface UserFooterProps {
-  user: {
-    name: string;
-    email: string;
-    role: string;
-    initial: string;
-  };
-  onLogout: () => void;
-}
-
-function UserFooter({ user, onLogout }: UserFooterProps) {
-  return (
-    <div className="border-t border-[var(--color-surface-3)] p-3">
-      <button
-        onClick={onLogout}
-        aria-label={`Sair da conta - ${user.name}`}
-        className="flex w-full items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--color-surface-2)]"
-      >
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--color-accent)] font-display text-sm text-[var(--color-surface-0)]">
-          {user.initial}
-        </div>
-        <div className="min-w-0 flex-1 text-left">
-          <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{user.name}</p>
-          <p className="truncate text-xs text-[var(--color-fg-tertiary)]">{user.role}</p>
-        </div>
-      </button>
-    </div>
-  );
-}
-
 interface AppSidebarProps {
   tenant?: {
     name: string;
     plan: string;
     userCount: number;
-    initial: string;
-  };
-  user?: {
-    name: string;
-    email: string;
-    role: string;
     initial: string;
   };
   onLogout?: () => void;
@@ -194,12 +158,6 @@ export function AppSidebar({
     plan: 'Plano Business',
     userCount: 1240,
     initial: 'D',
-  },
-  user = {
-    name: 'Marlon Vieira',
-    email: 'marlon@example.com',
-    role: 'Administrador',
-    initial: 'M',
   },
   onLogout,
   className,
@@ -278,8 +236,12 @@ export function AppSidebar({
         ))}
       </nav>
 
-      {/* User footer */}
-      <UserFooter user={user} onLogout={onLogout ?? (() => {})} />
+      {/* Copyright */}
+      <div className="border-t border-[var(--color-surface-3)] p-3">
+        <p className="text-center text-xs text-[var(--color-fg-quaternary)]">
+          © 2026 PhishGuard
+        </p>
+      </div>
     </aside>
   );
 }

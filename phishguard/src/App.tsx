@@ -34,7 +34,7 @@ import ChangePasswordPage from './routes/auth/ChangePassword'
 import EmailVerificationPage from './routes/auth/EmailVerification'
 
 // App pages (protected)
-import DashboardPage from './routes/app/dashboard.page'
+import DashboardPage from './routes/app/Dashboard'
 import CampanhasPage from './routes/app/Campanhas'
 import UsuariosPage from './routes/app/Usuarios'
 import ConfiguracoesPage from './routes/app/Configuracoes'

@@ -129,7 +129,12 @@ export default function RelatorioTecnicoPage() {
       </div>
 
       {/* Screen Header */}
-      <div className="border-b border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0 }}
+        className="border-b border-[var(--color-noir-700)] bg-[var(--color-surface-1)]"
+      >
         <div className="mx-auto max-w-7xl px-4 py-4">
           {/* Breadcrumb */}
           <div className="mb-4 flex items-center gap-2 text-sm text-[var(--color-fg-tertiary)]">
@@ -174,7 +179,7 @@ export default function RelatorioTecnicoPage() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main content */}
       <div className="mx-auto max-w-7xl px-4 py-6 space-y-6">
