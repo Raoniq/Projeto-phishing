@@ -226,11 +226,11 @@ export default function RegisterPage() {
                 />
                 <label htmlFor="acceptTerms" className="text-sm text-noir-300 leading-relaxed">
                   Concordo com os{' '}
-                  <Link to="/lgpd" className="text-amber-500 hover:text-amber-400 underline">
+                  <Link to="/termos" className="text-amber-500 hover:text-amber-400 underline">
                     Termos de Uso
                   </Link>
                   {' '}e{' '}
-                  <Link to="/lgpd" className="text-amber-500 hover:text-amber-400 underline">
+                  <Link to="/termos" className="text-amber-500 hover:text-amber-400 underline">
                     Política de Privacidade
                   </Link>
                 </label>

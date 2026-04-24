@@ -15,6 +15,7 @@ export default function MarketingLayout() {
     { to: '/pricing', label: 'Preços' },
     { to: '/about', label: 'Sobre' },
     { to: '/security', label: 'Segurança' },
+    { to: '/termos', label: 'Termos' },
     { to: '/lgpd', label: 'LGPD' },
     { to: '/contact', label: 'Contato' },
     { to: '/demo', label: 'Demo' },
@@ -109,6 +110,9 @@ export default function MarketingLayout() {
               © 2026 PhishGuard. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6">
+              <Link to="/termos" className="text-sm text-noir-500 hover:text-amber-500 transition-colors">
+                Termos de Uso
+              </Link>
               <Link to="/lgpd" className="text-sm text-noir-500 hover:text-amber-500 transition-colors">
                 LGPD
               </Link>
