@@ -105,6 +105,90 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['audit_logs']['Row'], 'id' | 'created_at'>
         Update: never // Immutable - no updates allowed
       }
+      campaign_templates: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          category: string
+          subject: string
+          body_html: string
+          body_text: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['campaign_templates']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['campaign_templates']['Insert']>
+      }
+      landing_pages: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          slug: string
+          html_content: string
+          css_variables: string
+          category: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['landing_pages']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['landing_pages']['Insert']>
+      }
+      campaigns: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          description: string | null
+          template_id: string | null
+          landing_page_id: string | null
+          status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'cancelled'
+          scheduled_at: string | null
+          started_at: string | null
+          completed_at: string | null
+          target_count: number
+          settings: Record<string, unknown>
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['campaigns']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['campaigns']['Insert']>
+      }
+      campaign_targets: {
+        Row: {
+          id: string
+          campaign_id: string
+          user_id: string
+          email: string
+          tracking_id: string
+          landed_url: string | null
+          status: 'pending' | 'sent' | 'opened' | 'clicked' | 'reported' | 'failed'
+          sent_at: string | null
+          opened_at: string | null
+          clicked_at: string | null
+          reported_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['campaign_targets']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['campaign_targets']['Insert']>
+      }
+      target_groups: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          type: 'all' | 'department' | 'role' | 'risk' | 'tenure'
+          filters: Record<string, unknown>
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['target_groups']['Row'], 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Database['public']['Tables']['target_groups']['Insert']>
+      }
     }
     Views: {
       [_ in string]: never

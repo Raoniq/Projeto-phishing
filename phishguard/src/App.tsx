@@ -74,6 +74,7 @@ import RelatorioTecnicoPage from './routes/app/relatorios/RelatorioTecnicoPage'
 
 // Templates page
 import TemplateEditorPage from './routes/app/templates/editor.page'
+import BibliotecaPage from './routes/app/templates/biblioteca.page'
 
 // Compliance page
 import CompliancePage from './routes/app/compliance/CompliancePage'
@@ -157,6 +158,7 @@ export default function App() {
             <Route path="/app/relatorios/tecnico" element={<RelatorioTecnicoPage />} />
 
             {/* Templates */}
+            <Route path="/app/templates" element={<BibliotecaPage />} />
             <Route path="/app/templates/editor" element={<TemplateEditorPage />} />
 
             {/* Compliance */}

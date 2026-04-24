@@ -1,4 +1,5 @@
 // Landing Page Preview Component
+import { useState, useCallback } from 'react';
 import type { LandingTemplate, BuilderState, DomainMaskConfig } from './types';
 
 interface Props {
@@ -8,7 +9,40 @@ interface Props {
   isFullPage?: boolean;
 }
 
+// Mock data for variable interpolation
+const MOCK_DATA = {
+  FirstName: 'João',
+  LastName: 'Silva',
+  Email: 'joao.silva@empresa.com',
+  CompanyName: 'Acme Corp',
+};
+
+// Variable patterns to interpolate
+const VARIABLE_PATTERN = /\{\{(\.[a-zA-Z0-9]+)\}\}/g;
+
+function interpolateVariables(text: string): string {
+  return text.replace(VARIABLE_PATTERN, (_, varPath) => {
+    const key = varPath.replace('.', '') as keyof typeof MOCK_DATA;
+    return MOCK_DATA[key] || varPath;
+  });
+}
+
 export default function LandingPreview({ template, customizations, domainMask, isFullPage }: Props) {
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [showTestResult, setShowTestResult] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleTestSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Simulate form submission delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setShowTestResult(true);
+  }, []);
+
   if (!template) {
     return (
       <div className="flex h-96 items-center justify-center bg-noir-800">
@@ -29,6 +63,13 @@ export default function LandingPreview({ template, customizations, domainMask, i
                     template.category === 'rh' ? '👥' :
                     template.category === 'ti' ? '💻' :
                     template.category === 'gov' ? '🏛️' : '🛒';
+
+  // Interpolate content with mock variables
+  const headline = interpolateVariables(template.content.headline);
+  const subheadline = interpolateVariables(template.content.subheadline);
+  const body = interpolateVariables(template.content.body);
+  const ctaText = interpolateVariables(template.content.ctaText);
+  const footerText = interpolateVariables(template.content.footerText);
 
   return (
     <div
@@ -70,9 +111,9 @@ export default function LandingPreview({ template, customizations, domainMask, i
 
           {/* Form Card */}
           <div className="rounded-2xl bg-white p-8 shadow-lg" style={{ color: colors.text }}>
-            <h1 className="mb-2 text-center text-xl font-bold">{template.content.headline}</h1>
+            <h1 className="mb-2 text-center text-xl font-bold">{headline}</h1>
             <p className="mb-6 text-center text-sm" style={{ color: '#666' }}>
-              {template.content.subheadline}
+              {subheadline}
             </p>
 
             {/* Alert Box */}
@@ -81,11 +122,11 @@ export default function LandingPreview({ template, customizations, domainMask, i
               style={{ backgroundColor: '#fef3c7', border: '1px solid #f59e0b', color: '#92400e' }}
             >
               <span>⚠️</span>
-              <span>{template.content.body}</span>
+              <span>{body}</span>
             </div>
 
-            {/* Form Fields */}
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            {/* Form Fields - Now with pre-filled mock data */}
+            <form className="space-y-4" onSubmit={handleTestSubmit}>
               {template.fields.map((field) => (
                 <div key={field.id}>
                   <label
@@ -109,7 +150,14 @@ export default function LandingPreview({ template, customizations, domainMask, i
                   ) : (
                     <input
                       type={field.type}
-                      placeholder={field.placeholder}
+                      placeholder={interpolateVariables(field.placeholder)}
+                      defaultValue={
+                        field.name === 'firstName' || field.name === 'first_name' ? MOCK_DATA.FirstName :
+                        field.name === 'lastName' || field.name === 'last_name' ? MOCK_DATA.LastName :
+                        field.name === 'email' ? MOCK_DATA.Email :
+                        field.name === 'company' || field.name === 'companyName' ? MOCK_DATA.CompanyName :
+                        ''
+                      }
                       className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
                       style={{ backgroundColor: '#fff' }}
                     />
@@ -119,22 +167,85 @@ export default function LandingPreview({ template, customizations, domainMask, i
 
               <button
                 type="submit"
-                className="w-full rounded-lg py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+                disabled={isSubmitting}
+                className="w-full rounded-lg py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                 }}
               >
-                {template.content.ctaText}
+                {isSubmitting ? 'Enviando...' : ctaText}
               </button>
             </form>
+
+            {/* Test Submit Educational Result */}
+            {showTestResult && (
+              <div className="mt-6 rounded-lg border-2 border-amber-500 bg-amber-50 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎓</span>
+                  <div>
+                    <h4 className="font-semibold text-amber-800">Simulação de Phishing</h4>
+                    <p className="mt-2 text-sm text-amber-700">
+                      Este foi um <strong>teste de phishing simulado</strong>. Em um ataque real,
+                      suas credenciais seriam harvestadas.
+                    </p>
+                    <p className="mt-2 text-xs text-amber-600">
+                      💡 Dica: Sempre verifique a URL na barra de endereços antes de inserir credenciais.
+                      Desconfie de domínios incomuns ou大众 mal escritos.
+                    </p>
+                    <button
+                      onClick={() => setShowTestResult(false)}
+                      className="mt-3 text-xs text-amber-600 hover:text-amber-800 underline"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <p className="mt-6 text-center text-xs" style={{ color: '#9ca3af' }}>
-            {template.content.footerText}
+            {footerText}
           </p>
         </div>
       </div>
+
+      {/* Preview Mode Toggle (for embedded preview only) */}
+      {!isFullPage && (
+        <div className="border-t border-noir-700 bg-noir-800/50 px-4 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-noir-400">Preview Mode:</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPreviewMode('desktop')}
+                className={`rounded px-2 py-1 text-xs ${
+                  previewMode === 'desktop'
+                    ? 'bg-amber-500 text-noir-950'
+                    : 'bg-noir-700 text-noir-300'
+                }`}
+              >
+                Desktop
+              </button>
+              <button
+                onClick={() => setPreviewMode('mobile')}
+                className={`rounded px-2 py-1 text-xs ${
+                  previewMode === 'mobile'
+                    ? 'bg-amber-500 text-noir-950'
+                    : 'bg-noir-700 text-noir-300'
+                }`}
+              >
+                Mobile
+              </button>
+            </div>
+          </div>
+          {previewMode === 'mobile' && (
+            <p className="mt-1 text-center text-xs text-noir-500">
+              Mobile: 375px width
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

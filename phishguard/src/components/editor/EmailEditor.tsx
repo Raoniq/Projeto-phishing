@@ -5,6 +5,8 @@ import { DragAndDropCanvas, BlockToolbar } from './DragAndDropCanvas';
 import { BlockRenderer, BlockEditorPanel } from './BlockRenderer';
 import { templateGallery, createTemplateFrom } from './templateGallery';
 import { Button } from '@/components/ui/Button';
+import { CategoryFilter, EmptyState, type CategoryKey } from '@/components/templates/CategoryFilter';
+import { supabase } from '@/lib/supabase';
 
 interface EmailEditorProps {
   initialTemplate?: EmailTemplate;
@@ -30,8 +32,28 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showGallery, setShowGallery] = useState(false);
   const [templateName, setTemplateName] = useState(template.name);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
+  const [companyId, setCompanyId] = useState<string>('');
 
   const selectedBlock = template.blocks.find(b => b.id === selectedBlockId) || null;
+
+  // Fetch company ID for category stats
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        if (userData?.company_id) {
+          setCompanyId(userData.company_id);
+        }
+      }
+    };
+    fetchCompanyId();
+  }, []);
 
   // Update template name when changed
   useEffect(() => {
@@ -151,6 +173,14 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
   }, []);
 
   const previewWidth = previewMode === 'mobile' ? 375 : '100%';
+
+  // Filter templates by selected category
+  const filteredAndFilteredTemplates = templateGallery.filter(tpl => {
+    if (selectedCategory === 'all') return true;
+    // For now, show all templates since we don't have category info in templateGallery
+    // In production, you'd fetch templates from campaign_templates table with category
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full bg-noir-950">
@@ -284,9 +314,25 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
                 </svg>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {templateGallery.map((tpl) => (
+            {/* Category Filter */}
+            {companyId && (
+              <div className="px-6 py-3 border-b border-noir-700 bg-noir-950/50">
+                <CategoryFilter
+                  companyId={companyId}
+                  selectedCategory={selectedCategory}
+                  onFilterChange={setSelectedCategory}
+                />
+              </div>
+            )}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+              {filteredAndFilteredTemplates.length === 0 && selectedCategory !== 'all' ? (
+                <EmptyState
+                  category={selectedCategory}
+                  onClearFilter={() => setSelectedCategory('all')}
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAndFilteredTemplates.map((tpl) => (
                   <button
                     key={tpl.id}
                     onClick={() => handleSelectTemplate(tpl)}
@@ -326,7 +372,8 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
                     <p className="text-xs text-noir-600 mt-2">{tpl.blocks.length} blocos</p>
                   </button>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
