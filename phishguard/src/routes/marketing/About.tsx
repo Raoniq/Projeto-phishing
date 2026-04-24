@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
@@ -12,6 +13,39 @@ import {
   Link,
   ArrowRight,
 } from "lucide-react";
+
+// Hook for scroll-triggered animations
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    return () => {
+      if (currentRef) {
+        const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+        revealElements.forEach((el) => observer.unobserve(el));
+      }
+    };
+  }, []);
+
+  return ref;
+}
 
 // Timeline event
 function TimelineEvent({
@@ -209,7 +243,7 @@ export default function AboutPage() {
   ];
   
   return (
-    <main className="relative">
+    <main className="relative" ref={useScrollReveal()}>
       {/* Background */}
       <div className="absolute inset-0 bg-noir-950" />
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900/30 via-transparent to-noir-950" />
@@ -220,7 +254,7 @@ export default function AboutPage() {
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
+            <div className="reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Sobre nós
               </span>
@@ -269,7 +303,7 @@ export default function AboutPage() {
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
-            <div>
+            <div className="reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Nossa missão
               </span>
@@ -289,7 +323,7 @@ export default function AboutPage() {
               </p>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 stagger-children">
               <Card className="p-6 bg-noir-900/50">
                 <Award className="w-8 h-8 text-amber-500 mb-4" />
                 <h3 className="text-lg font-semibold text-fg-primary mb-2">Certificações</h3>
@@ -320,7 +354,7 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Nossos valores
             </span>
@@ -329,7 +363,7 @@ export default function AboutPage() {
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
             {values.map((value, i) => (
               <ValueCard key={i} {...value} />
             ))}
@@ -342,7 +376,7 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Time
             </span>
@@ -354,7 +388,7 @@ export default function AboutPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
             {team.map((member, i) => (
               <TeamMember key={i} {...member} />
             ))}
@@ -368,7 +402,7 @@ export default function AboutPage() {
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
-            <div>
+            <div className="reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Nossa história
               </span>
@@ -382,7 +416,7 @@ export default function AboutPage() {
               </p>
             </div>
             
-            <div>
+            <div className="stagger-children">
               {timeline.map((event, i) => (
                 <TimelineEvent key={i} {...event} />
               ))}
@@ -396,7 +430,7 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-noir-900 to-noir-950" />
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent" />
         
-        <div className="relative mx-auto max-w-4xl px-4 text-center">
+        <div className="relative mx-auto max-w-4xl px-4 text-center reveal">
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
             Quer fazer parte da nossa história?
           </h2>

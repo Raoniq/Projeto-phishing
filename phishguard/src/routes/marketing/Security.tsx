@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { 
@@ -16,6 +17,39 @@ import {
   Award,
   Link2,
 } from "lucide-react";
+
+// Hook for scroll-triggered animations
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    return () => {
+      if (currentRef) {
+        const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+        revealElements.forEach((el) => observer.unobserve(el));
+      }
+    };
+  }, []);
+
+  return ref;
+}
 
 // Security feature card
 function SecurityFeatureCard({
@@ -100,7 +134,7 @@ export default function SecurityPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900/30 via-transparent to-noir-950" />
       
       {/* Hero Section */}
-      <section className="relative py-32 overflow-hidden">
+      <section className="relative py-32 overflow-hidden" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
 
         <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
@@ -109,11 +143,11 @@ export default function SecurityPage() {
             <span className="text-sm text-amber-400 font-medium">Segurança em primeiro lugar</span>
           </div>
           
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight reveal">
             Segurança de{' '}
             <span className="text-amber-500">nível enterprise</span>
           </h1>
-          <p className="text-xl text-noir-300 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-xl text-noir-300 max-w-4xl mx-auto leading-relaxed reveal">
             Levamos segurança tão a sério quanto você. Nossa infraestrutura foi 
             construída para proteger seus dados com os mais altos padrões do mercado.
           </p>
@@ -121,11 +155,11 @@ export default function SecurityPage() {
       </section>
       
       {/* Security Features Grid */}
-      <section className="relative py-16">
+      <section className="relative py-16" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Infraestrutura
             </span>
@@ -134,7 +168,7 @@ export default function SecurityPage() {
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 stagger-children">
             <SecurityFeatureCard
               icon={Lock}
               title="Criptografia de dados"
@@ -206,11 +240,11 @@ export default function SecurityPage() {
       </section>
       
       {/* Technical Specifications */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
 
         <div className="relative mx-auto max-w-4xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Especificações técnicas
             </span>
@@ -219,7 +253,7 @@ export default function SecurityPage() {
             </h2>
           </div>
           
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-8 stagger-children">
             <Card className="p-8">
               <h3 className="text-xl font-semibold text-fg-primary mb-6 flex items-center gap-2">
                 <Server className="w-5 h-5 text-amber-500" />
@@ -256,11 +290,11 @@ export default function SecurityPage() {
       </section>
       
       {/* Compliance Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Certificações
             </span>
@@ -273,7 +307,7 @@ export default function SecurityPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 stagger-children">
             <ComplianceBadge
               title="ISO 27001"
               description="Gestão de segurança da informação"
@@ -329,12 +363,12 @@ export default function SecurityPage() {
       </section>
       
       {/* Access Control Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
           <div className="grid lg:grid-cols-2 gap-16">
-            <div>
+            <div className="reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Acesso e controle
               </span>
@@ -403,11 +437,11 @@ export default function SecurityPage() {
       </section>
       
       {/* Privacy Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Privacidade
             </span>
@@ -420,7 +454,7 @@ export default function SecurityPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 stagger-children">
             <Card className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
                 <Link2 className="w-6 h-6 text-amber-500" />
@@ -459,11 +493,11 @@ export default function SecurityPage() {
       </section>
       
       {/* Incident Response Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-4xl px-4 w-full">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Resposta a incidentes
             </span>
@@ -533,19 +567,19 @@ export default function SecurityPage() {
       </section>
       
       {/* CTA Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-gradient-to-t from-noir-900 to-noir-950" />
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent" />
 
         <div className="relative mx-auto max-w-4xl px-4 w-full text-center">
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6 reveal">
             Tem dúvidas específicas sobre segurança?
           </h2>
-          <p className="text-xl text-noir-400 mb-10 max-w-4xl mx-auto">
+          <p className="text-xl text-noir-400 mb-10 max-w-4xl mx-auto reveal">
             Nossa equipe de segurança está disponível para responder suas perguntas
             e fornecer documentação técnica detalhada.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4 reveal">
             <Button asChild>
               <a href="/contact">Falar com segurança</a>
             </Button>

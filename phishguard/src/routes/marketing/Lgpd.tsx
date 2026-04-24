@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { 
@@ -15,6 +16,39 @@ import {
   RefreshCw,
   Bell,
 } from "lucide-react";
+
+// Hook for scroll-triggered animations
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    return () => {
+      if (currentRef) {
+        const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+        revealElements.forEach((el) => observer.unobserve(el));
+      }
+    };
+  }, []);
+
+  return ref;
+}
 
 // Legal basis card
 function LegalBasisCard({
@@ -104,7 +138,7 @@ export default function LgpdPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900/30 via-transparent to-noir-950" />
       
       {/* Hero Section */}
-      <section className="relative py-32 overflow-hidden">
+      <section className="relative py-32 overflow-hidden" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
         
         <div className="relative mx-auto max-w-4xl px-4 text-center">
@@ -113,27 +147,27 @@ export default function LgpdPage() {
             <span className="text-sm text-amber-400 font-medium">Conformidade total</span>
           </div>
           
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight reveal">
             Proteção de dados{' '}
             <span className="text-amber-500">LGPD</span>
           </h1>
-          <p className="text-xl text-noir-300 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-xl text-noir-300 max-w-4xl mx-auto leading-relaxed reveal">
             Estamos comprometidos com a proteção dos seus dados pessoais.
             Esta página explica como coletamos, usamos e protegemos suas informações
             em conformidade com a Lei Geral de Proteção de Dados.
           </p>
-          <p className="text-sm text-noir-500 mt-4">
+          <p className="text-sm text-noir-500 mt-4 reveal">
             Última atualização: 21 de abril de 2026
           </p>
         </div>
       </section>
       
       {/* Quick Summary */}
-      <section className="relative py-16">
+      <section className="relative py-16" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4">
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-4 gap-4 stagger-children">
             {[
               { icon: Shield, title: "Dados protegidos", desc: "Criptografia AES-256" },
               { icon: Lock, title: "Seus direitos", desc: "Acesso, correção, exclusão" },
@@ -153,11 +187,11 @@ export default function LgpdPage() {
       </section>
       
       {/* Legal Basis Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Base legal
             </span>
@@ -170,7 +204,7 @@ export default function LgpdPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 stagger-children">
             <LegalBasisCard
               article="7º"
               title="Consentimento"
@@ -200,11 +234,11 @@ export default function LgpdPage() {
       </section>
       
       {/* Data We Collect */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Dados coletados
             </span>
@@ -269,12 +303,12 @@ export default function LgpdPage() {
       </section>
       
       {/* Data Processing */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-6xl px-4">
           <div className="grid lg:grid-cols-2 gap-16">
-            <div>
+            <div className="reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Processamento
               </span>
@@ -345,11 +379,11 @@ export default function LgpdPage() {
       </section>
       
       {/* Your Rights */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Seus direitos
             </span>
@@ -362,7 +396,7 @@ export default function LgpdPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             <RightCard
               icon={Eye}
               title="Acesso"
@@ -416,11 +450,11 @@ export default function LgpdPage() {
       </section>
       
       {/* Security Measures */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         
         <div className="relative mx-auto max-w-4xl px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Segurança
             </span>
@@ -485,11 +519,11 @@ export default function LgpdPage() {
       </section>
       
       {/* Cookies Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-900/50" />
         
         <div className="relative mx-auto max-w-4xl px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Cookies
             </span>
@@ -529,20 +563,20 @@ export default function LgpdPage() {
       </section>
       
       {/* Contact Section */}
-      <section className="relative py-24">
+      <section className="relative py-24" ref={useScrollReveal()}>
         <div className="absolute inset-0 bg-noir-950" />
         <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 via-transparent to-transparent" />
         
         <div className="relative mx-auto max-w-4xl px-4 text-center">
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
+          <h2 className="font-display text-3xl md:text-4xl font-bold mb-6 reveal">
             Fale com nosso DPO
           </h2>
-          <p className="text-xl text-noir-400 mb-10 max-w-4xl mx-auto">
+          <p className="text-xl text-noir-400 mb-10 max-w-4xl mx-auto reveal">
             Para questões relacionadas a proteção de dados, você pode entrar em contato
             diretamente com nosso Encarregado de Proteção de Dados.
           </p>
           
-          <Card className="inline-block p-8 text-left">
+          <Card className="inline-block p-8 text-left reveal">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
                 <Mail className="w-6 h-6 text-amber-500" />

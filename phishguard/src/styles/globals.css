@@ -398,3 +398,17 @@ body::before {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-fg-quaternary);
 }
+
+/* ============================================
+   PROSE UTILITY CLASSES
+   ============================================ */
+
+.prose {
+  max-width: 65ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.prose-max {
+  max-width: none;
+}

@@ -1,7 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from "lucide-react";
+
+// Hook for scroll-triggered animations
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    return () => {
+      if (currentRef) {
+        const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+        revealElements.forEach((el) => observer.unobserve(el));
+      }
+    };
+  }, []);
+
+  return ref;
+}
 
 // Form field component
 function FormField({
@@ -15,20 +50,15 @@ function FormField({
   placeholder?: string;
   required?: boolean;
 }) {
-  const [value, setValue] = useState("");
-
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-fg-primary">
         {label} {required && <span className="text-amber-500">*</span>}
       </label>
-      <input
+      <Input
         type={type}
         placeholder={placeholder}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
         required={required}
-        className="w-full px-4 py-3 rounded-lg bg-noir-900 border border-noir-700 text-fg-primary placeholder:text-noir-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
       />
     </div>
   );
@@ -102,12 +132,12 @@ export default function ContactPage() {
       <div className="absolute inset-0 bg-noir-950" />
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900/50 via-transparent to-noir-950" />
 
-      <div className="relative">
+      <div className="relative" ref={useScrollReveal()}>
         {/* Hero section */}
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
 
-          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Fale conosco
             </span>
@@ -181,11 +211,10 @@ export default function ContactPage() {
                         <label className="text-sm font-medium text-fg-primary">
                           Mensagem <span className="text-amber-500">*</span>
                         </label>
-                        <textarea
+                        <Textarea
                           placeholder="Conte-nos sobre suas necessidades..."
                           required
                           rows={4}
-                          className="w-full px-4 py-3 rounded-lg bg-noir-900 border border-noir-700 text-fg-primary placeholder:text-noir-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors resize-none"
                         />
                       </div>
                       <Button type="submit" size="lg" className="w-full" disabled={loading}>
@@ -204,7 +233,7 @@ export default function ContactPage() {
               </div>
 
               {/* Contact info */}
-              <div className="space-y-6">
+              <div className="space-y-6 stagger-children">
                 <ContactInfoCard
                   icon={Mail}
                   title="Email"
