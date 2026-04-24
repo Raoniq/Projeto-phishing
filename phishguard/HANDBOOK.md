@@ -1,5 +1,22 @@
 # PhishGuard Platform Handbook
 
+## ⚠️ REGRA DE OURO: LOCAL SEMPRE TEM PRIORIDADE
+
+**O seu PC SEMPRE tem os dados mais atuais!** Nunca faça comandos que deshagam mudanças locais:
+
+- **NUNCA** use `git checkout -- .` ou `git checkout .` - isso DESFAZ todas as mudanças locais!
+- **NUNCA** use `git reset --hard` sem confirmar o que está fazendo
+- **SEMPRE** commite suas mudanças LOCAIS antes de fazer qualquer operação de git
+- Se precisar testar algo, use `git stash` para guardar mudanças temporariamente
+
+**Fluxo correto:**
+1. Faz as mudanças no seu PC (localhost)
+2. Testa no localhost
+3. Commita e push para GitHub
+4. Cloudflare faz deploy automaticamente
+
+---
+
 ## 1. Quick Overview
 
 PhishGuard is a security awareness training platform that simulates phishing attacks to help organizations assess and improve their employees' susceptibility to social engineering.

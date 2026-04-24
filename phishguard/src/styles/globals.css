@@ -56,6 +56,18 @@
   --spacing-2xl: 3rem;
   --spacing-3xl: 4rem;
 
+  /* Max Widths (Tailwind defaults) */
+  --max-width-sm: 24rem;
+  --max-width-md: 28rem;
+  --max-width-lg: 32rem;
+  --max-width-xl: 36rem;
+  --max-width-2xl: 42rem;
+  --max-width-3xl: 48rem;
+  --max-width-4xl: 56rem;
+  --max-width-5xl: 64rem;
+  --max-width-7xl: 80rem;
+  --max-width-prose: 65ch;
+
   /* Border Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
