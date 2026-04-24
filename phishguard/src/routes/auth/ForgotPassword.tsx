@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-noir-900/50 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-4xl">
+      <div className="relative w-full max-w-lg mx-auto">
         {/* Glow effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent rounded-3xl blur-xl" />
 
