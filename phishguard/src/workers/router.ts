@@ -5,6 +5,7 @@ import reportWorker from './tracking/report';
 import emailWorker from './email/worker';
 import dashboardWorker from './dashboard';
 import credentialsWorker from './credentials';
+import certificatesWorker from './certificates';
 
 interface Env {
   SUPABASE_URL: string;
@@ -48,6 +49,11 @@ export default {
     // Dashboard routes
     if (pathname.startsWith('/dashboard/')) {
       return dashboardWorker.default.fetch(request, env, ctx);
+    }
+
+    // Certificate routes
+    if (pathname.startsWith('/api/certificates/')) {
+      return certificatesWorker.default.fetch(request, env, ctx);
     }
 
     // 404 for unmatched routes

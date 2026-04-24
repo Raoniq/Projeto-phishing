@@ -26,7 +26,9 @@ export interface CampaignSchedulingState {
   sendMode: 'now' | 'schedule';
   scheduledAt?: Date;
   timezone: string;
-  staggerHours: number;
+  staggerMode: 'normal' | 'staggered';
+  emailsPerHour: number;
+  spreadHours: number;
   businessHoursOnly: boolean;
 }
 
@@ -95,13 +97,15 @@ export default function CampaignScheduling({
   value,
   onChange,
 }: CampaignSchedulingProps) {
-  const [sendMode, setSendMode] = useState<'now' | 'schedule'>(value?.sendMode || 'now');
+const [sendMode, setSendMode] = useState<'now' | 'schedule'>(value?.sendMode || 'now');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(
     value?.scheduledAt || null
   );
   const [selectedTime, setSelectedTime] = useState({ hours: 9, minutes: 0 });
-  const [timezone, setTimezone] = useState(value?.timezone || 'America/Sao_Paulo);
-  const [staggerHours, setStaggerHours] = useState(value?.staggerHours || 24);
+  const [timezone, setTimezone] = useState(value?.timezone || 'America/Sao_Paulo');
+  const [staggerMode, setStaggerMode] = useState<'normal' | 'staggered'>(value?.staggerMode || 'normal');
+  const [emailsPerHour, setEmailsPerHour] = useState(value?.emailsPerHour || 200);
+  const [spreadHours, setSpreadHours] = useState(value?.spreadHours || 24);
   const [businessHoursOnly, setBusinessHoursOnly] = useState(value?.businessHoursOnly || false);
 
   // Calendar state
@@ -124,11 +128,20 @@ export default function CampaignScheduling({
 
   // Calculate send rate
   const sendRate = useMemo(() => {
-    if (staggerHours > 0 && targetCount > 0) {
-      return Math.round(targetCount / staggerHours);
+    if (staggerMode === 'staggered' && spreadHours > 0 && targetCount > 0) {
+      return Math.round(targetCount / spreadHours);
     }
     return 0;
-  }, [staggerHours, targetCount]);
+  }, [staggerMode, spreadHours, targetCount]);
+
+  // Preview text for staggered sending
+  const staggerPreview = useMemo(() => {
+    if (staggerMode === 'staggered' && targetCount > 0 && emailsPerHour > 0) {
+      const totalHours = Math.ceil(targetCount / emailsPerHour);
+      return `${emailsPerHour} emails/hora por ${spreadHours} horas (${totalHours} horas total para ${targetCount} targets)`;
+    }
+    return null;
+  }, [staggerMode, targetCount, emailsPerHour, spreadHours]);
 
   // Calendar days
   const calendarDays = useMemo(() => {
@@ -156,10 +169,12 @@ export default function CampaignScheduling({
       sendMode: mode,
       scheduledAt: mode === 'schedule' ? scheduledDate || undefined : undefined,
       timezone,
-      staggerHours,
+      staggerMode,
+      emailsPerHour,
+      spreadHours,
       businessHoursOnly,
     });
-  }, [scheduledDate, timezone, staggerHours, businessHoursOnly, onChange]);
+  }, [scheduledDate, timezone, staggerMode, emailsPerHour, spreadHours, businessHoursOnly, onChange]);
 
   const handleDateSelect = useCallback((day: number) => {
     const newDate = new Date(currentYear, currentMonth, day);
@@ -175,10 +190,12 @@ export default function CampaignScheduling({
       sendMode,
       scheduledAt: combinedDate,
       timezone,
-      staggerHours,
+      staggerMode,
+      emailsPerHour,
+      spreadHours,
       businessHoursOnly,
     });
-  }, [currentYear, currentMonth, selectedTime, sendMode, timezone, staggerHours, businessHoursOnly, onChange]);
+  }, [currentYear, currentMonth, selectedTime, sendMode, timezone, staggerMode, emailsPerHour, spreadHours, businessHoursOnly, onChange]);
 
   const handleTimeChange = useCallback((type: 'hours' | 'minutes', value: number) => {
     const newTime = { ...selectedTime, [type]: value };
@@ -197,11 +214,13 @@ export default function CampaignScheduling({
         sendMode,
         scheduledAt: combinedDate,
         timezone,
-        staggerHours,
+        staggerMode,
+        emailsPerHour,
+        spreadHours,
         businessHoursOnly,
       });
     }
-  }, [scheduledDate, sendMode, timezone, staggerHours, businessHoursOnly, onChange]);
+  }, [scheduledDate, sendMode, timezone, staggerMode, emailsPerHour, spreadHours, businessHoursOnly, onChange]);
 
   const handleTimezoneChange = useCallback((tz: string) => {
     setTimezone(tz);
@@ -210,7 +229,9 @@ export default function CampaignScheduling({
         sendMode,
         scheduledAt: scheduledDate,
         timezone: tz,
-        staggerHours,
+        staggerMode,
+        emailsPerHour,
+        spreadHours,
         businessHoursOnly,
       });
     } else {
@@ -218,22 +239,52 @@ export default function CampaignScheduling({
         sendMode,
         scheduledAt: undefined,
         timezone: tz,
-        staggerHours,
+        staggerMode,
+        emailsPerHour,
+        spreadHours,
         businessHoursOnly,
       });
     }
-  }, [scheduledDate, sendMode, staggerHours, businessHoursOnly, onChange]);
+  }, [scheduledDate, sendMode, staggerMode, emailsPerHour, spreadHours, businessHoursOnly, onChange]);
 
-  const handleStaggerChange = useCallback((hours: number) => {
-    setStaggerHours(hours);
+  const handleStaggerModeChange = useCallback((mode: 'normal' | 'staggered') => {
+    setStaggerMode(mode);
     onChange?.({
       sendMode,
       scheduledAt: scheduledDate || undefined,
       timezone,
-      staggerHours: hours,
+      staggerMode: mode,
+      emailsPerHour,
+      spreadHours,
       businessHoursOnly,
     });
-  }, [scheduledDate, sendMode, timezone, businessHoursOnly, onChange]);
+  }, [scheduledDate, sendMode, timezone, emailsPerHour, spreadHours, businessHoursOnly, onChange]);
+
+  const handleEmailsPerHourChange = useCallback((value: number) => {
+    setEmailsPerHour(value);
+    onChange?.({
+      sendMode,
+      scheduledAt: scheduledDate || undefined,
+      timezone,
+      staggerMode,
+      emailsPerHour: value,
+      spreadHours,
+      businessHoursOnly,
+    });
+  }, [scheduledDate, sendMode, timezone, staggerMode, spreadHours, businessHoursOnly, onChange]);
+
+  const handleSpreadHoursChange = useCallback((hours: number) => {
+    setSpreadHours(hours);
+    onChange?.({
+      sendMode,
+      scheduledAt: scheduledDate || undefined,
+      timezone,
+      staggerMode,
+      emailsPerHour,
+      spreadHours: hours,
+      businessHoursOnly,
+    });
+  }, [scheduledDate, sendMode, timezone, staggerMode, emailsPerHour, businessHoursOnly, onChange]);
 
   const handleBusinessHoursToggle = useCallback((enabled: boolean) => {
     setBusinessHoursOnly(enabled);
@@ -241,10 +292,12 @@ export default function CampaignScheduling({
       sendMode,
       scheduledAt: scheduledDate || undefined,
       timezone,
-      staggerHours,
+      staggerMode,
+      emailsPerHour,
+      spreadHours,
       businessHoursOnly: enabled,
     });
-  }, [scheduledDate, sendMode, timezone, staggerHours, onChange]);
+  }, [scheduledDate, sendMode, timezone, staggerMode, emailsPerHour, spreadHours, onChange]);
 
   const navigateMonth = useCallback((direction: 'prev' | 'next') => {
     setCalendarDate(prev => {
@@ -591,87 +644,193 @@ export default function CampaignScheduling({
         </motion.div>
       )}
 
-      {/* Staggered Sending */}
+      {/* Staggered Sending Toggle */}
       <div className={cn(
         'rounded-[var(--radius-lg)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] p-5',
         'space-y-4'
       )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-purple-500/10">
-              <Clock className="h-5 w-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-fg-primary)]">Espalhar ao longo de X horas</p>
-              <p className="text-sm text-[var(--color-fg-tertiary)]">
-                Distribuir envios para evitar pico
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              max={48}
-              value={staggerHours}
-              onChange={(e) => handleStaggerChange(Math.min(48, Math.max(1, parseInt(e.target.value) || 1)))}
+        <div className="space-y-3">
+          <Label className="text-[var(--color-fg-secondary)]">Modo de envio escalonado:</Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Envio normal */}
+            <button
+              type="button"
+              onClick={() => handleStaggerModeChange('normal')}
               className={cn(
-                'h-10 w-20 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-3)]',
-                'px-3 text-center font-mono text-sm font-medium text-[var(--color-fg-primary)]',
-                'focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30'
+                'flex items-start gap-4 rounded-[var(--radius-lg)] border p-4 transition-all duration-200',
+                staggerMode === 'normal'
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)] shadow-[0_0_20px_rgba(217,119,87,0.15)]'
+                  : 'border-[var(--color-noir-700)] bg-[var(--color-surface-3)] hover:border-[var(--color-noir-600)]'
               )}
-            />
-            <span className="text-sm text-[var(--color-fg-muted)]">horas</span>
+            >
+              <div className={cn(
+                'grid h-12 w-12 shrink-0 place-items-center rounded-xl',
+                staggerMode === 'normal' ? 'bg-[var(--color-accent)]/20' : 'bg-green-500/10'
+              )}>
+                <Zap className={cn(
+                  'h-6 w-6',
+                  staggerMode === 'normal' ? 'text-[var(--color-accent)]' : 'text-green-400'
+                )} />
+              </div>
+              <div className="text-left">
+                <p className="font-display font-semibold text-[var(--color-fg-primary)]">Envio normal</p>
+                <p className="mt-1 text-sm text-[var(--color-fg-tertiary)]">
+                  Enviar todos os emails rapidamente
+                </p>
+              </div>
+            </button>
+
+            {/* Envio escalonado */}
+            <button
+              type="button"
+              onClick={() => handleStaggerModeChange('staggered')}
+              className={cn(
+                'flex items-start gap-4 rounded-[var(--radius-lg)] border p-4 transition-all duration-200',
+                staggerMode === 'staggered'
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent-subtle)] shadow-[0_0_20px_rgba(217,119,87,0.15)]'
+                  : 'border-[var(--color-noir-700)] bg-[var(--color-surface-3)] hover:border-[var(--color-noir-600)]'
+              )}
+            >
+              <div className={cn(
+                'grid h-12 w-12 shrink-0 place-items-center rounded-xl',
+                staggerMode === 'staggered' ? 'bg-[var(--color-accent)]/20' : 'bg-purple-500/10'
+              )}>
+                <Clock className={cn(
+                  'h-6 w-6',
+                  staggerMode === 'staggered' ? 'text-[var(--color-accent)]' : 'text-purple-400'
+                )} />
+              </div>
+              <div className="text-left">
+                <p className="font-display font-semibold text-[var(--color-fg-primary)]">Envio escalonado</p>
+                <p className="mt-1 text-sm text-[var(--color-fg-tertiary)]">
+                  Controlar ritmo de envios
+                </p>
+              </div>
+            </button>
           </div>
         </div>
 
-        {/* Slider */}
-        <div className="space-y-2">
-          <input
-            type="range"
-            min={1}
-            max={48}
-            value={staggerHours}
-            onChange={(e) => handleStaggerChange(parseInt(e.target.value))}
-            className={cn(
-              'h-2 w-full cursor-pointer appearance-none rounded-full',
-              '[&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none',
-              '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-accent)]',
-              '[&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)] [&::-webkit-slider-thumb]:cursor-pointer',
-              '[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110',
-              '[&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none',
-              '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-accent)]',
-              '[&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)]'
+        {/* Staggered Controls */}
+        {staggerMode === 'staggered' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-5 pt-2"
+          >
+            {/* Emails per hour */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-[var(--color-fg-secondary)]">Emails por hora:</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={50}
+                    max={500}
+                    step={10}
+                    value={emailsPerHour}
+                    onChange={(e) => handleEmailsPerHourChange(Math.min(500, Math.max(50, parseInt(e.target.value) || 50)))}
+                    className={cn(
+                      'h-10 w-20 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-3)]',
+                      'px-3 text-center font-mono text-sm font-medium text-[var(--color-fg-primary)]',
+                      'focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30'
+                    )}
+                  />
+                  <span className="text-sm text-[var(--color-fg-muted)]">emails/h</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min={50}
+                max={500}
+                step={10}
+                value={emailsPerHour}
+                onChange={(e) => handleEmailsPerHourChange(parseInt(e.target.value))}
+                className={cn(
+                  'h-2 w-full cursor-pointer appearance-none rounded-full',
+                  '[&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none',
+                  '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-accent)]',
+                  '[&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)] [&::-webkit-slider-thumb]:cursor-pointer',
+                  '[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110',
+                  '[&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none',
+                  '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-accent)]',
+                  '[&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)]'
+                )}
+                style={{
+                  background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${((emailsPerHour - 50) / 450) * 100}%, var(--color-noir-700) ${((emailsPerHour - 50) / 450) * 100}%, var(--color-noir-700) 100%)`,
+                }}
+              />
+              <div className="flex justify-between text-xs text-[var(--color-fg-muted)]">
+                <span>50</span>
+                <span>275</span>
+                <span>500</span>
+              </div>
+            </div>
+
+            {/* Spread hours */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-[var(--color-fg-secondary)]">Janela de envio:</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={48}
+                    value={spreadHours}
+                    onChange={(e) => handleSpreadHoursChange(Math.min(48, Math.max(1, parseInt(e.target.value) || 1)))}
+                    className={cn(
+                      'h-10 w-20 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-3)]',
+                      'px-3 text-center font-mono text-sm font-medium text-[var(--color-fg-primary)]',
+                      'focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30'
+                    )}
+                  />
+                  <span className="text-sm text-[var(--color-fg-muted)]">horas</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={48}
+                value={spreadHours}
+                onChange={(e) => handleSpreadHoursChange(parseInt(e.target.value))}
+                className={cn(
+                  'h-2 w-full cursor-pointer appearance-none rounded-full',
+                  '[&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none',
+                  '[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-accent)]',
+                  '[&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)] [&::-webkit-slider-thumb]:cursor-pointer',
+                  '[&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110',
+                  '[&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:appearance-none',
+                  '[&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--color-accent)]',
+                  '[&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-[0_0_10px_rgba(217,119,87,0.5)]'
+                )}
+                style={{
+                  background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${((spreadHours - 1) / 47) * 100}%, var(--color-noir-700) ${((spreadHours - 1) / 47) * 100}%, var(--color-noir-700) 100%)`,
+                }}
+              />
+              <div className="flex justify-between text-xs text-[var(--color-fg-muted)]">
+                <span>1h</span>
+                <span>24h</span>
+                <span>48h</span>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {staggerPreview && (
+              <div className={cn(
+                'rounded-[var(--radius-md)] border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 p-4',
+                'flex items-center justify-between'
+              )}>
+                <div>
+                  <p className="text-sm text-[var(--color-fg-secondary)]">Prévia do escalonamento:</p>
+                  <p className="mt-1 font-medium text-[var(--color-fg-primary)]">{staggerPreview}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-2xl font-bold text-[var(--color-accent)]">{sendRate}</p>
+                  <p className="text-xs text-[var(--color-fg-muted)]">emails/hora</p>
+                </div>
+              </div>
             )}
-            style={{
-              background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${((staggerHours - 1) / 47) * 100}%, var(--color-noir-700) ${((staggerHours - 1) / 47) * 100}%, var(--color-noir-700) 100%)`,
-            }}
-          />
-          <div className="flex justify-between text-xs text-[var(--color-fg-muted)]">
-            <span>1h</span>
-            <span>24h</span>
-            <span>48h</span>
-          </div>
-        </div>
-
-        {/* Info */}
-        {targetCount > 0 && (
-          <div className={cn(
-            'rounded-[var(--radius-md)] border border-[var(--color-noir-700)] p-3',
-            'flex items-center justify-between bg-[var(--color-surface-3)]'
-          )}>
-            <div>
-              <p className="text-sm text-[var(--color-fg-secondary)]">
-                Emails serão enviados uniformemente ao longo de <span className="font-semibold text-[var(--color-fg-primary)]">{staggerHours} horas</span>
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="font-mono text-lg font-bold text-[var(--color-accent)]">
-                {sendRate}
-              </p>
-              <p className="text-xs text-[var(--color-fg-muted)]">emails/hora</p>
-            </div>
-          </div>
+          </motion.div>
         )}
       </div>
 

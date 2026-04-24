@@ -23,6 +23,17 @@ import {
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { TimeToClickChart, TimeBucket } from '@/components/data-viz/TimeToClickChart';
+
+// Time bucket thresholds in milliseconds
+const TIME_BUCKETS = [
+  { label: '<1min', maxMs: 60 * 1000 },
+  { label: '1-5min', minMs: 60 * 1000, maxMs: 5 * 60 * 1000 },
+  { label: '5-15min', minMs: 5 * 60 * 1000, maxMs: 15 * 60 * 1000 },
+  { label: '15-60min', minMs: 15 * 60 * 1000, maxMs: 60 * 60 * 1000 },
+  { label: '1-4hr', minMs: 60 * 60 * 1000, maxMs: 4 * 60 * 60 * 1000 },
+  { label: '>4hr', minMs: 4 * 60 * 60 * 1000 },
+];
 
 // Types
 type TargetStatus = 'pending' | 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported';
@@ -106,6 +117,51 @@ function calculateTimeToAction(
 
   const firstActionTime = Math.min(...actionTimes);
   return formatDuration(firstActionTime - sentTime);
+}
+
+// Calculate time distribution for click events
+function calculateTimeDistribution(
+  data: TargetTrackingRow[]
+): { distribution: TimeBucket[]; avgTimeToClick: number } {
+  // Get all clicked records with click times
+  const clickedRecords = data.filter((r) => r.clicked_at && r.sent_at);
+
+  if (clickedRecords.length === 0) {
+    return {
+      distribution: TIME_BUCKETS.map((b) => ({ label: b.label, count: 0, percentage: 0 })),
+      avgTimeToClick: 0,
+    };
+  }
+
+  // Calculate time to click for each record (in milliseconds)
+  const timeToClicks = clickedRecords.map((r) => {
+    const sentMs = new Date(r.sent_at!).getTime();
+    const clickedMs = new Date(r.clicked_at!).getTime();
+    return clickedMs - sentMs;
+  });
+
+  // Calculate average in hours
+  const avgMs = timeToClicks.reduce((sum, ms) => sum + ms, 0) / timeToClicks.length;
+  const avgTimeToClick = avgMs / (1000 * 60 * 60);
+
+  // Count records in each bucket
+  const counts = TIME_BUCKETS.map((bucket) => {
+    const count = timeToClicks.filter((ms) => {
+      if (bucket.minMs !== undefined && ms < bucket.minMs) return false;
+      if (bucket.maxMs !== undefined && ms >= bucket.maxMs) return false;
+      return true;
+    }).length;
+    return count;
+  });
+
+  // Convert to distribution with percentages
+  const distribution: TimeBucket[] = TIME_BUCKETS.map((bucket, i) => ({
+    label: bucket.label,
+    count: counts[i],
+    percentage: clickedRecords.length > 0 ? (counts[i] / clickedRecords.length) * 100 : 0,
+  }));
+
+  return { distribution, avgTimeToClick };
 }
 
 // Get latest status from timestamps
@@ -618,6 +674,22 @@ export function TargetTrackingTable({
           )}
         </CardContent>
       </Card>
+
+      {/* Time-to-Click Chart */}
+      {!isLoading && data.length > 0 && (() => {
+        const { distribution, avgTimeToClick } = calculateTimeDistribution(data);
+        const sentCount = data.filter((r) => r.sent_at).length;
+        const clickedCount = data.filter((r) => r.clicked_at).length;
+
+        return (
+          <TimeToClickChart
+            sent={sentCount}
+            clicked={clickedCount}
+            avgTimeToClick={avgTimeToClick}
+            distribution={distribution}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -21,11 +21,16 @@ interface FlyerTemplatesProps {
   baseUrl?: string;
 }
 
-type TemplateType = 'a4' | 'a3' | 'business-card';
+type TemplateType = 'a4' | 'a3' | 'business-card' | 'bathroom-poster' | 'email-signature' | 'sms-invite' | 'whatsapp' | 'physical-meeting';
 
 const A4_SIZE = { width: 210, height: 297 }; // mm
 const A3_SIZE = { width: 297, height: 420 }; // mm
 const BC_SIZE = { width: 85, height: 54 }; // mm (standard business card)
+const BATHROOM_SIZE = { width: 148, height: 210 }; // mm (A5)
+const EMAIL_SIG_SIZE = { width: 350, height: 100 }; // px
+const SMS_SIZE = { width: 74, height: 48 }; // mm (standard business card)
+const WHATSAPP_SIZE = { width: 74, height: 48 }; // mm (business card)
+const PHYSICAL_SIZE = { width: 210, height: 297 }; // mm (A4)
 
 export function FlyerTemplates({
   trackingId,
@@ -67,6 +72,31 @@ export function FlyerTemplates({
             @page { size: 85mm 54mm; margin: 3mm; }
             .template { width: 85mm; height: 54mm; }
           `;
+        case 'bathroom-poster':
+          return `
+            @page { size: 148mm 210mm; margin: 8mm; }
+            .template { width: 148mm; height: 210mm; }
+          `;
+        case 'email-signature':
+          return `
+            @page { size: auto; margin: 0; }
+            .template { width: 350px; height: 100px; max-width: 100%; }
+          `;
+        case 'sms-invite':
+          return `
+            @page { size: 74mm 48mm; margin: 3mm; }
+            .template { width: 74mm; height: 48mm; }
+          `;
+        case 'whatsapp':
+          return `
+            @page { size: 74mm 48mm; margin: 3mm; }
+            .template { width: 74mm; height: 48mm; }
+          `;
+        case 'physical-meeting':
+          return `
+            @page { size: A4; margin: 15mm; }
+            .template { width: 210mm; height: 297mm; }
+          `;
       }
     };
 
@@ -91,12 +121,12 @@ export function FlyerTemplates({
                 </div>
                 <div class="text-section">
                   <h1>Cuidado com QR Codes Maliciosos</h1>
-                  <p>Este QR Code é parte de uma simulação de segurança. Se você escaneou e inseriu dados, entre em contato com o TI imediatamente.</p>
+                  <p>Este QR Code faz parte de uma simulacao de seguranca. Se voce escaneou e inseriu dados, entre em contato com o TI imediatamente.</p>
                   <div class="url-display">${trackingUrl}</div>
                 </div>
               </div>
               <div class="footer">
-                <p class="disclaimer">Este é um teste de segurança autorizado pela equipe de TI. Se você tiene dúvidas, consulte o documento de política de segurança.</p>
+                <p class="disclaimer">Este e um teste de seguranca autorizado pela equipe de TI. Se voce tem duvidas, consulte o documento de politica de seguranca.</p>
                 <div class="company-info">${companyName} © ${new Date().getFullYear()}</div>
               </div>
             </div>
@@ -107,8 +137,8 @@ export function FlyerTemplates({
               <div class="header-large">
                 <div class="shield-icon">🛡️</div>
                 <div class="title-area">
-                  <h1>ALERTA DE SEGURANÇA</h1>
-                  <h2>Simulação de Quishing</h2>
+                  <h1>ALERTA DE SEGURANCA</h1>
+                  <h2>Simulacao de Quishing</h2>
                 </div>
               </div>
               <div class="poster-content">
@@ -118,22 +148,22 @@ export function FlyerTemplates({
                 </div>
                 <div class="info-panels">
                   <div class="panel">
-                    <h3>O que é Quishing?</h3>
-                    <p>Quishing é phishing via QR Code. Criminosos substituem QR Codes legítimos para redirecionar vítimas para sites maliciosos.</p>
+                    <h3>O que e Quishing?</h3>
+                    <p>Quishing e phishing via QR Code. Criminosos substituem QR Codes legitimos para redirecionar vtimas para sites maliciosos.</p>
                   </div>
                   <div class="panel">
                     <h3>Como se proteger</h3>
                     <ul>
                       <li>Verifique o QR Code antes de escanear</li>
-                      <li>Confira a URL exibida após escanear</li>
-                      <li>Não insira dados em sites suspeitos</li>
+                      <li>Confira a URL exibida apos escanear</li>
+                      <li>Nao insira dados em sites suspeitos</li>
                       <li>Reporte QR Codes suspeitos ao TI</li>
                     </ul>
                   </div>
                 </div>
               </div>
               <div class="poster-footer">
-                <p>Teste de segurança autorizado | ${companyName} | ${new Date().getFullYear()}</p>
+                <p>Teste de seguranca autorizado | ${companyName} | ${new Date().getFullYear()}</p>
               </div>
             </div>
           `;
@@ -142,13 +172,114 @@ export function FlyerTemplates({
             <div class="template bc-card">
               <div class="bc-header">
                 <span class="bc-company">${companyName}</span>
-                <span class="bc-badge">Segurança</span>
+                <span class="bc-badge">Seguranca</span>
               </div>
               <div class="bc-qr">
                 <img src="${qrCodeUrl}" alt="QR" />
               </div>
               <div class="bc-footer">
-                <span>Não escaneie QR Codes desconhecidos</span>
+                <span>Nao escaneie QR Codes desconhecidos</span>
+              </div>
+            </div>
+          `;
+        case 'bathroom-poster':
+          return `
+            <div class="template bathroom-poster">
+              <div class="bathroom-urgent-banner">
+                <span class="bathroom-urgent-icon">⚠️</span>
+                <span class="bathroom-urgent-text">VERIFIQUE ANTES DE ESCANEAR</span>
+              </div>
+              <div class="bathroom-qr-section">
+                <div class="bathroom-qr-wrapper">
+                  <img src="${qrCodeUrl}" alt="QR Code" class="bathroom-qr-image" />
+                </div>
+                <p class="bathroom-instruction">Escaneie para verificar a seguranca da sua conta</p>
+              </div>
+              <div class="bathroom-footer">
+                <p class="bathroom-company">${companyName}</p>
+                <p class="bathroom-disclaimer">Teste de seguranca autorizado</p>
+              </div>
+            </div>
+          `;
+        case 'email-signature':
+          return `
+            <div class="template email-signature">
+              <div class="es-qr-wrapper">
+                <img src="${qrCodeUrl}" alt="QR Code" class="es-qr-image" />
+              </div>
+              <div class="es-info">
+                <span class="es-label">Verificar seguranca:</span>
+                <span class="es-url">${trackingUrl}</span>
+              </div>
+            </div>
+          `;
+        case 'sms-invite':
+          return `
+            <div class="template sms-invite">
+              <div class="sms-content">
+                <div class="sms-header">
+                  <span class="sms-icon">📱</span>
+                  <span class="sms-title">TEXT SECURE</span>
+                </div>
+                <div class="sms-body">
+                  <p class="sms-message">Envie uma mensagem para verificar sua conta de forma segura.</p>
+                  <p class="sms-shortcode">Numero: <strong>[Seu Numero]</strong></p>
+                </div>
+                <div class="sms-qr">
+                  <img src="${qrCodeUrl}" alt="QR" />
+                </div>
+              </div>
+            </div>
+          `;
+        case 'whatsapp':
+          return `
+            <div class="template whatsapp-template">
+              <div class="wa-header">
+                <span class="wa-icon">💬</span>
+                <span class="wa-title">WhatsApp Seguro</span>
+              </div>
+              <div class="wa-content">
+                <div class="wa-message">
+                  <p class="wa-text">Ola! Recebi este QR Code para verificacao de seguranca.</p>
+                  <p class="wa-url">URL: ${trackingUrl}</p>
+                </div>
+                <div class="wa-qr">
+                  <img src="${qrCodeUrl}" alt="QR" />
+                </div>
+              </div>
+            </div>
+          `;
+        case 'physical-meeting':
+          return `
+            <div class="template physical-meeting">
+              <div class="pm-header">
+                <div class="pm-event-badge">REUNIAO PRESENCIAL</div>
+                <h1 class="pm-title">Verificacao de Seguranca</h1>
+                <p class="pm-subtitle">Evento de conscientizacao sobre phishing</p>
+              </div>
+              <div class="pm-content">
+                <div class="pm-qr-section">
+                  <img src="${qrCodeUrl}" alt="QR Code" class="pm-qr-image" />
+                  <p class="pm-scan-text">Escaneie para registrar presenca</p>
+                </div>
+                <div class="pm-details">
+                  <div class="pm-detail-item">
+                    <span class="pm-detail-label">📅 Data:</span>
+                    <span class="pm-detail-value">[Data do Evento]</span>
+                  </div>
+                  <div class="pm-detail-item">
+                    <span class="pm-detail-label">⏰ Hora:</span>
+                    <span class="pm-detail-value">[Hora]</span>
+                  </div>
+                  <div class="pm-detail-item">
+                    <span class="pm-detail-label">📍 Local:</span>
+                    <span class="pm-detail-value">[Local]</span>
+                  </div>
+                </div>
+              </div>
+              <div class="pm-footer">
+                <p class="pm-company">${companyName} © ${new Date().getFullYear()}</p>
+                <p class="pm-authority">Autorizado pela equipe de seguranca</p>
               </div>
             </div>
           `;
@@ -424,6 +555,343 @@ export function FlyerTemplates({
         text-align: right;
       }
 
+      /* Bathroom Poster Styles */
+      .bathroom-poster {
+        background: #fef3c7;
+        border: 3px solid #f59e0b;
+        text-align: center;
+      }
+
+      .bathroom-poster .bathroom-urgent-banner {
+        background: #f59e0b;
+        color: #1a1a2e;
+        padding: 4mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3mm;
+        margin-bottom: 8mm;
+      }
+
+      .bathroom-poster .bathroom-urgent-icon {
+        font-size: 16pt;
+      }
+
+      .bathroom-poster .bathroom-urgent-text {
+        font-size: 11pt;
+        font-weight: 700;
+        letter-spacing: 1mm;
+      }
+
+      .bathroom-poster .bathroom-qr-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5mm;
+      }
+
+      .bathroom-poster .bathroom-qr-wrapper {
+        border: 3px solid #1a1a2e;
+        padding: 4mm;
+        border-radius: 4mm;
+        background: #ffffff;
+      }
+
+      .bathroom-poster .bathroom-qr-image {
+        width: 50mm;
+        height: 50mm;
+        display: block;
+      }
+
+      .bathroom-poster .bathroom-instruction {
+        font-size: 8pt;
+        color: #92400e;
+        font-weight: 500;
+      }
+
+      .bathroom-poster .bathroom-footer {
+        border-top: 2px solid #f59e0b;
+        padding-top: 4mm;
+      }
+
+      .bathroom-poster .bathroom-company {
+        font-size: 9pt;
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+
+      .bathroom-poster .bathroom-disclaimer {
+        font-size: 6pt;
+        color: #92400e;
+      }
+
+      /* Email Signature Styles */
+      .email-signature {
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        max-width: 350px;
+      }
+
+      .email-signature .es-qr-wrapper {
+        flex-shrink: 0;
+        border: 1px solid #d1d5db;
+        padding: 2px;
+      }
+
+      .email-signature .es-qr-image {
+        width: 60px;
+        height: 60px;
+        display: block;
+      }
+
+      .email-signature .es-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .email-signature .es-label {
+        font-size: 8pt;
+        color: #6b7280;
+      }
+
+      .email-signature .es-url {
+        font-size: 7pt;
+        color: #1a1a2e;
+        font-family: monospace;
+        word-break: break-all;
+      }
+
+      /* SMS Invite Styles */
+      .sms-invite {
+        background: #f0f9ff;
+        border: 2px solid #0ea5e9;
+        flex-direction: row;
+        align-items: center;
+        padding: 4mm;
+        gap: 4mm;
+      }
+
+      .sms-invite .sms-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2mm;
+        flex: 1;
+      }
+
+      .sms-invite .sms-header {
+        display: flex;
+        align-items: center;
+        gap: 2mm;
+      }
+
+      .sms-invite .sms-icon {
+        font-size: 12pt;
+      }
+
+      .sms-invite .sms-title {
+        font-size: 8pt;
+        font-weight: 700;
+        color: #0284c7;
+      }
+
+      .sms-invite .sms-body {
+        flex: 1;
+      }
+
+      .sms-invite .sms-message {
+        font-size: 6pt;
+        color: #0369a1;
+        line-height: 1.4;
+        margin-bottom: 2mm;
+      }
+
+      .sms-invite .sms-shortcode {
+        font-size: 7pt;
+        color: #0c4a6e;
+      }
+
+      .sms-invite .sms-shortcode strong {
+        font-size: 8pt;
+        color: #0284c7;
+      }
+
+      .sms-invite .sms-qr img {
+        width: 18mm;
+        height: 18mm;
+      }
+
+      /* WhatsApp Template Styles */
+      .whatsapp-template {
+        background: #dcfce7;
+        border: 2px solid #22c55e;
+        flex-direction: row;
+        align-items: center;
+        padding: 4mm;
+        gap: 4mm;
+      }
+
+      .whatsapp-template .wa-header {
+        display: flex;
+        align-items: center;
+        gap: 2mm;
+        margin-bottom: 2mm;
+      }
+
+      .whatsapp-template .wa-icon {
+        font-size: 12pt;
+      }
+
+      .whatsapp-template .wa-title {
+        font-size: 8pt;
+        font-weight: 700;
+        color: #16a34a;
+      }
+
+      .whatsapp-template .wa-content {
+        display: flex;
+        gap: 4mm;
+        align-items: center;
+        flex: 1;
+      }
+
+      .whatsapp-template .wa-message {
+        flex: 1;
+      }
+
+      .whatsapp-template .wa-text {
+        font-size: 6pt;
+        color: #15803d;
+        line-height: 1.4;
+        margin-bottom: 2mm;
+      }
+
+      .whatsapp-template .wa-url {
+        font-size: 5pt;
+        color: #166534;
+        font-family: monospace;
+        word-break: break-all;
+      }
+
+      .whatsapp-template .wa-qr img {
+        width: 18mm;
+        height: 18mm;
+      }
+
+      /* Physical Meeting Styles */
+      .physical-meeting {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #1a1a2e;
+        text-align: center;
+      }
+
+      .physical-meeting .pm-header {
+        padding: 10mm;
+        border-bottom: 3px solid #f59e0b;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #ffffff;
+      }
+
+      .physical-meeting .pm-event-badge {
+        display: inline-block;
+        background: #f59e0b;
+        color: #1a1a2e;
+        padding: 2mm 6mm;
+        border-radius: 3mm;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 1mm;
+        margin-bottom: 4mm;
+      }
+
+      .physical-meeting .pm-title {
+        font-size: 18pt;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 2mm;
+      }
+
+      .physical-meeting .pm-subtitle {
+        font-size: 10pt;
+        color: #d1d5db;
+      }
+
+      .physical-meeting .pm-content {
+        display: flex;
+        flex: 1;
+        padding: 10mm;
+        gap: 15mm;
+        align-items: center;
+      }
+
+      .physical-meeting .pm-qr-section {
+        flex-shrink: 0;
+      }
+
+      .physical-meeting .pm-qr-image {
+        width: 55mm;
+        height: 55mm;
+        border: 3px solid #1a1a2e;
+        border-radius: 4mm;
+      }
+
+      .physical-meeting .pm-scan-text {
+        font-size: 7pt;
+        color: #6b7280;
+        margin-top: 3mm;
+      }
+
+      .physical-meeting .pm-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6mm;
+        text-align: left;
+      }
+
+      .physical-meeting .pm-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 1mm;
+      }
+
+      .physical-meeting .pm-detail-label {
+        font-size: 8pt;
+        color: #9ca3af;
+      }
+
+      .physical-meeting .pm-detail-value {
+        font-size: 11pt;
+        font-weight: 600;
+        color: #1a1a2e;
+        border-bottom: 1px dashed #d1d5db;
+        padding-bottom: 2mm;
+      }
+
+      .physical-meeting .pm-footer {
+        padding: 8mm;
+        border-top: 2px solid #e5e7eb;
+        background: #f9fafb;
+      }
+
+      .physical-meeting .pm-company {
+        font-size: 9pt;
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+
+      .physical-meeting .pm-authority {
+        font-size: 7pt;
+        color: #6b7280;
+      }
+
       @media print {
         body { margin: 0; }
         .template { margin: 0; }
@@ -454,12 +922,109 @@ export function FlyerTemplates({
     setIsPrinting(false);
   }, [selectedTemplate, trackingId, baseUrl, companyName, campaignName]);
 
+  const renderPreview = (template: TemplateType) => {
+    switch (template) {
+      case 'bathroom-poster':
+        return (
+          <div className="rounded-[var(--radius-md)] border-2 border-amber-500 bg-amber-100 p-4 preview-area text-center">
+            <div className="bg-amber-500 text-black font-bold px-3 py-1 rounded text-xs mb-3 inline-block">⚠️ VERIFIQUE ANTES DE ESCANEAR</div>
+            <div className="border-2 border-gray-800 p-2 rounded bg-white inline-block mb-2">
+              <div className="w-16 h-16 bg-gray-200 flex items-center justify-center mx-auto">
+                <QrCode className="h-10 w-10 text-gray-600" />
+              </div>
+            </div>
+            <p className="text-[8px] text-amber-800 font-medium">Escaneie para verificar a seguranca da sua conta</p>
+          </div>
+        );
+      case 'email-signature':
+        return (
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-white p-3 preview-area flex items-center gap-3">
+            <div className="border border-gray-300 p-0.5">
+              <div className="w-12 h-12 bg-gray-200 flex items-center justify-center">
+                <QrCode className="h-8 w-8 text-gray-600" />
+              </div>
+            </div>
+            <div className="text-left">
+              <span className="text-[8px] text-gray-500 block">Verificar seguranca:</span>
+              <span className="text-[7px] font-mono text-gray-800">https://domain.com/qr/abc123...</span>
+            </div>
+          </div>
+        );
+      case 'sms-invite':
+        return (
+          <div className="rounded-[var(--radius-md)] border-2 border-sky-500 bg-sky-50 p-3 preview-area flex items-center gap-3">
+            <div className="text-left flex-1">
+              <span className="text-sm">📱</span>
+              <span className="text-[8px] font-bold text-sky-600 ml-1">TEXT SECURE</span>
+              <p className="text-[6px] text-sky-700 mt-1">Envie uma mensagem para verificar sua conta.</p>
+              <p className="text-[7px] text-sky-800">Numero: <strong className="text-sky-600">[Seu Numero]</strong></p>
+            </div>
+            <div className="border border-sky-400 p-0.5">
+              <div className="w-8 h-8 bg-white flex items-center justify-center">
+                <QrCode className="h-5 w-5 text-gray-800" />
+              </div>
+            </div>
+          </div>
+        );
+      case 'whatsapp':
+        return (
+          <div className="rounded-[var(--radius-md)] border-2 border-green-500 bg-green-50 p-3 preview-area flex items-center gap-3">
+            <div className="text-left flex-1">
+              <span className="text-sm">💬</span>
+              <span className="text-[8px] font-bold text-green-600 ml-1">WhatsApp Seguro</span>
+              <p className="text-[6px] text-green-700 mt-1">Ola! Recebi este QR Code para verificacao.</p>
+              <p className="text-[5px] font-mono text-green-800 mt-1">URL: https://domain.com/qr/...</p>
+            </div>
+            <div className="border border-green-500 p-0.5">
+              <div className="w-8 h-8 bg-white flex items-center justify-center">
+                <QrCode className="h-5 w-5 text-gray-800" />
+              </div>
+            </div>
+          </div>
+        );
+      case 'physical-meeting':
+        return (
+          <div className="rounded-[var(--radius-md)] border-2 border-[var(--color-noir-700)] bg-white p-4 preview-area">
+            <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16213e] text-white p-3 rounded-t border-b-2 border-amber-500 mb-3">
+              <div className="bg-amber-500 text-black text-[6px] px-2 py-0.5 rounded font-bold inline-block mb-1">REUNIAO PRESENCIAL</div>
+              <h3 className="text-sm font-bold text-white">Verificacao de Seguranca</h3>
+              <p className="text-[7px] text-gray-300">Evento de conscientizacao sobre phishing</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="border-2 border-gray-800 p-1 rounded">
+                <div className="w-14 h-14 bg-gray-200 flex items-center justify-center">
+                  <QrCode className="h-9 w-9 text-gray-600" />
+                </div>
+                <p className="text-[6px] text-gray-500 mt-1">Escaneie para registrar presenca</p>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div>
+                  <span className="text-[7px] text-gray-400">📅 Data:</span>
+                  <span className="text-[9px] font-semibold text-gray-800 block border-b border-dashed border-gray-300">[Data do Evento]</span>
+                </div>
+                <div>
+                  <span className="text-[7px] text-gray-400">⏰ Hora:</span>
+                  <span className="text-[9px] font-semibold text-gray-800 block border-b border-dashed border-gray-300">[Hora]</span>
+                </div>
+                <div>
+                  <span className="text-[7px] text-gray-400">📍 Local:</span>
+                  <span className="text-[9px] font-semibold text-gray-800 block border-b border-dashed border-gray-300">[Local]</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-display text-lg font-semibold text-[var(--color-fg-primary)]">
-            Templates para Impressão
+            Templates para Impressao
           </h3>
           <p className="text-sm text-[var(--color-fg-secondary)]">
             Escolha um formato e imprima o QR code com materiais educativos
@@ -468,10 +1033,15 @@ export function FlyerTemplates({
       </div>
 
       <Tabs value={selectedTemplate} onValueChange={(v) => setSelectedTemplate(v as TemplateType)}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="a4">Flyer A4</TabsTrigger>
           <TabsTrigger value="a3">Poster A3</TabsTrigger>
-          <TabsTrigger value="business-card">Cartão Visita</TabsTrigger>
+          <TabsTrigger value="business-card">Cartao</TabsTrigger>
+          <TabsTrigger value="bathroom-poster">Banheiro</TabsTrigger>
+          <TabsTrigger value="email-signature">Email</TabsTrigger>
+          <TabsTrigger value="sms-invite">SMS</TabsTrigger>
+          <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+          <TabsTrigger value="physical-meeting">Reuniao</TabsTrigger>
         </TabsList>
 
         <TabsContent value="a4" className="mt-4">
@@ -484,7 +1054,7 @@ export function FlyerTemplates({
                 <div className="a4-preview">
                   <div className="flex justify-between items-center border-b-2 border-gray-800 pb-2 mb-4">
                     <span className="font-bold text-sm">{companyName}</span>
-                    <span className="bg-amber-500 text-black text-xs px-2 py-0.5 rounded">Segurança</span>
+                    <span className="bg-amber-500 text-black text-xs px-2 py-0.5 rounded">Seguranca</span>
                   </div>
                   <div className="flex gap-4 mb-4">
                     <div className="border-2 border-gray-800 p-2 rounded">
@@ -494,11 +1064,11 @@ export function FlyerTemplates({
                     </div>
                     <div className="flex-1 flex flex-col justify-center">
                       <h2 className="text-lg font-bold text-red-600 mb-1">Cuidado com QR Codes Maliciosos</h2>
-                      <p className="text-xs text-gray-600 mb-2">Este QR Code é parte de uma simulação de segurança.</p>
+                      <p className="text-xs text-gray-600 mb-2">Este QR Code faz parte de uma simulacao de seguranca.</p>
                       <code className="text-[8px] bg-gray-100 p-1 rounded block truncate">{baseUrl}/qr/{trackingId.slice(0, 8)}...</code>
                     </div>
                   </div>
-                  <p className="text-[7px] text-gray-500 border-t pt-2">Este é um teste de segurança autorizado pela equipe de TI.</p>
+                  <p className="text-[7px] text-gray-500 border-t pt-2">Este e um teste de seguranca autorizado pela equipe de TI.</p>
                 </div>
               </div>
               <Button
@@ -524,8 +1094,8 @@ export function FlyerTemplates({
                 <div className="a3-preview text-white text-center">
                   <div className="border-b-2 border-amber-500 pb-3 mb-4">
                     <div className="text-2xl mb-1">🛡️</div>
-                    <h1 className="text-lg font-bold text-amber-500 tracking-widest">ALERTA DE SEGURANÇA</h1>
-                    <h2 className="text-sm text-gray-300">Simulação de Quishing</h2>
+                    <h1 className="text-lg font-bold text-amber-500 tracking-widest">ALERTA DE SEGURANCA</h1>
+                    <h2 className="text-sm text-gray-300">Simulacao de Quishing</h2>
                   </div>
                   <div className="flex justify-center items-center gap-6 mb-3">
                     <div className="border-2 border-amber-500 p-1 rounded">
@@ -534,11 +1104,11 @@ export function FlyerTemplates({
                       </div>
                     </div>
                     <div className="text-left flex-1 max-w-[120px]">
-                      <h3 className="text-[10px] font-semibold text-amber-500 mb-1">O que é Quishing?</h3>
+                      <h3 className="text-[10px] font-semibold text-amber-500 mb-1">O que e Quishing?</h3>
                       <p className="text-[7px] text-gray-400">Phishing via QR Code.</p>
                     </div>
                   </div>
-                  <p className="text-[6px] text-gray-500">Teste de segurança autorizado</p>
+                  <p className="text-[6px] text-gray-500">Teste de seguranca autorizado</p>
                 </div>
               </div>
               <Button
@@ -557,13 +1127,13 @@ export function FlyerTemplates({
         <TabsContent value="business-card" className="mt-4">
           <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Cartão de Visita (85mm x 54mm)</CardTitle>
+              <CardTitle className="text-base">Cartao de Visita (85mm x 54mm)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[#1a1a2e] p-4 preview-area flex items-center justify-between">
                 <div className="text-white">
                   <div className="text-xs font-bold mb-0.5">{companyName}</div>
-                  <div className="text-[6px] bg-amber-500 text-black px-1 py-0.5 rounded inline-block mb-1">Segurança</div>
+                  <div className="text-[6px] bg-amber-500 text-black px-1 py-0.5 rounded inline-block mb-1">Seguranca</div>
                 </div>
                 <div className="border border-white p-0.5">
                   <div className="w-10 h-10 bg-white flex items-center justify-center">
@@ -578,7 +1148,107 @@ export function FlyerTemplates({
                 disabled={isPrinting}
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Imprimir Cartão de Visita
+                Imprimir Cartao de Visita
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bathroom-poster" className="mt-4">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Poster Banheiro (A5 - 148mm x 210mm)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPreview('bathroom-poster')}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handlePrint('bathroom-poster')}
+                disabled={isPrinting}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir Poster Banheiro
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="email-signature" className="mt-4">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Assinatura de Email (350px x 100px)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPreview('email-signature')}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handlePrint('email-signature')}
+                disabled={isPrinting}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir Assinatura
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sms-invite" className="mt-4">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Invite SMS (74mm x 48mm)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPreview('sms-invite')}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handlePrint('sms-invite')}
+                disabled={isPrinting}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir Invite SMS
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="whatsapp" className="mt-4">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">WhatsApp (74mm x 48mm)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPreview('whatsapp')}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handlePrint('whatsapp')}
+                disabled={isPrinting}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir WhatsApp
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="physical-meeting" className="mt-4">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Reuniao Presencial (A4)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {renderPreview('physical-meeting')}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => handlePrint('physical-meeting')}
+                disabled={isPrinting}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir Reuniao Presencial
               </Button>
             </CardContent>
           </Card>
@@ -589,12 +1259,12 @@ export function FlyerTemplates({
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-400" />
           <div>
-            <p className="font-medium text-blue-400">Dicas de impressão</p>
+            <p className="font-medium text-blue-400">Dicas de impressao</p>
             <ul className="mt-1 text-sm text-[var(--color-fg-secondary)] space-y-1">
               <li>• Use papel branco para melhor contraste</li>
               <li>• Configure a impressora para cores precisas</li>
-              <li>• Para flyers,。建议 usar papel A4 reciclado</li>
-              <li>• Para cartões, use papel.cartãoCommands 250g/m²</li>
+              <li>• Para flyers, use papel A4 reciclado</li>
+              <li>• Para cartoes, use papel cartao 250g/m²</li>
             </ul>
           </div>
         </div>

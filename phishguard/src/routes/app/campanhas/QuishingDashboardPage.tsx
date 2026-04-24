@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
   QrCode,
@@ -14,6 +14,11 @@ import {
   Pause,
   Play,
   AlertCircle,
+  Smartphone,
+  Monitor,
+  Tablet,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -56,6 +61,30 @@ interface ScanEvent {
   count: number;
 }
 
+interface HeatmapCell {
+  day: number; // 0-6 (Sunday-Saturday)
+  hour: number; // 0-23
+  count: number;
+}
+
+interface DeviceStats {
+  mobile: number;
+  desktop: number;
+  tablet: number;
+}
+
+interface QRPerformance {
+  id: string;
+  name: string;
+  totalScans: number;
+  uniqueScans: number;
+  avgTimeToScan: number; // in seconds
+  createdAt: string;
+}
+
+const DAYS_OF_WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
 const STATUS_CONFIG = {
   draft: { label: 'Rascunho', color: 'text-gray-400', bgColor: 'bg-gray-500/10' },
   scheduled: { label: 'Agendado', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
@@ -64,29 +93,55 @@ const STATUS_CONFIG = {
   completed: { label: 'Concluído', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
 };
 
-function generateMockHeatmapData(): ScanEvent[] {
-  const hours = [];
-  for (let i = 0; i < 24; i++) {
-    // Generate realistic-looking scan patterns (peak at 10-12 and 14-16)
-    let count = Math.floor(Math.random() * 15);
-    if ((i >= 10 && i <= 12) || (i >= 14 && i <= 16)) {
-      count = Math.floor(Math.random() * 40) + 20;
-    } else if (i >= 9 && i <= 17) {
-      count = Math.floor(Math.random() * 25) + 10;
+function generateMockHeatmapData(): HeatmapCell[] {
+  const data: HeatmapCell[] = [];
+  // Peak hours: 9-12 and 14-17 on weekdays
+  for (let day = 0; day < 7; day++) {
+    for (let hour = 0; hour < 24; hour++) {
+      let count = Math.floor(Math.random() * 15);
+      // Weekend reduction
+      if (day === 0 || day === 6) {
+        count = Math.floor(count * 0.3);
+      } else {
+        // Weekday peaks
+        if ((hour >= 9 && hour <= 12) || (hour >= 14 && hour <= 17)) {
+          count = Math.floor(Math.random() * 45) + 25;
+        } else if (hour >= 7 && hour <= 19) {
+          count = Math.floor(Math.random() * 25) + 10;
+        }
+      }
+      data.push({ day, hour, count });
     }
-    hours.push({ scan_hour: i, count });
   }
-  return hours;
+  return data;
 }
 
 function getHeatmapColor(count: number, max: number): string {
   const intensity = max > 0 ? count / max : 0;
   if (intensity === 0) return 'var(--color-surface-2)';
-  if (intensity < 0.2) return 'rgba(245, 158, 11, 0.2)';
-  if (intensity < 0.4) return 'rgba(245, 158, 11, 0.4)';
-  if (intensity < 0.6) return 'rgba(245, 158, 11, 0.6)';
-  if (intensity < 0.8) return 'rgba(245, 158, 11, 0.8)';
-  return 'rgba(245, 158, 11, 1)';
+  if (intensity < 0.2) return 'rgba(245, 158, 11, 0.15)';
+  if (intensity < 0.4) return 'rgba(245, 158, 11, 0.3)';
+  if (intensity < 0.6) return 'rgba(245, 158, 11, 0.5)';
+  if (intensity < 0.8) return 'rgba(245, 158, 11, 0.7)';
+  return 'rgba(245, 158, 11, 0.95)';
+}
+
+function generateMockDeviceStats(): DeviceStats {
+  // Realistic distribution: mobile dominant
+  const mobile = Math.floor(Math.random() * 30) + 55; // 55-85%
+  const desktop = Math.floor(Math.random() * 20) + 10; // 10-30%
+  const tablet = 100 - mobile - desktop;
+  return { mobile, desktop, tablet };
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins < 60) return `${mins}m ${secs}s`;
+  const hours = Math.floor(mins / 60);
+  const remainingMins = mins % 60;
+  return `${hours}h ${remainingMins}m`;
 }
 
 export default function QuishingDashboardPage() {
@@ -95,10 +150,17 @@ export default function QuishingDashboardPage() {
   const [campaign, setCampaign] = useState<QuishingCampaign | null>(null);
   const [qrcodes, setQrcodes] = useState<QuishingQRCode[]>([]);
   const [heatmapData, setHeatmapData] = useState<ScanEvent[]>([]);
+  const [heatmap7x24, setHeatmap7x24] = useState<HeatmapCell[]>([]);
+  const [deviceStats, setDeviceStats] = useState<DeviceStats>({ mobile: 0, desktop: 0, tablet: 0 });
+  const [qrPerformance, setQrPerformance] = useState<QRPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [expandedQR, setExpandedQR] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<'totalScans' | 'uniqueScans' | 'avgTimeToScan'>('totalScans');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const shouldReduceMotion = useReducedMotion();
 
   // Load campaign data
   useEffect(() => {
@@ -139,6 +201,10 @@ export default function QuishingDashboardPage() {
         } else {
           setHeatmapData(generateMockHeatmapData());
         }
+
+        // Load 7x24 heatmap data
+        setHeatmap7x24(generateMockHeatmapData());
+        setDeviceStats(generateMockDeviceStats());
       } catch (err) {
         console.error('Error loading data:', err);
         // Load mock data for demo
@@ -183,6 +249,8 @@ export default function QuishingDashboardPage() {
         ]);
 
         setHeatmapData(generateMockHeatmapData());
+        setHeatmap7x24(generateMockHeatmapData());
+        setDeviceStats(generateMockDeviceStats());
       } finally {
         setLoading(false);
       }
@@ -191,8 +259,45 @@ export default function QuishingDashboardPage() {
     loadData();
   }, [campaignId]);
 
+  // Generate performance data from qrcodes
+  useEffect(() => {
+    if (qrcodes.length > 0) {
+      const performance: QRPerformance[] = qrcodes.map((qr, index) => ({
+        id: qr.id,
+        name: qr.name || `QR Code ${index + 1}`,
+        totalScans: qr.scan_count,
+        uniqueScans: qr.unique_scans,
+        avgTimeToScan: Math.floor(Math.random() * 120) + 15, // 15-135 seconds
+        createdAt: qr.created_at,
+      }));
+      setQrPerformance(performance);
+    }
+  }, [qrcodes]);
+
   const statusInfo = campaign ? STATUS_CONFIG[campaign.status] : STATUS_CONFIG.draft;
   const maxHeatmapCount = heatmapData.reduce((max, h) => Math.max(max, h.count), 0);
+  const maxHeatmap7x24 = useMemo(
+    () => heatmap7x24.reduce((max, cell) => Math.max(max, cell.count), 0),
+    [heatmap7x24]
+  );
+
+  // Sorting for QR Performance Table
+  const sortedQRPerformance = useMemo(() => {
+    return [...qrPerformance].sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+      return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+    });
+  }, [qrPerformance, sortColumn, sortDirection]);
+
+  const toggleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
 
   // Calculate stats
   const scansToday = heatmapData
@@ -322,71 +427,322 @@ export default function QuishingDashboardPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-6">
-          {/* Heatmap Preview */}
+          {/* 7x24 Scan Heatmap */}
           <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Atividade por Hora</CardTitle>
+              <CardTitle className="text-base">Mapa de Calor - Scans por Dia e Hora</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-24 gap-1">
-                {heatmapData.map((hour) => (
-                  <div
-                    key={hour.scan_hour}
-                    className="aspect-square rounded-sm transition-colors"
-                    style={{ backgroundColor: getHeatmapColor(hour.count, maxHeatmapCount) }}
-                    title={`${hour.scan_hour}:00 - ${hour.count} scans`}
-                  />
-                ))}
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-[var(--color-fg-secondary)]">
+                  Distribuição de scans ao longo da semana
+                </p>
+                <div className="flex items-center gap-2 text-xs text-[var(--color-fg-tertiary)]">
+                  <span>Mín</span>
+                  <div className="flex h-4 gap-0.5">
+                    {[0, 0.2, 0.4, 0.6, 0.8, 1].map((intensity) => (
+                      <div
+                        key={intensity}
+                        className="h-full w-4 rounded-sm"
+                        style={{ backgroundColor: intensity === 0 ? 'var(--color-surface-2)' : `rgba(245, 158, 11, ${intensity})` }}
+                      />
+                    ))}
+                  </div>
+                  <span>Máx</span>
+                </div>
               </div>
-              <div className="mt-3 flex items-center justify-between text-xs text-[var(--color-fg-tertiary)]">
-                <span>00:00</span>
-                <span>12:00</span>
-                <span>23:00</span>
-              </div>
-              <div className="mt-2 flex items-center justify-end gap-2">
-                <span className="text-xs text-[var(--color-fg-tertiary)]">Intensidade:</span>
-                <div className="flex gap-1">
-                  <div className="h-3 w-3 rounded-sm bg-[var(--color-surface-2)]" />
-                  <div className="h-3 w-3 rounded-sm bg-[rgba(245,158,11,0.3)]" />
-                  <div className="h-3 w-3 rounded-sm bg-[rgba(245,158,11,0.6)]" />
-                  <div className="h-3 w-3 rounded-sm bg-[rgba(245,158,11,0.9)]" />
+
+              {/* Heatmap grid: 24 columns (hours) x 7 rows (days) */}
+              <div className="overflow-x-auto">
+                <div className="inline-flex flex-col gap-1">
+                  {/* Hour labels row */}
+                  <div className="flex gap-1 pl-10">
+                    {HOURS.map((hour) => (
+                      <div
+                        key={hour}
+                        className="w-6 text-center text-[10px] text-[var(--color-fg-muted)]"
+                      >
+                        {hour % 6 === 0 ? `${hour}` : ''}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Day rows */}
+                  {DAYS_OF_WEEK.map((dayLabel, dayIndex) => (
+                    <div key={dayLabel} className="flex items-center gap-1">
+                      {/* Day label */}
+                      <div className="w-8 text-xs text-[var(--color-fg-muted)] text-right pr-2">
+                        {dayLabel}
+                      </div>
+                      {/* Hour cells */}
+                      {HOURS.map((hour) => {
+                        const cell = heatmap7x24.find(c => c.day === dayIndex && c.hour === hour);
+                        const count = cell?.count || 0;
+                        return (
+                          <motion.div
+                            key={`${dayIndex}-${hour}`}
+                            className="h-6 w-6 rounded-sm transition-all hover:ring-1 hover:ring-[var(--color-accent)] cursor-pointer"
+                            style={{ backgroundColor: getHeatmapColor(count, maxHeatmap7x24) }}
+                            whileHover={shouldReduceMotion ? {} : { scale: 1.2 }}
+                            title={`${dayLabel} ${hour}:00 - ${count} scans`}
+                          >
+                            {count > 0 && maxHeatmap7x24 > 0 && count / maxHeatmap7x24 > 0.7 && (
+                              <span className="flex h-full items-center justify-center text-[8px] text-white">
+                                {count}
+                              </span>
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
-          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">QR Codes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {qrcodes.map((qr) => (
+          {/* Device Breakdown + QR Performance Table */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Device Breakdown Pie Chart */}
+            <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Dispositivos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* SVG Pie Chart using conic-gradient */}
+                <div className="relative flex h-40 w-40 flex-col items-center">
                   <div
-                    key={qr.id}
-                    className="flex items-center gap-4 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] p-3"
-                  >
-                    <div className="grid h-12 w-12 place-items-center rounded-lg bg-white">
-                      <QrCode className="h-6 w-6 text-gray-800" />
+                    className="h-40 w-40"
+                    style={{
+                      background: `conic-gradient(
+                        var(--color-accent) 0% ${deviceStats.mobile}%,
+                        var(--color-blue-500) ${deviceStats.mobile}% ${deviceStats.mobile + deviceStats.desktop}%,
+                        var(--color-purple-500) ${deviceStats.mobile + deviceStats.desktop}% 100%
+                      )`,
+                      borderRadius: '50%',
+                      mask: 'radial-gradient(transparent 55%, black 55%)',
+                      WebkitMask: 'radial-gradient(transparent 55%, black 55%)',
+                    }}
+                  />
+                  {/* Center text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-2xl font-bold text-[var(--color-fg-primary)]">
+                      {campaign.scan_count.toLocaleString('pt-BR')}
+                    </span>
+                    <span className="text-xs text-[var(--color-fg-muted)]">total scans</span>
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="mt-6 space-y-3">
+                  {/* Mobile */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-[var(--color-accent)]" />
+                      <span className="text-sm text-[var(--color-fg-secondary)]">Mobile</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-[var(--color-fg-primary)]">{qr.name || 'QR Code'}</p>
-                      <p className="text-xs text-[var(--color-fg-tertiary)] truncate">
-                        {baseUrl}/qr/{qr.tracking_id.slice(0, 8)}...
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display text-lg font-bold text-[var(--color-accent)]">
-                        {qr.scan_count}
-                      </p>
-                      <p className="text-xs text-[var(--color-fg-tertiary)]">scans</p>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-[var(--color-fg-primary)]">
+                        {deviceStats.mobile}%
+                      </span>
+                      <div
+                        className="h-2 w-12 rounded-full bg-[var(--color-accent)]"
+                        style={{ width: `${deviceStats.mobile}%`, maxWidth: '3rem' }}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  {/* Desktop */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-[var(--color-blue-500)]" />
+                      <span className="text-sm text-[var(--color-fg-secondary)]">Desktop</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-[var(--color-fg-primary)]">
+                        {deviceStats.desktop}%
+                      </span>
+                      <div
+                        className="h-2 w-12 rounded-full bg-[var(--color-blue-500)]"
+                        style={{ width: `${deviceStats.desktop}%`, maxWidth: '3rem' }}
+                      />
+                    </div>
+                  </div>
+                  {/* Tablet */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tablet className="h-4 w-4 text-[var(--color-purple-500)]" />
+                      <span className="text-sm text-[var(--color-fg-secondary)]">Tablet</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-[var(--color-fg-primary)]">
+                        {deviceStats.tablet}%
+                      </span>
+                      <div
+                        className="h-2 w-12 rounded-full bg-[var(--color-purple-500)]"
+                        style={{ width: `${deviceStats.tablet}%`, maxWidth: '3rem' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* QR Performance Table */}
+            <div className="lg:col-span-2">
+              <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Desempenho por QR Code</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--color-noir-700)]">
+                          <th className="pb-3 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]">
+                            QR Code
+                          </th>
+                          <th
+                            className="cursor-pointer pb-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]"
+                            onClick={() => toggleSort('totalScans')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Total Scans
+                              {sortColumn === 'totalScans' && (
+                                sortDirection === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            className="cursor-pointer pb-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]"
+                            onClick={() => toggleSort('uniqueScans')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Únicos
+                              {sortColumn === 'uniqueScans' && (
+                                sortDirection === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />
+                              )}
+                            </div>
+                          </th>
+                          <th
+                            className="cursor-pointer pb-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]"
+                            onClick={() => toggleSort('avgTimeToScan')}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              Tempo Médio
+                              {sortColumn === 'avgTimeToScan' && (
+                                sortDirection === 'desc' ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />
+                              )}
+                            </div>
+                          </th>
+                          <th className="pb-3 text-right text-xs font-semibold uppercase tracking-wide text-[var(--color-fg-muted)]">
+                            Criado em
+                          </th>
+                          <th className="pb-3 w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedQRPerformance.map((qr, index) => (
+                          <motion.tr
+                            key={qr.id}
+                            className="border-b border-[var(--color-noir-800)] transition-colors hover:bg-[var(--color-surface-2)]"
+                            initial={shouldReduceMotion ? false : { opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={shouldReduceMotion ? {} : { duration: 0.3, delay: index * 0.05 }}
+                          >
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-white">
+                                  <QrCode className="h-4 w-4 text-gray-800" />
+                                </div>
+                                <span className="font-medium text-[var(--color-fg-primary)]">{qr.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 text-right font-mono text-[var(--color-fg-primary)]">
+                              {qr.totalScans.toLocaleString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-right font-mono text-[var(--color-fg-secondary)]">
+                              {qr.uniqueScans.toLocaleString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-right font-mono text-[var(--color-accent)]">
+                              {formatDuration(qr.avgTimeToScan)}
+                            </td>
+                            <td className="py-3 text-right text-xs text-[var(--color-fg-muted)]">
+                              {new Date(qr.createdAt).toLocaleDateString('pt-BR')}
+                            </td>
+                            <td className="py-3 text-center">
+                              <button
+                                className="rounded p-1 transition-colors hover:bg-[var(--color-surface-3)]"
+                                onClick={() => setExpandedQR(expandedQR === qr.id ? null : qr.id)}
+                              >
+                                {expandedQR === qr.id ? (
+                                  <ChevronUp className="h-4 w-4 text-[var(--color-fg-muted)]" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-[var(--color-fg-muted)]" />
+                                )}
+                              </button>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Expanded row details */}
+                  <AnimatePresence>
+                    {expandedQR && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] p-4">
+                          <h4 className="mb-3 text-sm font-semibold text-[var(--color-fg-primary)]">
+                            Detalhes - {qrPerformance.find(q => q.id === expandedQR)?.name}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                            <div>
+                              <p className="text-xs text-[var(--color-fg-muted)]">Total Scans</p>
+                              <p className="font-display text-lg font-bold text-[var(--color-fg-primary)]">
+                                {qrPerformance.find(q => q.id === expandedQR)?.totalScans.toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[var(--color-fg-muted)]">Scans Únicos</p>
+                              <p className="font-display text-lg font-bold text-[var(--color-fg-primary)]">
+                                {qrPerformance.find(q => q.id === expandedQR)?.uniqueScans.toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[var(--color-fg-muted)]">Tempo Médio</p>
+                              <p className="font-display text-lg font-bold text-[var(--color-accent)]">
+                                {formatDuration(qrPerformance.find(q => q.id === expandedQR)?.avgTimeToScan || 0)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[var(--color-fg-muted)]">Taxa Única</p>
+                              <p className="font-display text-lg font-bold text-[var(--color-fg-primary)]">
+                                {qrPerformance.find(q => q.id === expandedQR)
+                                  ? Math.round((qrPerformance.find(q => q.id === expandedQR)!.uniqueScans / qrPerformance.find(q => q.id === expandedQR)!.totalScans) * 100)
+                                  : 0}%
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {sortedQRPerformance.length === 0 && (
+                    <div className="py-8 text-center text-sm text-[var(--color-fg-muted)]">
+                      Nenhum QR code encontrado
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="heatmap" className="mt-4">

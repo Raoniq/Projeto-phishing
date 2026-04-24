@@ -5,3 +5,4 @@ export * from './rotation';
 export * from './health-check';
 export * from './warming';
 export * from './retirement';
+export * from './generator';
