@@ -78,7 +78,7 @@ function TenantSwitcher({ tenant }: TenantSwitcherProps) {
         aria-label={`Empresa atual: ${tenant.name}. Clique para trocar.`}
         className="mx-3 mt-3 flex w-full items-center gap-3 rounded-md border border-[var(--color-surface-3)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left transition-colors hover:border-[var(--color-accent-subtle)]"
       >
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded bg-[var(--color-surface-3)] font-display text-sm text-[var(--color-fg-secondary)]">
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded bg-[var(--color-accent)] font-display text-sm text-[var(--color-surface-0)]">
           {tenant.initial}
         </div>
         <div className="min-w-0 flex-1">
@@ -124,6 +124,7 @@ function TenantSwitcher({ tenant }: TenantSwitcherProps) {
           <div className="my-1 border-t border-[var(--color-surface-3)]" />
           <button
             aria-label="Adicionar nova empresa"
+            onClick={() => { /* TODO: Implement multi-tenant management modal */ alert('Funcionalidade em desenvolvimento'); }}
             className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-[var(--color-surface-2)]"
           >
             <div className="grid h-8 w-8 shrink-0 place-items-center rounded border border-dashed border-[var(--color-surface-3)] font-display text-sm text-[var(--color-fg-tertiary)]">
@@ -222,7 +223,9 @@ export function AppSidebar({
       </div>
 
       {/* Tenant switcher */}
-      <TenantSwitcher tenant={tenant} />
+      <div className="px-3 mt-3">
+        <TenantSwitcher tenant={tenant} />
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">

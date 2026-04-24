@@ -124,6 +124,7 @@ export default function App() {
 {/* App - protected (requires auth) */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
+            <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="/app/dashboard" element={<DashboardPage />} />
             <Route path="/app/campanhas" element={<CampanhasPage />} />
             <Route path="/app/usuarios" element={<UsuariosPage />} />
