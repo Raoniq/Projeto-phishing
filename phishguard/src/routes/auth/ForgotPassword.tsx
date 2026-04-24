@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { supabase } from '@/lib/supabase';
+import { isMockMode } from '@/lib/auth/session';
 
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -17,11 +20,30 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Integrate with Supabase
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setSent(true);
-      setResendCountdown(60);
-      
+      if (isMockMode()) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setSent(true);
+        setResendCountdown(60);
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/change-password`,
+        });
+
+        if (error) {
+          const message = error.message.toLowerCase();
+          if (message.includes('email not found') || message.includes('user not found')) {
+            setError('Este email não está cadastrado');
+          } else if (message.includes('invalid email')) {
+            setError('Email inválido');
+          } else {
+            setError('Erro ao enviar email. Tente novamente.');
+          }
+          return;
+        }
+        setSent(true);
+        setResendCountdown(60);
+      }
+
       // Start countdown for resend
       const interval = setInterval(() => {
         setResendCountdown(prev => {
@@ -41,14 +63,25 @@ export default function ForgotPasswordPage() {
 
   const handleResend = async () => {
     if (resendCountdown > 0) return;
-    
+
     setError('');
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isMockMode()) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/change-password`,
+        });
+
+        if (error) {
+          setError('Erro ao reenviar. Tente novamente.');
+          return;
+        }
+      }
       setResendCountdown(60);
-      
+
       const interval = setInterval(() => {
         setResendCountdown(prev => {
           if (prev <= 1) {

@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Checkbox } from '@/components/forms/CheckboxField';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/registerSchema';
+import { supabase } from '@/lib/supabase';
+import { isMockMode } from '@/lib/auth/session';
+import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -56,14 +59,47 @@ export default function RegisterPage() {
     }
 
     try {
-      // TODO: Integrate with Supabase
-      // 1. Create user account
-      // 2. Create company record
-      // 3. Send verification email
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (isMockMode()) {
+        await mockSupabaseAuth.signIn({ email: formData.email, name: formData.name });
+        navigate('/verify-email', { state: { email: formData.email } });
+        return;
+      }
 
-      // For demo, navigate to verification
-      navigate('/verify-email', { state: { email: formData.email } });
+      // Create user account with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            company_name: companyName,
+          },
+        },
+      });
+
+      if (error) {
+        // Translate Supabase errors to Portuguese
+        const message = error.message.toLowerCase();
+        if (message.includes('email already') || message.includes('user already')) {
+          setError('Este email já está cadastrado');
+        } else if (message.includes('invalid email')) {
+          setError('Email inválido');
+        } else if (message.includes('password') && message.includes('length')) {
+          setError('A senha deve ter pelo menos 8 caracteres');
+        } else {
+          setError('Erro ao criar conta. Tente novamente.');
+        }
+        return;
+      }
+
+      // If we have a user but no session, email confirmation is required
+      if (data.user && !data.session) {
+        navigate('/verify-email', { state: { email: formData.email } });
+        return;
+      }
+
+      // If we have a session directly (email confirmation disabled), navigate to dashboard
+      navigate('/app/dashboard');
     } catch (err) {
       setError('Erro ao criar conta. Tente novamente.');
     } finally {

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 
 // Scroll to top on navigation
@@ -14,6 +14,7 @@ function ScrollToTop() {
 
 // Layout
 import MarketingLayout from './components/navigation/MarketingLayout'
+import { AppShell } from './components/navigation'
 
 // Marketing pages
 import HomePage from './routes/marketing/Home'
@@ -33,10 +34,13 @@ import ChangePasswordPage from './routes/auth/ChangePassword'
 import EmailVerificationPage from './routes/auth/EmailVerification'
 
 // App pages (protected)
-import DashboardPage from './routes/app/Dashboard'
+import DashboardPage from './routes/app/dashboard.page'
 import CampanhasPage from './routes/app/Campanhas'
 import UsuariosPage from './routes/app/Usuarios'
 import ConfiguracoesPage from './routes/app/Configuracoes'
+import AuditoriaPage from './routes/app/auditoria/page'
+import SuportePage from './routes/app/suporte/page'
+import TreinamentoPage from './routes/app/treinamento/page'
 
 // Campanhas sub-pages
 import CampanhasListPage from './routes/app/campanhas/CampanhasPage'
@@ -74,6 +78,9 @@ import TemplateEditorPage from './routes/app/templates/editor.page'
 // Compliance page
 import CompliancePage from './routes/app/compliance/CompliancePage'
 
+// Inteligencia page
+import InteligenciaPage from './routes/app/inteligencia/page'
+
 // Onboarding page
 import OnboardingPage from './routes/app/onboarding/Onboarding'
 
@@ -88,6 +95,7 @@ import VerifyPage from './routes/verify/[id].page'
 // Utils
 import Breadcrumbs from './routes/lib/Breadcrumbs'
 import ErrorBoundary from './routes/lib/ErrorBoundary'
+import ProtectedRoute from './routes/lib/ProtectedRoute'
 
 export default function App() {
   return (
@@ -113,11 +121,53 @@ export default function App() {
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
 
-        {/* App - protected (requires auth) */}
-        <Route path="/app/dashboard" element={<DashboardPage />} />
-        <Route path="/app/campanhas" element={<CampanhasPage />} />
-        <Route path="/app/usuarios" element={<UsuariosPage />} />
-        <Route path="/app/configuracoes" element={<ConfiguracoesPage />} />
+{/* App - protected (requires auth) */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppShell />}>
+            <Route path="/app/dashboard" element={<DashboardPage />} />
+            <Route path="/app/campanhas" element={<CampanhasPage />} />
+            <Route path="/app/usuarios" element={<UsuariosPage />} />
+            <Route path="/app/treinamento" element={<TreinamentoPage />} />
+            <Route path="/app/configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="/app/auditoria" element={<AuditoriaPage />} />
+            <Route path="/app/suporte" element={<SuportePage />} />
+
+            {/* Campanhas sub-routes */}
+            <Route path="/app/campanhas/nova" element={<NovaCampanhaPage />} />
+            <Route path="/app/campanhas/:id" element={<CampanhaDetailPage />} />
+            <Route path="/app/campanhas/:id/targets" element={<CampanhaTargetsPage />} />
+            <Route path="/app/campanhas/:id/analytics" element={<CampanhaAnalyticsPage />} />
+            <Route path="/app/campanhas/:id/relatorio" element={<RelatorioPage />} />
+
+            {/* Usuarios sub-routes */}
+            <Route path="/app/usuarios/groups" element={<GroupsPage />} />
+            <Route path="/app/usuarios/import" element={<ImportPage />} />
+            <Route path="/app/usuarios/:id" element={<UserDetailPage />} />
+
+            {/* Configuracoes sub-routes */}
+            <Route path="/app/configuracoes/admins" element={<AdminsPage />} />
+            <Route path="/app/configuracoes/audit-log" element={<AuditLogPage />} />
+            <Route path="/app/configuracoes/dominios" element={<DominiosPage />} />
+            <Route path="/app/configuracoes/notificacoes" element={<NotificacoesPage />} />
+
+            {/* Relatorios */}
+            <Route path="/app/relatorios" element={<Navigate to="/app/relatorios/executivo" replace />} />
+            <Route path="/app/relatorios/executivo" element={<RelatorioExecutivoPage />} />
+            <Route path="/app/relatorios/tecnico" element={<RelatorioTecnicoPage />} />
+
+            {/* Templates */}
+            <Route path="/app/templates/editor" element={<TemplateEditorPage />} />
+
+            {/* Compliance */}
+            <Route path="/app/compliance" element={<CompliancePage />} />
+
+            {/* Inteligencia */}
+            <Route path="/app/inteligencia" element={<InteligenciaPage />} />
+
+            {/* Onboarding */}
+            <Route path="/app/onboarding" element={<OnboardingPage />} />
+          </Route>
+        </Route>
 
         {/* Learner portal */}
         <Route path="/learner/dashboard" element={<LearnerDashboard />} />
@@ -128,37 +178,6 @@ export default function App() {
         <Route path="/pescado" element={<VoceFoiPescado />} />
         <Route path="/pescado/:id" element={<PescadoDetailPage />} />
         <Route path="/templates" element={<LandingTemplates />} />
-
-        {/* Campanhas sub-routes */}
-        <Route path="/app/campanhas/nova" element={<NovaCampanhaPage />} />
-        <Route path="/app/campanhas/:id" element={<CampanhaDetailPage />} />
-        <Route path="/app/campanhas/:id/targets" element={<CampanhaTargetsPage />} />
-        <Route path="/app/campanhas/:id/analytics" element={<CampanhaAnalyticsPage />} />
-        <Route path="/app/campanhas/:id/relatorio" element={<RelatorioPage />} />
-
-        {/* Usuarios sub-routes */}
-        <Route path="/app/usuarios/groups" element={<GroupsPage />} />
-        <Route path="/app/usuarios/import" element={<ImportPage />} />
-        <Route path="/app/usuarios/:id" element={<UserDetailPage />} />
-
-        {/* Configuracoes sub-routes */}
-        <Route path="/app/configuracoes/admins" element={<AdminsPage />} />
-        <Route path="/app/configuracoes/audit-log" element={<AuditLogPage />} />
-        <Route path="/app/configuracoes/dominios" element={<DominiosPage />} />
-        <Route path="/app/configuracoes/notificacoes" element={<NotificacoesPage />} />
-
-        {/* Relatorios */}
-        <Route path="/app/relatorios/executivo" element={<RelatorioExecutivoPage />} />
-        <Route path="/app/relatorios/tecnico" element={<RelatorioTecnicoPage />} />
-
-        {/* Templates */}
-        <Route path="/app/templates/editor" element={<TemplateEditorPage />} />
-
-        {/* Compliance */}
-        <Route path="/app/compliance" element={<CompliancePage />} />
-
-        {/* Onboarding */}
-        <Route path="/app/onboarding" element={<OnboardingPage />} />
 
         {/* Learner */}
         <Route path="/learner" element={<LearnerPortal />} />

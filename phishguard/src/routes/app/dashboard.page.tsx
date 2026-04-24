@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from '@/components/ui/Card';
 import { Zap, Target, Flag, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getSession, isMockMode } from '@/lib/auth/session';
 
 // Mock data for demonstration (when database is not set up)
 const mockMetrics = {
@@ -43,26 +44,93 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        // Try to get real company ID from auth
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        let companyIdToUse = 'demo-company';
+
+        // Try to get real company ID from auth session
+        const session = await getSession();
+        if (session?.user) {
           const { data: profile } = await supabase
             .from('users')
             .select('company_id')
-            .eq('auth_id', user.id)
+            .eq('auth_id', session.user.id)
             .single();
           if (profile) {
-            setCompanyId(profile.company_id);
+            companyIdToUse = profile.company_id;
           }
         }
-      } catch {
-        // Use demo company for now
-      }
 
-      // Simulate loading for demo
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setMetrics(mockMetrics);
-      setLoading(false);
+        // If mock mode or no company ID, use mock data
+        if (isMockMode() || companyIdToUse === 'demo-company') {
+          await new Promise(resolve => setTimeout(resolve, 800));
+          setMetrics(mockMetrics);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch real data from Supabase
+        const [
+          activeCampaignsResult,
+          sentEventsResult,
+          clickedEventsResult,
+          reportedEventsResult
+        ] = await Promise.all([
+          supabase
+            .from('campaigns')
+            .select('*', { count: 'exact', head: true })
+            .eq('company_id', companyIdToUse)
+            .eq('status', 'active'),
+          supabase
+            .from('campaign_events')
+            .select('id')
+            .eq('company_id', companyIdToUse)
+            .eq('event_type', 'sent'),
+          supabase
+            .from('campaign_events')
+            .select('id')
+            .eq('company_id', companyIdToUse)
+            .eq('event_type', 'clicked'),
+          supabase
+            .from('campaign_events')
+            .select('id')
+            .eq('company_id', companyIdToUse)
+            .eq('event_type', 'reported')
+        ]);
+
+        const activeCampaigns = activeCampaignsResult.count ?? 0;
+        const sentEvents = sentEventsResult.data?.length ?? 0;
+        const clickedEvents = clickedEventsResult.data?.length ?? 0;
+        const reportedEvents = reportedEventsResult.data?.length ?? 0;
+
+        const clickRate = sentEvents > 0
+          ? parseFloat(((clickedEvents / sentEvents) * 100).toFixed(1))
+          : 0;
+        const reportsRate = sentEvents > 0
+          ? parseFloat(((reportedEvents / sentEvents) * 100).toFixed(1))
+          : 0;
+
+        // Set real metrics
+        setMetrics({
+          activeCampaigns,
+          clickRate,
+          reportsRate,
+          averageRisk: 42,
+          trends: {
+            activeCampaigns: 0,
+            clickRate: 0,
+            reportsRate: 0,
+            averageRisk: 0,
+          },
+        });
+
+        setCompanyId(companyIdToUse);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+        // Fallback to mock data on any error
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setMetrics(mockMetrics);
+        setLoading(false);
+      }
     };
 
     fetchMetrics();
@@ -101,7 +169,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface-0)]">
+      <div className="h-full bg-[var(--color-surface-0)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div className="h-9 w-48 bg-[var(--color-noir-700)] rounded animate-pulse" />
@@ -114,7 +182,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-0)]">
+    <div className="h-full bg-[var(--color-surface-0)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

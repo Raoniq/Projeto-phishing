@@ -42,7 +42,7 @@ const sections: NavSection[] = [
   {
     label: 'Inteligência',
     items: [
-      { to: '/app/relatorios', icon: BarChart3, label: 'Relatórios' },
+      { to: '/app/relatorios/executivo', icon: BarChart3, label: 'Relatórios' },
       { to: '/app/auditoria', icon: FileText, label: 'Auditoria' },
       { to: '/app/inteligencia', icon: ShieldAlert, label: 'Inteligência', tag: 'beta' },
     ],
@@ -52,7 +52,7 @@ const sections: NavSection[] = [
     items: [
       { to: '/app/configuracoes', icon: Settings, label: 'Configurações' },
       { to: '/app/suporte', icon: LifeBuoy, label: 'Suporte' },
-      { to: '/app/usuarios/grupos', icon: Users, label: 'Departamentos' },
+      { to: '/app/usuarios/groups', icon: Users, label: 'Departamentos' },
     ],
   },
 ];
