@@ -106,7 +106,7 @@ export default function MarketingLayout() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-noir-500">
-              © 2024 PhishGuard. Todos os direitos reservados.
+              © 2026 PhishGuard. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6">
               <Link to="/lgpd" className="text-sm text-noir-500 hover:text-amber-500 transition-colors">
