@@ -1,7 +1,40 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Check, ChevronDown, ChevronUp, Zap, Shield, Users, Building2, Star } from "lucide-react";
+
+// Hook for scroll-triggered animations
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    return () => {
+      if (currentRef) {
+        const revealElements = currentRef.querySelectorAll(".reveal, .stagger-children");
+        revealElements.forEach((el) => observer.unobserve(el));
+      }
+    };
+  }, []);
+
+  return ref;
+}
 
 // FAQ Item component
 function FaqItem({ question, answer }: { question: string; answer: string }) {
@@ -211,7 +244,7 @@ export default function PricingPage() {
   ];
   
   return (
-    <main className="relative min-h-screen">
+    <main className="relative min-h-screen" ref={useScrollReveal()}>
       {/* Background */}
       <div className="absolute inset-0 bg-noir-950" />
       <div className="absolute inset-0 bg-gradient-to-b from-noir-900/50 via-transparent to-noir-950" />
@@ -221,7 +254,7 @@ export default function PricingPage() {
         <section className="relative py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent" />
           
-          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full reveal">
             <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
               Planos e Preços
             </span>
@@ -240,7 +273,7 @@ export default function PricingPage() {
         {/* Pricing cards */}
         <section className="relative py-16">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
               {plans.map((plan, i) => (
                 <PlanCard key={i} {...plan} />
               ))}
@@ -251,7 +284,7 @@ export default function PricingPage() {
         {/* Comparison note */}
         <section className="relative py-16">
           <div className="mx-auto max-w-4xl px-4 w-full">
-            <Card className="p-8 text-center bg-noir-900/50 border-noir-700">
+            <Card className="p-8 text-center bg-noir-900/50 border-noir-700 reveal">
               <h3 className="font-display text-2xl font-bold mb-4">
                 Não sabe qual plano escolher?
               </h3>
@@ -276,7 +309,7 @@ export default function PricingPage() {
           <div className="absolute inset-0 bg-noir-900/50" />
           
           <div className="relative mx-auto max-w-4xl px-4 w-full">
-            <div className="text-center mb-16">
+            <div className="text-center mb-16 reveal">
               <span className="text-amber-500 text-sm font-semibold tracking-widest uppercase mb-4 block">
                 Perguntas Frequentes
               </span>
@@ -292,7 +325,7 @@ export default function PricingPage() {
             </div>
             
             <Card className="p-0">
-              <div className="p-8">
+              <div className="p-8 stagger-children">
                 {faqs.map((faq, i) => (
                   <FaqItem key={i} {...faq} />
                 ))}
@@ -306,7 +339,7 @@ export default function PricingPage() {
           <div className="absolute inset-0 bg-noir-950" />
           <div className="absolute inset-0 bg-gradient-to-t from-amber-500/10 via-transparent to-transparent" />
           
-          <div className="relative mx-auto max-w-4xl px-4 text-center w-full">
+          <div className="relative mx-auto max-w-4xl px-4 text-center w-full reveal">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
               Pronto para começar?
             </h2>
