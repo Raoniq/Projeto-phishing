@@ -112,9 +112,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      if (isMockMode()) {
-        await mockSupabaseAuth.signIn({ email: 'demo@phishguard.com', name: 'Demo User' });
-      }
+      // Always use mock auth for demo login, regardless of isMockMode setting
+      await mockSupabaseAuth.signIn({ email: 'demo@phishguard.com', name: 'Demo User' });
       navigate('/app/dashboard');
     } catch (err) {
       setError('Erro ao entrar no modo demo. Tente novamente.');
