@@ -1,4 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+
+// Scroll to top on navigation
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
+  return null
+}
 
 // Layout
 import MarketingLayout from './components/navigation/MarketingLayout'
@@ -79,6 +91,7 @@ import ErrorBoundary from './routes/lib/ErrorBoundary'
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Marketing - public */}
         <Route element={<MarketingLayout />}>
