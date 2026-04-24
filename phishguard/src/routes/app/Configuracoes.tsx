@@ -1,7 +1,12 @@
+// routes/app/Configuracoes.tsx — Settings page with tabs
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { PermissionMatrix } from '@/components/rbac/PermissionMatrix';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Settings, Shield, Bell, Globe, Users, FileText, Lock } from 'lucide-react';
 
 export default function ConfiguracoesPage() {
   const location = useLocation();
@@ -13,95 +18,127 @@ export default function ConfiguracoesPage() {
   if (currentPath.includes('/audit-log') && activeTab !== 'audit') setActiveTab('audit');
 
   const tabs = [
-    { id: 'general', label: 'Geral', path: '/app/configuracoes' },
-    { id: 'admins', label: 'Administradores', path: '/app/configuracoes/admins' },
-    { id: 'audit', label: 'Log de Auditoria', path: '/app/configuracoes/audit-log' },
-    { id: 'permissions', label: 'Permissões', path: '/app/configuracoes' },
-    { id: 'security', label: 'Segurança', path: '/app/configuracoes' },
-    { id: 'notifications', label: 'Notificações', path: '/app/configuracoes' },
-    { id: 'domains', label: 'Domínios', path: '/app/configuracoes/dominios' },
+    { id: 'general', label: 'Geral', icon: Settings },
+    { id: 'admins', label: 'Administradores', icon: Users },
+    { id: 'audit', label: 'Log de Auditoria', icon: FileText },
+    { id: 'permissions', label: 'Permissões', icon: Shield },
+    { id: 'security', label: 'Segurança', icon: Lock },
+    { id: 'notifications', label: 'Notificações', icon: Bell },
+    { id: 'domains', label: 'Domínios', icon: Globe },
   ] as const;
 
   return (
-    <div className="text-white p-6">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-3xl font-display font-bold">Configurações</h1>
-        <p className="mt-2 text-noir-400">
-          Gerencie as configurações da sua conta e plataforma
-        </p>
+    <div className="min-h-screen bg-[var(--color-surface-0)]">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="border-b border-[var(--color-noir-700)] bg-[var(--color-surface-1)]"
+      >
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--color-fg-primary)]">
+                Configurações
+              </h1>
+              <p className="mt-1 text-sm text-[var(--color-fg-secondary)]">
+                Gerencie as configurações da sua conta e plataforma
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
-        <div className="mt-8 flex gap-4 border-b border-noir-800 overflow-x-auto">
+      <div className="mx-auto max-w-4xl px-4 py-6">
+        {/* Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6 flex gap-2 overflow-x-auto border-b border-[var(--color-noir-700)] pb-0"
+        >
           {tabs.map((tab) => (
             <Link
               key={tab.id}
-              to={tab.path}
+              to={tab.id === 'general' || tab.id === 'security' || tab.id === 'notifications' ? '/app/configuracoes' : `/app/configuracoes/${tab.id === 'audit' ? 'audit-log' : tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'pb-4 px-2 text-sm font-medium transition-colors whitespace-nowrap',
+                'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap',
                 activeTab === tab.id
-                  ? 'text-amber-500 border-b-2 border-amber-500'
-                  : 'text-noir-400 hover:text-white'
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                  : 'border-transparent text-[var(--color-fg-tertiary)] hover:text-[var(--color-fg-primary)] hover:border-[var(--color-noir-600)]'
               )}
             >
+              <tab.icon className="h-4 w-4" />
               {tab.label}
             </Link>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="mt-8">
-          {activeTab === 'permissions' && (
-            <PermissionMatrix />
-          )}
+        {/* Tab Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          {activeTab === 'permissions' && <PermissionMatrix />}
 
           {activeTab === 'general' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-noir-800 bg-noir-900 p-6">
-                <h2 className="text-lg font-semibold">Perfil da empresa</h2>
-                <div className="mt-4 grid gap-4">
+            <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-semibold text-[var(--color-fg-primary)] mb-4">Perfil da empresa</h2>
+                <div className="grid gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-noir-300">
+                    <label className="text-sm font-medium text-[var(--color-fg-secondary)] mb-1.5 block">
                       Nome da empresa
                     </label>
                     <input
                       type="text"
                       defaultValue="Acme Corp"
-                      className="mt-1 block w-full rounded-lg border border-noir-700 bg-noir-800 px-4 py-3 text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-noir-300">
+                    <label className="text-sm font-medium text-[var(--color-fg-secondary)] mb-1.5 block">
                       Domínio de email
                     </label>
                     <input
                       type="text"
                       defaultValue="acme.com"
-                      className="mt-1 block w-full rounded-lg border border-noir-700 bg-noir-800 px-4 py-3 text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="w-full rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                     />
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-noir-800 bg-noir-900 p-6">
-                <h2 className="text-lg font-semibold">Autenticação em dois fatores</h2>
-                <p className="mt-2 text-noir-400 text-sm max-w-xl">
-                  Adicione uma camada extra de segurança à sua conta
-                </p>
-                <button className="mt-4 rounded-lg border border-amber-500 px-4 py-2 text-amber-500 hover:bg-amber-500/10 transition-colors">
-                  Ativar 2FA
-                </button>
-              </div>
-            </div>
+            <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-[var(--color-accent)]/10">
+                    <Lock className="h-6 w-6 text-[var(--color-accent)]" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-[var(--color-fg-primary)]">Autenticação em dois fatores</h2>
+                    <p className="mt-2 text-sm text-[var(--color-fg-secondary)] max-w-md">
+                      Adicione uma camada extra de segurança à sua conta
+                    </p>
+                    <Button variant="primary" size="sm" className="mt-4">
+                      Ativar 2FA
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-noir-800 bg-noir-900 p-6">
-                <h2 className="text-lg font-semibold">Preferências de email</h2>
-                <div className="mt-4 space-y-4">
+            <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-semibold text-[var(--color-fg-primary)] mb-4">Preferências de email</h2>
+                <div className="space-y-4">
                   {[
                     { label: 'Relatórios semanais', desc: 'Receba um resumo semanal do desempenho' },
                     { label: 'Alertas de campanha', desc: 'Notificações quando campanhas terminam' },
@@ -109,63 +146,78 @@ export default function ConfiguracoesPage() {
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="text-sm text-noir-400 max-w-lg">{item.desc}</p>
+                        <p className="font-medium text-[var(--color-fg-primary)]">{item.label}</p>
+                        <p className="text-sm text-[var(--color-fg-secondary)] max-w-lg">{item.desc}</p>
                       </div>
-                      <input type="checkbox" className="h-5 w-5 rounded border-noir-600 bg-noir-800 text-amber-500 focus:ring-amber-500" />
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="h-5 w-5 rounded border-[var(--color-noir-600)] bg-[var(--color-surface-2)] text-[var(--color-accent)] focus:ring-[var(--color-accent)] focus:ring-offset-[var(--color-surface-0)]"
+                      />
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 'domains' && (
-            <div className="space-y-6">
-              <div className="rounded-xl border border-noir-800 bg-noir-900 p-6">
-                <h2 className="text-lg font-semibold">Pool de Domínios de Isca</h2>
-                <p className="mt-2 text-noir-400 text-sm max-w-xl">
-                  Gerencie os domínios usados para simulações de phishing
-                </p>
-                <div className="mt-4 grid gap-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-noir-800/50">
-                    <div>
-                      <p className="font-medium">Domínios ativos</p>
-                      <p className="text-sm text-noir-400">20 domínios no pool</p>
-                    </div>
-                    <span className="text-2xl font-bold text-emerald-400">20</span>
+            <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-500/10">
+                    <Globe className="h-6 w-6 text-blue-400" />
                   </div>
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-noir-800/50">
-                    <div>
-                      <p className="font-medium">Reputação média</p>
-                      <p className="text-sm text-noir-400">Saúde geral do pool</p>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-[var(--color-fg-primary)]">Pool de Domínios de Isca</h2>
+                    <p className="mt-2 text-sm text-[var(--color-fg-secondary)] max-w-md">
+                      Gerencie os domínios usados para simulações de phishing
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
+                        <div>
+                          <p className="font-medium text-[var(--color-fg-primary)]">Domínios ativos</p>
+                          <p className="text-sm text-[var(--color-fg-tertiary)]">20 domínios no pool</p>
+                        </div>
+                        <span className="text-2xl font-bold text-green-400">20</span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg bg-[var(--color-surface-2)] p-4">
+                        <div>
+                          <p className="font-medium text-[var(--color-fg-primary)]">Reputação média</p>
+                          <p className="text-sm text-[var(--color-fg-tertiary)]">Saúde geral do pool</p>
+                        </div>
+                        <span className="text-2xl font-bold text-amber-400">78%</span>
+                      </div>
                     </div>
-                    <span className="text-2xl font-bold text-amber-400">78%</span>
+                    <Link
+                      to="/app/configuracoes/dominios"
+                      className="mt-6 inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-[var(--color-surface-0)] hover:bg-[var(--color-accent)]/90 transition-colors"
+                    >
+                      <Globe className="h-4 w-4" />
+                      Gerenciar Domínios
+                    </Link>
                   </div>
                 </div>
-                <Link
-                  to="/app/configuracoes/dominios"
-                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 font-semibold text-noir-950 hover:bg-amber-400 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Gerenciar Domínios
-                </Link>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
-          {(activeTab === 'admins' || activeTab === 'audit') && (
-            <Outlet />
-          )}
-        </div>
+          {(activeTab === 'admins' || activeTab === 'audit') && <Outlet />}
+        </motion.div>
 
-        <div className="mt-8 flex justify-end">
-          <button className="rounded-lg bg-amber-500 px-6 py-2 font-semibold text-noir-950 hover:bg-amber-400 transition-colors">
-            Salvar alterações
-          </button>
-        </div>
+        {/* Save Button */}
+        {(activeTab === 'general' || activeTab === 'security' || activeTab === 'notifications') && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-6 flex justify-end"
+          >
+            <Button variant="primary">
+              Salvar alterações
+            </Button>
+          </motion.div>
+        )}
       </div>
     </div>
   );
