@@ -360,11 +360,11 @@ export default function LoginPage() {
           {/* Terms */}
           <p className="mt-6 text-xs text-noir-500 text-center">
             Ao entrar, você concorda com nossos{' '}
-            <Link to="/lgpd" className="text-amber-500/70 hover:text-amber-500 transition-colors">
+            <Link to="/termos" className="text-amber-500/70 hover:text-amber-500 transition-colors">
               Termos de Uso
             </Link>
             {' '}e{' '}
-            <Link to="/lgpd" className="text-amber-500/70 hover:text-amber-500 transition-colors">
+            <Link to="/termos" className="text-amber-500/70 hover:text-amber-500 transition-colors">
               Política de Privacidade
             </Link>
           </p>

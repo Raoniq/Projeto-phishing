@@ -21,6 +21,7 @@ import AboutPage from './routes/marketing/About'
 import PricingPage from './routes/marketing/Pricing'
 import SecurityPage from './routes/marketing/Security'
 import LgpdPage from './routes/marketing/Lgpd'
+import TermosPage from './routes/marketing/Termos'
 import ContactPage from './routes/marketing/Contact'
 import DemoPage from './routes/marketing/Demo'
 
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/security" element={<SecurityPage />} />
           <Route path="/lgpd" element={<LgpdPage />} />
+          <Route path="/termos" element={<TermosPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/demo" element={<DemoPage />} />
         </Route>
