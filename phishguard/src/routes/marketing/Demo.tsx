@@ -265,7 +265,7 @@ export default function DemoPage() {
           <div className="mx-auto max-w-4xl px-4 w-full">
             <Card className="p-8 text-center bg-noir-900/50 border-noir-700">
               <h3 className="font-display text-2xl font-bold mb-4">
-                Ainda deciding?
+                Ainda decidindo?
               </h3>
               <p className="text-noir-400 mb-6 max-w-prose mx-auto">
                 Comece com nosso teste gratuito de 14 dias. Sem cartão de crédito.
