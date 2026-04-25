@@ -1,10 +1,10 @@
 // src/components/notifications/NotificationBell.tsx
 // Notification bell with unread badge and dropdown preview
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Check, CheckCheck, X, FileText, GraduationCap, Award, AlertTriangle, Info } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { getSession, isMockMode } from '@/lib/auth/session';
+import { Bell, Check, CheckCheck, FileText, GraduationCap, Award, AlertTriangle, Info } from 'lucide-react';
+import { useUser } from '@/hooks/useUser';
+import { useNotifications } from '@/lib/hooks';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,153 +66,9 @@ const TYPE_CONFIG = {
 // ============================================================================
 
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Fetch user ID and initial notifications
-  useEffect(() => {
-    const init = async () => {
-      const session = await getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-      }
-    };
-    init();
-  }, []);
-
-  // Fetch notifications
-  const fetchNotifications = useCallback(async () => {
-    if (!userId && !isMockMode()) return;
-
-    setIsLoading(true);
-    try {
-      if (isMockMode()) {
-        // Mock data for demo
-        const mockNotifications: Notification[] = [
-          {
-            id: '1',
-            user_id: 'mock',
-            title: 'Campanha "Phishing Q1" concluída',
-            body: 'A campanha foi finalizada com 156 cliques e 48 reportes.',
-            type: 'campaign_completed',
-            read_at: null,
-            metadata: { campaign_id: 'camp-123' },
-            created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '2',
-            user_id: 'mock',
-            title: 'Novo treinamento atribuído',
-            body: 'Complete o módulo de "Reconhecimento de Phishing" até sexta-feira.',
-            type: 'training_assigned',
-            read_at: null,
-            metadata: { track_id: 'track-456' },
-            created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '3',
-            user_id: 'mock',
-            title: 'Certificado conquistado',
-            body: 'Você completou o treinamento de Segurança Digital Básico!',
-            type: 'certificate_earned',
-            read_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            metadata: { certificate_id: 'cert-789' },
-            created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          },
-        ];
-        setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter(n => !n.read_at).length);
-      } else {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (!error && data) {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.read_at).length);
-        }
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId]);
-
-  // Initial fetch and realtime subscription
-  useEffect(() => {
-    fetchNotifications();
-
-    if (isMockMode() || !userId) return;
-
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('notifications-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchNotifications, userId]);
-
-  // Mark single notification as read
-  const markAsRead = async (notificationId: string) => {
-    if (isMockMode()) {
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      return;
-    }
-
-    await supabase
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', notificationId);
-
-    setNotifications(prev =>
-      prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    if (isMockMode()) {
-      setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
-      setUnreadCount(0);
-      return;
-    }
-
-    if (!userId) return;
-
-    await supabase
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .is('read_at', null);
-
-    setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
-    setUnreadCount(0);
-  };
+  const { user } = useUser();
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications(user?.id);
 
   // Format relative time
   const formatTime = (dateStr: string) => {
@@ -271,7 +127,7 @@ export function NotificationBell() {
 
         {/* Notification List */}
         <div className="max-h-96 overflow-y-auto">
-          {isLoading && notifications.length === 0 ? (
+          {loading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-sm text-[var(--color-fg-muted)]">
               Carregando...
             </div>
@@ -282,8 +138,8 @@ export function NotificationBell() {
             </div>
           ) : (
             <AnimatePresence>
-              {notifications.map((notification) => {
-                const config = TYPE_CONFIG[notification.type] || TYPE_CONFIG.info;
+              {notifications.slice(0, 10).map((notification) => {
+                const config = TYPE_CONFIG[notification.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.info;
                 const Icon = config.icon;
 
                 return (

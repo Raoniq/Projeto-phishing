@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
   ChevronLeft,
@@ -23,6 +23,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { useAuditLogs, useUsers } from '@/lib/hooks';
+import { supabase } from '@/lib/supabase';
 
 type ActionType =
   | 'login'
@@ -57,7 +59,7 @@ interface AuditLogEntry {
   newData?: Record<string, unknown>;
 }
 
-const ACTION_LABELS: Record<ActionType, string> = {
+const ACTION_LABELS: Record<string, string> = {
   login: 'Login',
   logout: 'Logout',
   view: 'Visualização',
@@ -75,7 +77,7 @@ const ACTION_LABELS: Record<ActionType, string> = {
   data_access: 'Acesso a dados',
 };
 
-const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
+const ACTION_ICONS: Record<string, React.ReactNode> = {
   login: <LogIn className="h-3 w-3" />,
   logout: <LogOut className="h-3 w-3" />,
   view: <Eye className="h-3 w-3" />,
@@ -93,7 +95,7 @@ const ACTION_ICONS: Record<ActionType, React.ReactNode> = {
   data_access: <Eye className="h-3 w-3" />,
 };
 
-const ACTION_COLORS: Record<ActionType, string> = {
+const ACTION_COLORS: Record<string, string> = {
   login: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
   logout: 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
   view: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
@@ -111,36 +113,7 @@ const ACTION_COLORS: Record<ActionType, string> = {
   data_access: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
 };
 
-const MOCK_LOGS: AuditLogEntry[] = [
-  { id: '1', timestamp: new Date('2026-04-24T09:15:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'login', entityType: 'user', entityName: 'Sistema', details: 'Login no sistema', ip: '192.168.1.45' },
-  { id: '2', timestamp: new Date('2026-04-24T09:22:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_created', entityType: 'campaign', entityName: 'Black Friday 2026', details: 'Campanha "Black Friday 2026" criada com template de phishing padrão', ip: '192.168.1.102', newData: { template: 'phishing_default', target_count: 150 } },
-  { id: '3', timestamp: new Date('2026-04-24T09:30:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'data_access', entityType: 'report', entityName: 'Relatório Exec Q1', details: 'Visualizou relatório executivo do Q1 2026', ip: '192.168.1.45' },
-  { id: '4', timestamp: new Date('2026-04-24T09:45:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'user_added', entityType: 'group', entityName: 'Marketing', details: 'Usuário joao.costa@empresa.com adicionado ao grupo Marketing', ip: '192.168.1.78', newData: { role: 'member', groups: ['Marketing'] } },
-  { id: '5', timestamp: new Date('2026-04-24T10:00:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'view', entityType: 'campaign', entityName: 'Recall LGPD', details: 'Visualizou detalhes da campanha Recall LGPD', ip: '192.168.1.102' },
-  { id: '6', timestamp: new Date('2026-04-24T10:12:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'campaign_launched', entityType: 'campaign', entityName: 'Reminder LGPD', details: 'Campanha "Reminder LGPD" iniciada para 45 usuários', ip: '192.168.1.45', newData: { recipients: 45, scheduled: false } },
-  { id: '7', timestamp: new Date('2026-04-24T10:30:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'export', entityType: 'report', entityName: 'Relatório Executivo', details: 'Relatório executivo - Abril 2026 exportado em PDF', ip: '192.168.1.200', newData: { format: 'pdf', date_range: '2026-04-01_2026-04-30' } },
-  { id: '8', timestamp: new Date('2026-04-24T10:45:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'update', entityType: 'settings', entityName: 'Notificações', details: 'Configuração de notificação por email alterada', ip: '192.168.1.33', oldData: { email_notifications: true, frequency: 'daily' }, newData: { email_notifications: true, frequency: 'weekly' } },
-  { id: '9', timestamp: new Date('2026-04-24T11:00:00'), userName: 'João Costa', userEmail: 'joao.costa@empresa.com', action: 'logout', entityType: 'user', entityName: 'Sistema', details: 'Logout do sistema', ip: '192.168.1.88' },
-  { id: '10', timestamp: new Date('2026-04-24T11:15:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_created', entityType: 'campaign', entityName: 'Phishing Teste Q1', details: 'Campanha "Phishing Teste Q1" criada', ip: '192.168.1.102', newData: { template: ' Spear phishing', target_count: 20 } },
-  { id: '11', timestamp: new Date('2026-04-24T11:30:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'view', entityType: 'user', entityName: 'Lista de Usuários', details: 'Acessou lista completa de usuários do sistema', ip: '192.168.1.45' },
-  { id: '12', timestamp: new Date('2026-04-24T12:00:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'export', entityType: 'report', entityName: 'Métricas Detalhadas', details: 'Exportou relatório de métricas detalhado em CSV', ip: '192.168.1.78', newData: { format: 'csv', type: 'metrics' } },
-  { id: '13', timestamp: new Date('2026-04-24T12:30:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'user_added', entityType: 'group', entityName: 'Administradores', details: 'Usuário fernanda.rocha@empresa.com adicionado ao grupo Administradores', ip: '192.168.1.200', newData: { role: 'admin', groups: ['Administradores'] } },
-  { id: '14', timestamp: new Date('2026-04-24T13:00:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'data_access', entityType: 'template', entityName: 'Template Banco', details: 'Acessou template de email "Banco Fake"', ip: '192.168.1.33' },
-  { id: '15', timestamp: new Date('2026-04-24T13:30:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_archived', entityType: 'campaign', entityName: 'Natal 2025', details: 'Campanha "Natal 2025" arquivada', ip: '192.168.1.102' },
-  { id: '16', timestamp: new Date('2026-04-23T08:00:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'login', entityType: 'user', entityName: 'Sistema', details: 'Login no sistema', ip: '192.168.1.200' },
-  { id: '17', timestamp: new Date('2026-04-23T08:30:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'update', entityType: 'settings', entityName: 'Limite de Emails', details: 'Limite de emails diários alterado para 500', ip: '192.168.1.45', oldData: { daily_limit: 100 }, newData: { daily_limit: 500 } },
-  { id: '18', timestamp: new Date('2026-04-23T09:15:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'campaign_launched', entityType: 'campaign', entityName: 'Update Financeiro', details: 'Campanha "Update Financeiro" iniciada', ip: '192.168.1.33' },
-  { id: '19', timestamp: new Date('2026-04-23T09:45:00'), userName: 'João Costa', userEmail: 'joao.costa@empresa.com', action: 'data_access', entityType: 'report', entityName: 'Dashboard', details: 'Acessou dashboard principal', ip: '192.168.1.88' },
-  { id: '20', timestamp: new Date('2026-04-23T10:00:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'create', entityType: 'template', entityName: 'Novo Template', details: 'Criou novo template de email "Verificação de Segurança"', ip: '192.168.1.102', newData: { category: 'security', fields: ['name', 'url'] } },
-  { id: '21', timestamp: new Date('2026-04-23T10:30:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'export', entityType: 'user', entityName: 'Lista de Usuários', details: 'Exportação de lista de usuários em CSV', ip: '192.168.1.78', newData: { format: 'csv', count: 85 } },
-  { id: '22', timestamp: new Date('2026-04-23T11:00:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'report_exported', entityType: 'report', entityName: 'Treinamento', details: 'Relatório de treinamento exportado', ip: '192.168.1.200' },
-  { id: '23', timestamp: new Date('2026-04-22T14:20:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'user_removed', entityType: 'group', entityName: 'Marketing', details: 'Usuário pedro.alves@empresa.com removido do grupo Marketing', ip: '192.168.1.45', oldData: { groups: ['Marketing'] } },
-  { id: '24', timestamp: new Date('2026-04-22T15:00:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'campaign_launched', entityType: 'campaign', entityName: 'Recall de Política', details: 'Campanha "Recall de Política" iniciada', ip: '192.168.1.200' },
-  { id: '25', timestamp: new Date('2026-04-22T15:30:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'update', entityType: 'template', entityName: 'Template Padrão', details: 'Template de email padrão alterado', ip: '192.168.1.102', oldData: { logo: 'old_logo.png' }, newData: { logo: 'new_logo.png' } },
-];
-
-const USERS = ['Todos', 'Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Paula Souza', 'Roberto Lima'];
-const ACTION_TYPES: { value: ActionType | 'all'; label: string }[] = [
+const ACTION_TYPES: { value: string; label: string }[] = [
   { value: 'all', label: 'Todas as ações' },
   { value: 'login', label: 'Login' },
   { value: 'logout', label: 'Logout' },
@@ -158,14 +131,15 @@ const ACTION_TYPES: { value: ActionType | 'all'; label: string }[] = [
   { value: 'report_exported', label: 'Relatório exportado' },
   { value: 'data_access', label: 'Acesso a dados' },
 ];
-const ENTITY_TYPES: { value: EntityType | 'all'; label: string }[] = [
+
+const ENTITY_TYPES: { value: string; label: string }[] = [
   { value: 'all', label: 'Todas as entidades' },
-  { value: 'campaign', label: 'Campanha' },
-  { value: 'user', label: 'Usuário' },
-  { value: 'report', label: 'Relatório' },
+  { value: 'campaigns', label: 'Campanha' },
+  { value: 'users', label: 'Usuário' },
+  { value: 'reports', label: 'Relatório' },
   { value: 'settings', label: 'Configuração' },
-  { value: 'template', label: 'Template' },
-  { value: 'group', label: 'Grupo' },
+  { value: 'landing_pages', label: 'Template' },
+  { value: 'groups', label: 'Grupo' },
 ];
 
 type SortField = 'timestamp' | 'userName' | 'action' | 'entityType';
@@ -177,21 +151,67 @@ const RETENTION_DATE = new Date();
 RETENTION_DATE.setDate(RETENTION_DATE.getDate() - RETENTION_DAYS);
 
 export default function AuditLogPage() {
+  const [companyId, setCompanyId] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState('Todos');
-  const [selectedAction, setSelectedAction] = useState<ActionType | 'all'>('all');
-  const [selectedEntity, setSelectedEntity] = useState<EntityType | 'all'>('all');
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [selectedAction, setSelectedAction] = useState<string>('all');
+  const [selectedEntity, setSelectedEntity] = useState<string>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
+  // Fetch company ID on mount
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      const { data } = await supabase.rpc('get_user_company_id');
+      if (data) setCompanyId(data);
+    };
+    fetchCompanyId();
+  }, []);
+
+  // Fetch audit logs with filters
+  const { logs, loading, error, refetch } = useAuditLogs(companyId || undefined);
+
+  // Fetch users for filter dropdown
+  const { users } = useUsers(companyId || undefined);
+
+  // Map user_id to user name/email
+  const userMap = useMemo(() => {
+    const map = new Map<string, { name: string; email: string }>();
+    users.forEach(u => map.set(u.id, { name: u.name, email: u.email }));
+    return map;
+  }, [users]);
+
+  // Map audit_logs to AuditLogEntry format
+  const mappedLogs = useMemo((): AuditLogEntry[] => {
+    return logs.map(log => {
+      const user = userMap.get(log.user_id || '') || { name: 'Sistema', email: '' };
+      const actionLabel = ACTION_LABELS[log.action] || log.action;
+      
+      return {
+        id: log.id,
+        timestamp: new Date(log.created_at),
+        userName: user.name,
+        userEmail: user.email,
+        action: log.action as ActionType,
+        entityType: log.table_name.replace(/_/g, '-') as EntityType,
+        entityName: actionLabel,
+        details: `${actionLabel} - ${log.table_name}`,
+        ip: log.ip_address || '-',
+        oldData: log.old_data || undefined,
+        newData: log.new_data || undefined,
+      };
+    });
+  }, [logs, userMap]);
+
+  // Filter logs client-side (useAuditLogs already filters server-side for user/action/table)
   const filteredLogs = useMemo(() => {
-    return MOCK_LOGS.filter(log => {
-      if (selectedUser !== 'Todos' && log.userName !== selectedUser) return false;
+    return mappedLogs.filter(log => {
+      if (selectedUserId !== 'all' && log.userName !== selectedUserId) return false;
       if (selectedAction !== 'all' && log.action !== selectedAction) return false;
-      if (selectedEntity !== 'all' && log.entityType !== selectedEntity) return false;
+      if (selectedEntity !== 'all' && !log.entityType.includes(selectedEntity)) return false;
       if (startDate && new Date(log.timestamp) < new Date(startDate)) return false;
       if (endDate && new Date(log.timestamp) > new Date(endDate + 'T23:59:59')) return false;
       return true;
@@ -213,10 +233,23 @@ export default function AuditLogPage() {
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [selectedUser, selectedAction, selectedEntity, startDate, endDate, sortField, sortDirection]);
+  }, [mappedLogs, selectedUserId, selectedAction, selectedEntity, startDate, endDate, sortField, sortDirection]);
 
-  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
-  const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  // Refetch when filters change
+  useEffect(() => {
+    if (companyId) {
+      refetch({
+        user_id: selectedUserId !== 'all' ? selectedUserId : undefined,
+        action: selectedAction !== 'all' ? selectedAction : undefined,
+        table_name: selectedEntity !== 'all' ? selectedEntity : undefined,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      });
+    }
+  }, [companyId, selectedUserId, selectedAction, selectedEntity, startDate, endDate, refetch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
+  const startItem = Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredLogs.length);
   const endItem = Math.min(currentPage * ITEMS_PER_PAGE, filteredLogs.length);
 
   const handleSort = (field: SortField) => {
@@ -234,7 +267,7 @@ export default function AuditLogPage() {
       log.timestamp.toISOString(),
       log.userName,
       log.userEmail,
-      ACTION_LABELS[log.action],
+      ACTION_LABELS[log.action] || log.action,
       log.entityType,
       log.entityName,
       log.details,
@@ -257,7 +290,7 @@ export default function AuditLogPage() {
   };
 
   const clearFilters = () => {
-    setSelectedUser('Todos');
+    setSelectedUserId('all');
     setSelectedAction('all');
     setSelectedEntity('all');
     setStartDate('');
@@ -265,7 +298,14 @@ export default function AuditLogPage() {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedUser !== 'Todos' || selectedAction !== 'all' || selectedEntity !== 'all' || startDate || endDate;
+  const hasActiveFilters = selectedUserId !== 'all' || selectedAction !== 'all' || selectedEntity !== 'all' || startDate || endDate;
+
+  // Get unique users for filter
+  const userOptions = useMemo(() => {
+    const names = new Set<string>();
+    userMap.forEach(u => names.add(u.name));
+    return ['all', ...Array.from(names)];
+  }, [userMap]);
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">
@@ -287,7 +327,7 @@ export default function AuditLogPage() {
             </div>
             <div className="flex items-center gap-3">
               <span className="rounded-full bg-[var(--color-accent)]/10 px-3 py-1 text-sm font-medium text-[var(--color-accent)]">
-                {filteredLogs.length} registros
+                {loading ? 'Carregando...' : `${filteredLogs.length} registros`}
               </span>
               <div className="relative">
                 <Button
@@ -340,7 +380,7 @@ export default function AuditLogPage() {
                     <FileText className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{filteredLogs.length}</p>
+                    <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{loading ? '-' : filteredLogs.length}</p>
                     <p className="text-xs text-[var(--color-fg-tertiary)]">Total de registros</p>
                   </div>
                 </div>
@@ -361,7 +401,7 @@ export default function AuditLogPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
-                      {filteredLogs.filter(l => l.action === 'create' || l.action === 'campaign_created').length}
+                      {loading ? '-' : filteredLogs.filter(l => l.action === 'create' || l.action === 'campaign_created').length}
                     </p>
                     <p className="text-xs text-[var(--color-fg-tertiary)]">Ações de criação</p>
                   </div>
@@ -383,7 +423,7 @@ export default function AuditLogPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
-                      {filteredLogs.filter(l => l.action === 'export' || l.action === 'report_exported').length}
+                      {loading ? '-' : filteredLogs.filter(l => l.action === 'export' || l.action === 'report_exported').length}
                     </p>
                     <p className="text-xs text-[var(--color-fg-tertiary)]">Exportações</p>
                   </div>
@@ -405,7 +445,7 @@ export default function AuditLogPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
-                      {filteredLogs.filter(l => l.action === 'view' || l.action === 'data_access').length}
+                      {loading ? '-' : filteredLogs.filter(l => l.action === 'view' || l.action === 'data_access').length}
                     </p>
                     <p className="text-xs text-[var(--color-fg-tertiary)]">Acessos a dados</p>
                   </div>
@@ -503,12 +543,13 @@ export default function AuditLogPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-[var(--color-fg-tertiary)]">Usuário</label>
                 <select
-                  value={selectedUser}
-                  onChange={e => { setSelectedUser(e.target.value); setCurrentPage(1); }}
+                  value={selectedUserId}
+                  onChange={e => { setSelectedUserId(e.target.value); setCurrentPage(1); }}
                   className="h-9 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none min-w-[160px]"
                 >
-                  {USERS.map(user => (
-                    <option key={user} value={user === 'Todos' ? 'all' : user}>{user}</option>
+                  <option value="all">Todos</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
               </div>
@@ -517,7 +558,7 @@ export default function AuditLogPage() {
                 <label className="text-xs text-[var(--color-fg-tertiary)]">Tipo de ação</label>
                 <select
                   value={selectedAction}
-                  onChange={e => { setSelectedAction(e.target.value as ActionType | 'all'); setCurrentPage(1); }}
+                  onChange={e => { setSelectedAction(e.target.value); setCurrentPage(1); }}
                   className="h-9 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none min-w-[160px]"
                 >
                   {ACTION_TYPES.map(type => (
@@ -527,10 +568,10 @@ export default function AuditLogPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-[var(--color-fg-tertiary)]">Entidade</label>
+                <label className="text-xs text-[var(--color-fg-tertiary)]">Tabela</label>
                 <select
                   value={selectedEntity}
-                  onChange={e => { setSelectedEntity(e.target.value as EntityType | 'all'); setCurrentPage(1); }}
+                  onChange={e => { setSelectedEntity(e.target.value); setCurrentPage(1); }}
                   className="h-9 rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] px-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none min-w-[140px]"
                 >
                   {ENTITY_TYPES.map(type => (
@@ -598,73 +639,81 @@ export default function AuditLogPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-noir-700)]">
-                {filteredLogs.slice(startItem - 1, endItem).map((log) => (
-                  <tr
-                    key={log.id}
-                    className="hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer"
-                  >
-                    <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-[var(--color-fg-primary)]">
-                          {log.timestamp.toLocaleDateString('pt-BR')}
-                        </p>
-                        <p className="text-xs text-[var(--color-fg-muted)]">
-                          {log.timestamp.toLocaleTimeString('pt-BR')}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-sm font-medium text-[var(--color-accent)]">
-                          {log.userName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-[var(--color-fg-primary)]">{log.userName}</p>
-                          <p className="text-xs text-[var(--color-fg-muted)]">{log.userEmail}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                        ACTION_COLORS[log.action]
-                      )}>
-                        {ACTION_ICONS[log.action]}
-                        {ACTION_LABELS[log.action]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm text-[var(--color-fg-primary)]">{log.entityName}</p>
-                        <p className="text-xs text-[var(--color-fg-muted)] capitalize">{log.entityType}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-[var(--color-fg-secondary)] max-w-xs">
-                      <span className="line-clamp-2">{log.details}</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <code className="text-xs text-[var(--color-fg-muted)] bg-[var(--color-surface-2)] px-2 py-1 rounded font-mono">
-                        {log.ip}
-                      </code>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-[var(--color-fg-secondary)]">
+                      Carregando logs de auditoria...
                     </td>
                   </tr>
-                ))}
+                ) : filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center">
+                      <FileText className="h-12 w-12 text-[var(--color-fg-muted)] mx-auto mb-4" />
+                      <p className="text-[var(--color-fg-secondary)]">Nenhum registro encontrado</p>
+                      <p className="text-sm text-[var(--color-fg-muted)]">Tente ajustar os filtros de busca</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLogs.slice(startItem - 1, endItem).map((log) => (
+                    <tr
+                      key={log.id}
+                      className="hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-fg-primary)]">
+                            {log.timestamp.toLocaleDateString('pt-BR')}
+                          </p>
+                          <p className="text-xs text-[var(--color-fg-muted)]">
+                            {log.timestamp.toLocaleTimeString('pt-BR')}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-sm font-medium text-[var(--color-accent)]">
+                            {log.userName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-[var(--color-fg-primary)]">{log.userName}</p>
+                            <p className="text-xs text-[var(--color-fg-muted)]">{log.userEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                          ACTION_COLORS[log.action] || 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                        )}>
+                          {ACTION_ICONS[log.action] || <Eye className="h-3 w-3" />}
+                          {ACTION_LABELS[log.action] || log.action}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="text-sm text-[var(--color-fg-primary)]">{log.entityName}</p>
+                          <p className="text-xs text-[var(--color-fg-muted)] capitalize">{log.entityType}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[var(--color-fg-secondary)] max-w-xs">
+                        <span className="line-clamp-2">{log.details}</span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <code className="text-xs text-[var(--color-fg-muted)] bg-[var(--color-surface-2)] px-2 py-1 rounded font-mono">
+                          {log.ip}
+                        </code>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          {filteredLogs.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="h-12 w-12 text-[var(--color-fg-muted)] mb-4" />
-              <p className="text-[var(--color-fg-secondary)]">Nenhum registro encontrado</p>
-              <p className="text-sm text-[var(--color-fg-muted)]">Tente ajustar os filtros de busca</p>
-            </div>
-          )}
-
           {/* Pagination */}
           <div className="flex items-center justify-between border-t border-[var(--color-noir-700)] px-4 py-3">
             <span className="text-sm text-[var(--color-fg-muted)]">
-              Mostrando {startItem}-{endItem} de {filteredLogs.length} registros
+              {loading ? 'Carregando...' : `Mostrando ${filteredLogs.length > 0 ? startItem : 0}-${endItem} de ${filteredLogs.length} registros`}
             </span>
 
             <div className="flex items-center gap-2">
@@ -678,7 +727,7 @@ export default function AuditLogPage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm text-[var(--color-fg-primary)] px-2">
-                {currentPage} / {totalPages || 1}
+                {currentPage} / {totalPages}
               </span>
               <Button
                 variant="secondary"

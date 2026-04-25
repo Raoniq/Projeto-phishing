@@ -164,6 +164,7 @@ export default function NovaCampanhaPage() {
   const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
   const [targetGroups, setTargetGroups] = useState<TargetGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   // UI State
   const [templateSearch, setTemplateSearch] = useState('');
@@ -358,23 +359,29 @@ export default function NovaCampanhaPage() {
   // Submit campaign
   const handleSubmit = useCallback(async () => {
     try {
+      setLoadingSubmit(true);
+
       // Get current user company
-      const { data: userData } = await supabase.rpc('get_user_company_id');
-      const companyId = userData;
+      const { data: companyIdData, error: companyError } = await supabase.rpc('get_user_company_id');
+      if (companyError) throw new Error('Failed to get company ID');
+      const companyId = companyIdData;
 
       // Create campaign
+      const scheduledAt = formData.scheduleType !== 'now'
+        ? new Date(`${formData.scheduledDate}T${formData.scheduledTime}`).toISOString()
+        : null;
+
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
           company_id: companyId,
           name: formData.name,
-          description: formData.description,
+          description: formData.description || null,
           template_id: formData.templateId,
           landing_page_id: formData.landingPageId,
           status: formData.scheduleType === 'now' ? 'running' : 'scheduled',
-          scheduled_at: formData.scheduleType !== 'now'
-            ? new Date(`${formData.scheduledDate}T${formData.scheduledTime}`).toISOString()
-            : null,
+          scheduled_at: scheduledAt,
+          target_count: totalTargets,
           settings: {
             difficulty: formData.difficulty,
             target_type: formData.targetType,
@@ -389,16 +396,87 @@ export default function NovaCampanhaPage() {
         .select()
         .single();
 
-      if (campaignError) throw campaignError;
+      if (campaignError) {
+        console.error('Campaign insert error:', campaignError);
+        throw campaignError;
+      }
 
-      // Navigate to campaigns list on success
+      // Insert campaign targets (Step 4)
+      if (formData.targetType === 'csv' && formData.csvData.length > 0) {
+        // CSV targets - insert directly with emails
+        const targetInserts = formData.csvData.map(row => ({
+          campaign_id: campaign.id,
+          user_id: '', // No user_id for CSV targets
+          email: row.email,
+          tracking_id: crypto.randomUUID(),
+          status: 'pending' as const,
+        }));
+
+        const { error: targetsError } = await supabase
+          .from('campaign_targets')
+          .insert(targetInserts);
+
+        if (targetsError) {
+          console.error('Targets insert error:', targetsError);
+          throw targetsError;
+        }
+      } else if (formData.targetGroupIds.length > 0) {
+        // Group-based targets - fetch users from groups and insert
+        // For now, insert pending records that will be resolved by backend
+        const { data: groupUsers } = await supabase
+          .from('target_groups')
+          .select('id, name, type')
+          .in('id', formData.targetGroupIds);
+
+        if (groupUsers && groupUsers.length > 0) {
+          // Get employees/users in these groups
+          // Since target_groups is a view/table with user counts, we insert placeholder targets
+          // The backend will resolve these to actual users when campaign starts
+          const targetInserts = formData.targetGroupIds.map(groupId => ({
+            campaign_id: campaign.id,
+            user_id: groupId, // Using group ID as reference - backend will expand
+            email: '', // Will be filled by backend
+            tracking_id: crypto.randomUUID(),
+            status: 'pending' as const,
+          }));
+
+          const { error: targetsError } = await supabase
+            .from('campaign_targets')
+            .insert(targetInserts);
+
+          if (targetsError) {
+            console.error('Targets insert error:', targetsError);
+            throw targetsError;
+          }
+        }
+      }
+
+      // Insert sending schedule for staggered campaigns (Step 5)
+      if (formData.scheduleType === 'staggered' && scheduledAt) {
+        const { error: scheduleError } = await supabase
+          .from('sending_schedules')
+          .insert({
+            campaign_id: campaign.id,
+            scheduled_for: scheduledAt,
+            batch_size: 50,
+            batch_interval_minutes: formData.staggerHours * 60 / Math.max(1, Math.ceil(totalTargets / 50)),
+          });
+
+        if (scheduleError) {
+          console.error('Schedule insert error:', scheduleError);
+          throw scheduleError;
+        }
+      }
+
+      // Success - navigate to campaigns list
       navigate('/app/campanhas');
     } catch (err) {
       console.error('Error creating campaign:', err);
-      // For demo, just navigate
-      navigate('/app/campanhas');
+      window.alert('Erro ao criar campanha. Por favor, tente novamente.');
+    } finally {
+      setLoadingSubmit(false);
     }
-  }, [formData, navigate]);
+  }, [formData, totalTargets, navigate]);
 
   // Filter data
   const filteredTemplates = templates.filter(t =>
@@ -1606,9 +1684,18 @@ export default function NovaCampanhaPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="primary" onClick={handleSubmit}>
-                <Check className="h-4 w-4" />
-                Criar campanha
+              <Button variant="primary" onClick={handleSubmit} disabled={loadingSubmit}>
+                {loadingSubmit ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span>
+                    Criando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Criar campanha
+                  </>
+                )}
               </Button>
             )}
           </div>
