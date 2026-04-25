@@ -31,6 +31,8 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
+import { useCampaigns } from '@/lib/hooks';
+import { useCompany } from '@/hooks/useCompany';
 
 interface Campaign {
   id: string;
@@ -49,40 +51,6 @@ interface Campaign {
   };
   createdAt: string;
 }
-
-// Mock data generator for realistic demo
-function generateMockCampaigns(count: number): Campaign[] {
-  const templates = [
-    'Black Friday Promo', 'LGPD Reminder', 'Password Expiry', 'Invoice Due',
-    'Security Update Required', 'VPN Maintenance', 'HR Document', 'IT Support Ticket',
-    'Executive Message', 'Benefits Enrollment', 'Calendar Invite', 'SharePoint Update'
-  ];
-  const statuses: Campaign['status'][] = ['draft', 'scheduled', 'active', 'completed', 'cancelled'];
-  const tiers: Campaign['tier'][] = [1, 2, 3];
-
-  return Array.from({ length: count }, (_, i) => {
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const sent = status === 'draft' ? 0 : Math.floor(Math.random() * 500) + 50;
-    const opened = Math.floor(sent * (0.4 + Math.random() * 0.4));
-    const clicked = Math.floor(opened * (0.05 + Math.random() * 0.15));
-    const reported = Math.floor(clicked * (0.1 + Math.random() * 0.3));
-    const compromised = Math.floor(clicked * (0.3 + Math.random() * 0.4));
-
-    return {
-      id: `campaign-${i + 1}`,
-      name: `${templates[Math.floor(Math.random() * templates.length)]} ${i + 1}`,
-      template: templates[Math.floor(Math.random() * templates.length)],
-      tier: tiers[Math.floor(Math.random() * tiers.length)],
-      status,
-      scheduledAt: status === 'scheduled' ? new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-      completedAt: status === 'completed' ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-      stats: { sent, opened, clicked, reported, compromised },
-      createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-  });
-}
-
-const ALL_CAMPAIGNS = generateMockCampaigns(247);
 
 type SortField = 'name' | 'status' | 'tier' | 'createdAt' | 'stats.sent' | 'stats.opened' | 'stats.clicked';
 type SortDirection = 'asc' | 'desc';
@@ -114,8 +82,35 @@ function SortIcon({ field, sortField, sortDirection }: SortIconProps) {
   return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
 }
 
+// Map database status to UI status
+function mapStatus(dbStatus: string): Campaign['status'] {
+  switch (dbStatus) {
+    case 'running': return 'active'
+    default: return dbStatus as Campaign['status']
+  }
+}
+
 export default function CampanhasPage() {
   const navigate = useNavigate();
+  const { company } = useCompany();
+  const companyId = company?.id
+
+  const { campaigns: dbCampaigns, loading } = useCampaigns(companyId)
+
+  // Transform database campaigns to UI format
+  const realCampaigns: Campaign[] = useMemo(() => {
+    return dbCampaigns.map(c => ({
+      id: c.id,
+      name: c.name,
+      template: c.description || 'Sem template',
+      tier: 1, // Default tier, could be derived from settings if needed
+      status: mapStatus(c.status),
+      scheduledAt: c.scheduled_at,
+      completedAt: c.completed_at,
+      stats: c.stats,
+      createdAt: c.created_at,
+    }))
+  }, [dbCampaigns])
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,7 +131,7 @@ export default function CampanhasPage() {
 
   // Filter and sort campaigns
   const filteredCampaigns = useMemo(() => {
-    let result = [...ALL_CAMPAIGNS];
+    let result = [...realCampaigns];
 
     // Search filter
     if (searchQuery) {
@@ -208,7 +203,7 @@ export default function CampanhasPage() {
     });
 
     return result;
-  }, [searchQuery, statusFilter, tierFilter, dateRange, sortField, sortDirection]);
+  }, [searchQuery, statusFilter, tierFilter, dateRange, sortField, sortDirection, realCampaigns]);
 
   // Pagination
   const totalItems = filteredCampaigns.length;
@@ -245,10 +240,10 @@ export default function CampanhasPage() {
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || tierFilter !== 'all' || dateRange.from || dateRange.to;
 
   // Stats for summary cards
-  const totalActive = ALL_CAMPAIGNS.filter(c => c.status === 'active').length;
-  const totalScheduled = ALL_CAMPAIGNS.filter(c => c.status === 'scheduled').length;
-  const avgClickRate = ALL_CAMPAIGNS.length > 0
-    ? ((ALL_CAMPAIGNS.reduce((acc, c) => acc + (c.stats.opened > 0 ? c.stats.clicked / c.stats.opened : 0), 0) / ALL_CAMPAIGNS.length) * 100).toFixed(1)
+  const totalActive = realCampaigns.filter(c => c.status === 'active').length;
+  const totalScheduled = realCampaigns.filter(c => c.status === 'scheduled').length;
+  const avgClickRate = realCampaigns.length > 0
+    ? ((realCampaigns.reduce((acc, c) => acc + (c.stats.opened > 0 ? c.stats.clicked / c.stats.opened : 0), 0) / realCampaigns.length) * 100).toFixed(1)
     : '0';
 
   return (
@@ -335,7 +330,7 @@ export default function CampanhasPage() {
                   <Mail className="h-5 w-5 text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{ALL_CAMPAIGNS.length}</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{realCampaigns.length}</p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Total de campanhas</p>
                 </div>
               </div>

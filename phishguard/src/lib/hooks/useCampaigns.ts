@@ -8,17 +8,39 @@ import type { Database } from '../supabase'
 
 type Campaign = Database['public']['Tables']['campaigns']['Row']
 type CampaignTarget = Database['public']['Tables']['campaign_targets']['Row']
-type CampaignEvent = Database['public']['Tables']['campaign_events']['Row']
 
 export interface CampaignWithStats extends Campaign {
-  targets_sent?: number
-  targets_opened?: number
-  targets_clicked?: number
-  targets_reported?: number
+  stats: {
+    sent: number
+    opened: number
+    clicked: number
+    reported: number
+    compromised: number
+  }
+}
+
+async function fetchCampaignStats(campaignId: string) {
+  const { data: targets, error } = await supabase
+    .from('campaign_targets')
+    .select('status, sent_at, opened_at, clicked_at, reported_at')
+    .eq('campaign_id', campaignId)
+
+  if (error || !targets) {
+    return { sent: 0, opened: 0, clicked: 0, reported: 0, compromised: 0 }
+  }
+
+  const sent = targets.filter(t => t.sent_at !== null).length
+  const opened = targets.filter(t => t.opened_at !== null).length
+  const clicked = targets.filter(t => t.clicked_at !== null).length
+  const reported = targets.filter(t => t.reported_at !== null).length
+  // compromised = clicked - reported (those who clicked but didn't report)
+  const compromised = Math.max(0, clicked - reported)
+
+  return { sent, opened, clicked, reported, compromised }
 }
 
 export function useCampaigns(companyId?: string) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaigns, setCampaigns] = useState<CampaignWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,7 +59,16 @@ export function useCampaigns(companyId?: string) {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setCampaigns(data || [])
+
+      // Fetch stats for each campaign
+      const campaignsWithStats = await Promise.all(
+        (data || []).map(async (campaign) => {
+          const stats = await fetchCampaignStats(campaign.id)
+          return { ...campaign, stats }
+        })
+      )
+
+      setCampaigns(campaignsWithStats)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch campaigns')
     } finally {
@@ -62,8 +93,12 @@ export function useCampaigns(companyId?: string) {
       .single()
 
     if (error) throw error
-    setCampaigns(prev => [data, ...prev])
-    return data
+    const campaignWithStats: CampaignWithStats = {
+      ...data,
+      stats: { sent: 0, opened: 0, clicked: 0, reported: 0, compromised: 0 }
+    }
+    setCampaigns(prev => [campaignWithStats, ...prev])
+    return campaignWithStats
   }, [])
 
   const updateCampaign = useCallback(async (id: string, updates: Partial<Campaign>) => {

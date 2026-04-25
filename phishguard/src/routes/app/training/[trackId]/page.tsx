@@ -1,6 +1,6 @@
 // routes/app/training/[trackId]/page.tsx — Training Track Detail + Lesson Player
-import { useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ChevronDown,
@@ -16,12 +16,19 @@ import {
   ArrowRight,
   ArrowLeft,
   RotateCcw,
-  Trophy
+  Trophy,
+  Award,
+  Sparkles,
+  PartyPopper,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
+import { getCurrentUser } from '@/lib/auth/session';
+import { useUserEnrollments } from '@/lib/hooks';
+import { CertificateTemplate, type CertificateData } from '@/components/certificate/CertificateTemplate';
 
 // Types
 type ContentType = 'video' | 'reading' | 'interactive' | 'game';
@@ -55,182 +62,12 @@ interface Module {
 
 interface Track {
   id: string;
-  title: string;
+  name: string;
   description: string;
-  progress: number;
-  totalModules: number;
-  completedModules: number;
-  estimatedTime: string;
-  level: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  estimated_duration_minutes: number;
   modules: Module[];
 }
-
-// Mock data
-const mockTrack: Track = {
-  id: '1',
-  title: 'Fundamentos de Segurança',
-  description: 'Aprenda os conceitos essenciais de segurança digital, incluindo senhas seguras, autenticação em duas etapas e reconhecimento de ameaças básicas.',
-  progress: 35,
-  totalModules: 4,
-  completedModules: 1,
-  estimatedTime: '45min',
-  level: 'Básico',
-  modules: [
-    {
-      id: 'mod-1',
-      title: 'Introdução ao Phishing',
-      lessons: [
-        {
-          id: 'les-1-1',
-          title: 'O que é Phishing?',
-          description: 'Entenda os conceitos básicos de phishing',
-          contentType: 'video',
-          duration: 8,
-          completed: true,
-        },
-        {
-          id: 'les-1-2',
-          title: 'Tipos de Ataques',
-          description: 'Conheça os diferentes tipos de phishing',
-          contentType: 'reading',
-          duration: 5,
-          completed: true,
-        },
-        {
-          id: 'les-1-3',
-          title: 'Quiz: Phishing Básico',
-          description: 'Teste seus conhecimentos',
-          contentType: 'game',
-          duration: 3,
-          completed: false,
-          quiz: {
-            questions: [
-              {
-                id: 'q1',
-                question: 'Qual é a principal característica de um e-mail de phishing?',
-                options: [
-                  { label: 'Vem de remetentes desconhecidos', correct: false },
-                  { label: 'Cria urgência e pede informações sensíveis', correct: true },
-                  { label: 'Contém anexos grandes', correct: false },
-                  { label: 'Tem formatação profissional', correct: false },
-                ],
-                explanation: 'E-mails de phishing frequentemente criam urgência e solicitam informações sensíveis que organizações legítimas nunca pediriam por email.',
-              },
-              {
-                id: 'q2',
-                question: 'O que significa spear phishing?',
-                options: [
-                  { label: 'Phishing através de spear', correct: false },
-                  { label: 'Phishing direcionado a pessoas específicas', correct: true },
-                  { label: 'Phishing em grande escala', correct: false },
-                  { label: 'Phishing via redes sociais', correct: false },
-                ],
-                explanation: 'Spear phishing é um tipo de ataque direcionado onde o agressor pesquisa e personaliza a abordagem para vítimas específicas.',
-              },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      id: 'mod-2',
-      title: 'Senhas Seguras',
-      lessons: [
-        {
-          id: 'les-2-1',
-          title: 'Criando Senhas Fortes',
-          description: 'Como criar senhas memoráveis e seguras',
-          contentType: 'video',
-          duration: 10,
-          completed: false,
-        },
-        {
-          id: 'les-2-2',
-          title: 'Gerenciadores de Senhas',
-          description: 'Use ferramentas para gerenciar suas senhas',
-          contentType: 'reading',
-          duration: 6,
-          completed: false,
-        },
-        {
-          id: 'les-2-3',
-          title: 'Autenticação em Duas Etapas',
-          description: 'Adicione uma camada extra de segurança',
-          contentType: 'interactive',
-          duration: 5,
-          completed: false,
-        },
-      ],
-    },
-    {
-      id: 'mod-3',
-      title: 'E-mail Seguro',
-      lessons: [
-        {
-          id: 'les-3-1',
-          title: 'Identificando E-mails Suspeitos',
-          description: 'Sinais de alerta em mensagens',
-          contentType: 'video',
-          duration: 12,
-          completed: false,
-        },
-        {
-          id: 'les-3-2',
-          title: 'Prática: Analise E-mails',
-          description: 'Exercício interativo de análise',
-          contentType: 'interactive',
-          duration: 8,
-          completed: false,
-        },
-      ],
-    },
-    {
-      id: 'mod-4',
-      title: 'Proteção de Dados',
-      lessons: [
-        {
-          id: 'les-4-1',
-          title: 'Classificação de Dados',
-          description: 'Como categorizar informações sensíveis',
-          contentType: 'reading',
-          duration: 7,
-          completed: false,
-        },
-        {
-          id: 'les-4-2',
-          title: 'Backup e Criptografia',
-          description: 'Proteja seus dados importantes',
-          contentType: 'video',
-          duration: 9,
-          completed: false,
-        },
-        {
-          id: 'les-4-3',
-          title: 'Quiz Final',
-          description: 'Teste seus conhecimentos do módulo',
-          contentType: 'game',
-          duration: 5,
-          completed: false,
-          quiz: {
-            questions: [
-              {
-                id: 'q3',
-                question: 'Qual é a melhor prática para senhas?',
-                options: [
-                  { label: 'Usar a mesma senha para todos os sites', correct: false },
-                  { label: 'Usar um gerenciador de senhas', correct: true },
-                  { label: 'Anotar senhas em um papel', correct: false },
-                  { label: 'Usar senhas simples para lembrar', correct: false },
-                ],
-                explanation: 'Gerenciadores de senhas permitem criar e armazenar senhas complexas com segurança.',
-              },
-            ],
-          },
-        },
-      ],
-    },
-  ],
-};
 
 // Content type icons
 const ContentTypeIcon = ({ type }: { type: ContentType }) => {
@@ -244,65 +81,164 @@ const ContentTypeIcon = ({ type }: { type: ContentType }) => {
   return <Icon className="w-4 h-4" />;
 };
 
-// Track Header Component
-const TrackHeader = ({ track }: { track: Track }) => (
-  <div className="mb-8">
-    <div className="flex items-start justify-between mb-4">
-      <div>
-        <div className="flex items-center gap-3 mb-2">
-          <Badge
-            variant="outline"
-            className="text-xs font-medium"
-            style={{
-              borderColor: 'var(--color-accent)',
-              color: 'var(--color-accent)',
-            }}
-          >
-            {track.level}
-          </Badge>
-          <span className="text-sm text-[var(--color-fg-muted)]">
-            {track.totalModules} módulos
-          </span>
-          <span className="text-sm text-[var(--color-fg-muted)] flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
-            {track.estimatedTime}
-          </span>
-        </div>
-        <h1 className="text-3xl font-display font-bold text-[var(--color-fg-primary)] tracking-tight">
-          {track.title}
-        </h1>
-        <p className="mt-2 text-[var(--color-fg-secondary)] max-w-2xl">
-          {track.description}
-        </p>
-      </div>
-    </div>
-
-    {/* Progress bar */}
-    <div className="flex items-center gap-4">
-      <div className="flex-1 max-w-md">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm text-[var(--color-fg-muted)]">Progresso da Trilha</span>
-          <span className="font-mono text-sm font-bold text-[var(--color-accent)]">
-            {track.progress}%
-          </span>
-        </div>
-        <div className="h-3 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-amber-400)]"
-            initial={{ width: 0 }}
-            animate={{ width: `${track.progress}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          />
-        </div>
-      </div>
-      <div className="text-right">
-        <span className="text-sm text-[var(--color-fg-muted)]">
-          {track.completedModules} de {track.totalModules} módulos
-        </span>
-      </div>
-    </div>
+// Confetti animation component (CSS-based)
+const ConfettiAnimation = () => (
+  <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+    {[...Array(50)].map((_, i) => (
+      <motion.div
+        key={i}
+        initial={{
+          opacity: 1,
+          y: -20,
+          x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+          rotate: 0,
+          scale: Math.random() * 0.5 + 0.5,
+        }}
+        animate={{
+          opacity: [1, 1, 0],
+          y: typeof window !== 'undefined' ? window.innerHeight + 100 : 1000,
+          x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000) + (Math.random() - 0.5) * 200,
+          rotate: Math.random() * 720 - 360,
+        }}
+        transition={{
+          duration: Math.random() * 2 + 2,
+          delay: Math.random() * 0.5,
+          ease: 'easeOut',
+        }}
+        className={cn(
+          'absolute w-3 h-3 rounded-sm',
+          [
+            'bg-[var(--color-accent)]',
+            'bg-[var(--color-amber-400)]',
+            'bg-[var(--color-success)]',
+            'bg-[var(--color-warning)]',
+            'bg-purple-500',
+          ][Math.floor(Math.random() * 5)]
+        )}
+      />
+    ))}
   </div>
 );
+
+// Certificate Card Component
+const CertificateCard = ({
+  userName,
+  trackName,
+  completedAt,
+  onGenerateCertificate,
+}: {
+  userName: string;
+  trackName: string;
+  completedAt: string;
+  onGenerateCertificate: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="mb-8"
+  >
+    <Card className="border-[var(--color-success)]/30 bg-gradient-to-br from-[var(--color-surface-1)] to-[var(--color-surface-2)] overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-success)]/5 to-transparent" />
+      <CardContent className="relative p-6">
+        <div className="flex items-start gap-4">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-success)] to-emerald-600 shadow-lg shadow-[var(--color-success)]/30"
+          >
+            <Trophy className="h-8 w-8 text-white" />
+          </motion.div>
+          <div className="flex-1">
+            <h3 className="font-display text-xl font-bold text-[var(--color-fg-primary)] flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-[var(--color-success)]" />
+              Trilha Concluída!
+            </h3>
+            <p className="mt-1 text-[var(--color-fg-secondary)]">
+              Parabéns! Você completou a trilha <span className="font-semibold text-[var(--color-fg-primary)]">{trackName}</span>
+            </p>
+            <p className="mt-1 text-sm text-[var(--color-fg-muted)]">
+              Concluído em {new Date(completedAt).toLocaleDateString('pt-BR')}
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button
+            variant="primary"
+            onClick={onGenerateCertificate}
+            className="gap-2 bg-gradient-to-r from-[var(--color-success)] to-emerald-600 hover:from-[var(--color-success)]/90 hover:to-emerald-600/90"
+          >
+            <Award className="w-4 h-4" />
+            颁发证书 (Gerar Certificado)
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+// Track Header Component
+const TrackHeader = ({ track, progress }: { track: Track; progress: number }) => {
+  const levelLabels = {
+    beginner: 'Básico',
+    intermediate: 'Intermediário',
+    advanced: 'Avançado',
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <Badge
+              variant="outline"
+              className="text-xs font-medium"
+              style={{
+                borderColor: 'var(--color-accent)',
+                color: 'var(--color-accent)',
+              }}
+            >
+              {levelLabels[track.difficulty_level] || 'Básico'}
+            </Badge>
+            <span className="text-sm text-[var(--color-fg-muted)]">
+              {track.modules.length} módulos
+            </span>
+            <span className="text-sm text-[var(--color-fg-muted)] flex items-center gap-1.5">
+              <Clock className="w-4 h-4" />
+              {track.estimated_duration_minutes}min
+            </span>
+          </div>
+          <h1 className="text-3xl font-display font-bold text-[var(--color-fg-primary)] tracking-tight">
+            {track.name}
+          </h1>
+          <p className="mt-2 text-[var(--color-fg-secondary)] max-w-2xl">
+            {track.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 max-w-md">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm text-[var(--color-fg-muted)]">Progresso da Trilha</span>
+            <span className="font-mono text-sm font-bold text-[var(--color-accent)]">
+              {progress}%
+            </span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-amber-400)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Module List Component
 const ModuleList = ({
@@ -311,15 +247,17 @@ const ModuleList = ({
   setExpandedModule,
   currentLesson,
   setCurrentLesson,
+  completedLessons,
 }: {
   modules: Track['modules'];
   expandedModule: string | null;
   setExpandedModule: (id: string | null) => void;
   currentLesson: string | null;
   setCurrentLesson: (id: string) => void;
+  completedLessons: Set<string>;
 }) => {
   const completedLessonsInModule = (module: Module) =>
-    module.lessons.filter((l) => l.completed).length;
+    module.lessons.filter((l) => completedLessons.has(l.id)).length;
 
   return (
     <div className="space-y-3">
@@ -399,8 +337,9 @@ const ModuleList = ({
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 space-y-2">
-                    {module.lessons.map((lesson, lessonIndex) => {
+                    {module.lessons.map((lesson) => {
                       const isCurrent = currentLesson === lesson.id;
+                      const isCompleted = completedLessons.has(lesson.id);
                       return (
                         <button
                           key={lesson.id}
@@ -415,12 +354,12 @@ const ModuleList = ({
                           <div
                             className={cn(
                               'flex h-8 w-8 items-center justify-center rounded-lg',
-                              lesson.completed
+                              isCompleted
                                 ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]'
                                 : 'bg-[var(--color-surface-3)] text-[var(--color-fg-muted)]'
                             )}
                           >
-                            {lesson.completed ? (
+                            {isCompleted ? (
                               <CheckCircle2 className="w-4 h-4" />
                             ) : (
                               <ContentTypeIcon type={lesson.contentType} />
@@ -430,7 +369,7 @@ const ModuleList = ({
                             <p
                               className={cn(
                                 'text-sm font-medium truncate',
-                                lesson.completed
+                                isCompleted
                                   ? 'text-[var(--color-fg-muted)]'
                                   : 'text-[var(--color-fg-primary)]'
                               )}
@@ -472,9 +411,11 @@ const ModuleList = ({
 const LessonViewer = ({
   lesson,
   onMarkComplete,
+  isCompleted,
 }: {
   lesson: Lesson;
   onMarkComplete: () => void;
+  isCompleted: boolean;
 }) => {
   return (
     <div className="space-y-6">
@@ -566,7 +507,7 @@ const LessonViewer = ({
       </Card>
 
       {/* Mark Complete Button */}
-      {!lesson.completed && lesson.contentType !== 'game' && (
+      {!isCompleted && lesson.contentType !== 'game' && (
         <div className="flex justify-center">
           <Button
             variant="primary"
@@ -579,7 +520,7 @@ const LessonViewer = ({
         </div>
       )}
 
-      {lesson.completed && (
+      {isCompleted && (
         <div className="flex items-center justify-center gap-2 py-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-success)]/20">
             <Trophy className="w-5 h-5 text-[var(--color-success)]" />
@@ -792,43 +733,309 @@ const XCircle = ({ className }: { className?: string }) => (
 
 export default function TrainingTrackPage() {
   const params = useParams();
+  const navigate = useNavigate();
   const trackId = params.trackId;
 
-  const [expandedModule, setExpandedModule] = useState<string | null>(mockTrack.modules[0]?.id || null);
-  const [currentLesson, setCurrentLesson] = useState<string | null>(
-    mockTrack.modules[0]?.lessons[0]?.id || null
-  );
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(
-    new Set(mockTrack.modules.flatMap((m) => m.lessons.filter((l) => l.completed).map((l) => l.id)))
-  );
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Find current lesson data
-  const currentLessonData = mockTrack.modules
-    .flatMap((m) => m.lessons)
-    .find((l) => l.id === currentLesson);
+  // Track data
+  const [track, setTrack] = useState<Track | null>(null);
+  const [trackLoading, setTrackLoading] = useState(true);
 
-  const handleMarkComplete = useCallback(() => {
-    if (currentLesson) {
-      setCompletedLessons((prev) => new Set([...prev, currentLesson]));
+  // Enrollment
+  const { enrollments, updateProgress, refetch: refetchEnrollments } = useUserEnrollments(currentUser?.id);
+  const enrollment = enrollments.find(e => e.track_id === trackId);
+
+  // Lesson state
+  const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  const [currentLesson, setCurrentLesson] = useState<string | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+
+  // Certificate state
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
+
+  // Fetch current user
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setCurrentUser({
+            id: user.id,
+            name: user.name || user.email || 'Usuário',
+            email: user.email || '',
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [currentLesson]);
+    fetchUser();
+  }, []);
 
+  // Fetch track data with modules and lessons
+  useEffect(() => {
+    if (!trackId) return;
+
+    async function fetchTrack() {
+      try {
+        setTrackLoading(true);
+
+        // Fetch track
+        const { data: trackData, error: trackError } = await supabase
+          .from('training_tracks')
+          .select('*')
+          .eq('id', trackId)
+          .single();
+
+        if (trackError) throw trackError;
+        if (!trackData) return;
+
+        // Fetch modules
+        const { data: modulesData, error: modulesError } = await supabase
+          .from('training_modules')
+          .select('*')
+          .eq('track_id', trackId)
+          .order('sequence_order', { ascending: true });
+
+        if (modulesError) throw modulesError;
+
+        // Fetch lessons for each module
+        const modulesWithLessons = await Promise.all(
+          (modulesData || []).map(async (module) => {
+            const { data: lessonsData } = await supabase
+              .from('training_lessons')
+              .select('*')
+              .eq('module_id', module.id)
+              .order('sequence_order', { ascending: true });
+
+            return {
+              id: module.id,
+              title: module.title,
+              lessons: (lessonsData || []).map(lesson => ({
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description || '',
+                contentType: (lesson.content_type || 'reading') as ContentType,
+                duration: lesson.duration_minutes || 5,
+                completed: false,
+                quiz: lesson.content_type === 'game' ? {
+                  questions: [],
+                } : undefined,
+              })),
+            };
+          })
+        );
+
+        setTrack({
+          id: trackData.id,
+          name: trackData.name,
+          description: trackData.description || '',
+          difficulty_level: trackData.difficulty_level || 'beginner',
+          estimated_duration_minutes: trackData.estimated_duration_minutes || 30,
+          modules: modulesWithLessons,
+        });
+
+        // Set initial expanded module and lesson
+        if (modulesWithLessons.length > 0) {
+          setExpandedModule(modulesWithLessons[0].id);
+          if (modulesWithLessons[0].lessons.length > 0) {
+            setCurrentLesson(modulesWithLessons[0].lessons[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch track:', err);
+      } finally {
+        setTrackLoading(false);
+      }
+    }
+
+    fetchTrack();
+  }, [trackId]);
+
+  // Sync completed lessons from enrollment
+  useEffect(() => {
+    if (enrollment && track) {
+      // Calculate completed lessons from enrollment progress
+      // For now, we'll track locally since we don't have per-lesson tracking in the schema
+      // The enrollment.progress field represents overall progress percentage
+    }
+  }, [enrollment, track]);
+
+  // Calculate progress
+  const totalLessons = useMemo(() => {
+    if (!track) return 0;
+    return track.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  }, [track]);
+
+  const progress = useMemo(() => {
+    if (totalLessons === 0) return 0;
+    return Math.round((completedLessons.size / totalLessons) * 100);
+  }, [completedLessons.size, totalLessons]);
+
+  // Check if track is complete
+  const isTrackComplete = totalLessons > 0 && completedLessons.size === totalLessons;
+
+  // Mark lesson complete and save progress
+  const handleMarkComplete = useCallback(async () => {
+    if (!currentLesson || !currentUser || !trackId) return;
+
+    // Mark locally
+    setCompletedLessons(prev => new Set([...prev, currentLesson]));
+
+    // Calculate new progress
+    const newCompletedLessons = new Set([...completedLessons, currentLesson]);
+    const newProgress = Math.round((newCompletedLessons.size / totalLessons) * 100);
+
+    // Determine status
+    const isFirstLesson = completedLessons.size === 0;
+    const isAllComplete = newCompletedLessons.size === totalLessons;
+    const newStatus = isAllComplete ? 'completed' : 'in_progress';
+
+    try {
+      // Update enrollment in Supabase
+      const updates: Record<string, unknown> = {
+        progress: newProgress,
+        status: newStatus,
+      };
+
+      if (isFirstLesson) {
+        // First lesson started - mark as in_progress
+        updates.status = 'in_progress';
+      }
+
+      if (isAllComplete) {
+        updates.completed_at = new Date().toISOString();
+        setCompletedAt(updates.completed_at as string);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+      }
+
+      await updateProgress(enrollment?.id || '', newProgress, isAllComplete);
+
+      // Also try direct update for status changes
+      if (isFirstLesson || isAllComplete) {
+        await supabase
+          .from('user_training_enrollments')
+          .update(updates)
+          .eq('id', enrollment?.id)
+          .eq('user_id', currentUser.id);
+      }
+    } catch (err) {
+      console.error('Failed to save progress:', err);
+    }
+  }, [currentLesson, currentUser, trackId, completedLessons, totalLessons, enrollment?.id, updateProgress]);
+
+  // Handle lesson selection
   const handleLessonSelect = (lessonId: string) => {
     setCurrentLesson(lessonId);
-    const module = mockTrack.modules.find((m) => m.lessons.some((l) => l.id === lessonId));
-    if (module && expandedModule !== module.id) {
-      setExpandedModule(module.id);
+    if (track) {
+      const module = track.modules.find(m => m.lessons.some(l => l.id === lessonId));
+      if (module && expandedModule !== module.id) {
+        setExpandedModule(module.id);
+      }
     }
   };
 
+  // Find current lesson data
+  const currentLessonData = useMemo(() => {
+    if (!track || !currentLesson) return null;
+    return track.modules
+      .flatMap(m => m.lessons)
+      .find(l => l.id === currentLesson);
+  }, [track, currentLesson]);
+
   // Find next and previous lessons
-  const allLessons = mockTrack.modules.flatMap((m) => m.lessons);
-  const currentIndex = allLessons.findIndex((l) => l.id === currentLesson);
-  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
-  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+  const { prevLesson, nextLesson } = useMemo(() => {
+    if (!track) return { prevLesson: null, nextLesson: null };
+    const allLessons = track.modules.flatMap(m => m.lessons);
+    const currentIndex = allLessons.findIndex(l => l.id === currentLesson);
+    return {
+      prevLesson: currentIndex > 0 ? allLessons[currentIndex - 1] : null,
+      nextLesson: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null,
+    };
+  }, [track, currentLesson]);
+
+  // Generate certificate
+  const handleGenerateCertificate = () => {
+    if (!currentUser || !track || !completedAt) return;
+    setShowCertificate(true);
+  };
+
+  // Certificate data
+  const certificateData: CertificateData | null = useMemo(() => {
+    if (!currentUser || !track || !completedAt) return null;
+    return {
+      id: enrollment?.id || `cert-${Date.now()}`,
+      userName: currentUser.name,
+      userEmail: currentUser.email,
+      courseName: track.name,
+      courseDescription: track.description,
+      completedAt: completedAt,
+      companyName: 'PhishGuard',
+      duration: `${track.estimated_duration_minutes}min`,
+    };
+  }, [currentUser, track, completedAt, enrollment?.id]);
+
+  // Loading state
+  if (isLoading || trackLoading) {
+    return (
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
+        <div className="animate-pulse text-[var(--color-fg-muted)]">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[var(--color-fg-muted)]">Trilha não encontrada</p>
+          <Button variant="primary" onClick={() => navigate('/app/treinamento')} className="mt-4">
+            Voltar para Treinamentos
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show certificate modal
+  if (showCertificate && certificateData) {
+    return (
+      <div className="min-h-screen bg-[var(--color-surface-0)]">
+        <div className="sticky top-0 z-40 border-b border-[var(--color-noir-700)] bg-[var(--color-surface-0)]/95 backdrop-blur">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCertificate(false)}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Voltar
+              </Button>
+              <p className="text-sm text-[var(--color-fg-muted)]">
+                Certificado de Conclusão
+              </p>
+            </div>
+          </div>
+        </div>
+        <CertificateTemplate data={certificateData} showPrintButton={true} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">
+      {/* Confetti animation */}
+      {showConfetti && <ConfettiAnimation />}
+
       {/* Header */}
       <div className="sticky top-0 z-40 border-b border-[var(--color-noir-700)] bg-[var(--color-surface-0)]/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -845,7 +1052,7 @@ export default function TrainingTrackPage() {
                 Trilhas de Aprendizado
               </p>
               <h1 className="font-display text-lg font-semibold text-[var(--color-fg-primary)]">
-                {mockTrack.title}
+                {track.name}
               </h1>
             </div>
           </div>
@@ -854,6 +1061,18 @@ export default function TrainingTrackPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Certificate completion card */}
+        {isTrackComplete && completedAt && (
+          <CertificateCard
+            userName={currentUser?.name || ''}
+            trackName={track.name}
+            completedAt={completedAt}
+            onGenerateCertificate={handleGenerateCertificate}
+          />
+        )}
+
+        <TrackHeader track={track} progress={progress} />
+
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left Column - Module List */}
           <div className="lg:col-span-1">
@@ -864,11 +1083,12 @@ export default function TrainingTrackPage() {
               </h2>
             </div>
             <ModuleList
-              modules={mockTrack.modules}
+              modules={track.modules}
               expandedModule={expandedModule}
               setExpandedModule={setExpandedModule}
               currentLesson={currentLesson}
               setCurrentLesson={handleLessonSelect}
+              completedLessons={completedLessons}
             />
           </div>
 
@@ -876,7 +1096,11 @@ export default function TrainingTrackPage() {
           <div className="lg:col-span-2">
             {currentLessonData ? (
               <>
-                <LessonViewer lesson={currentLessonData} onMarkComplete={handleMarkComplete} />
+                <LessonViewer
+                  lesson={currentLessonData}
+                  onMarkComplete={handleMarkComplete}
+                  isCompleted={completedLessons.has(currentLesson || '')}
+                />
 
                 {/* Navigation */}
                 <div className="mt-8 flex items-center justify-between border-t border-[var(--color-noir-700)] pt-6">
