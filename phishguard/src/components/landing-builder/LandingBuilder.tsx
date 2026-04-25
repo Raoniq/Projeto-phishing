@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Landing Builder - Main component with block editor
 import { useState, useCallback } from 'react';
 import type { LandingTemplate, BuilderState, DomainMaskConfig, DeployResult, Block, BlockType, BrandPreset } from './types';
-import { TEMPLATES, CATEGORY_LABELS } from './templates';
 import { BRAND_PRESETS, generateBlockId, defaultHeaderBlock, defaultParagraphBlock, defaultButtonBlock, defaultInputBlock, defaultImageBlock, defaultDividerBlock, defaultSpacerBlock, defaultHtmlBlock, defaultLoginFormBlock, defaultPasswordFieldBlock, defaultTwoFactorInputBlock, defaultPhoneInputBlock } from './types';
 import LandingPreview from './LandingPreview';
 import DomainMaskConfigPanel from './DomainMaskConfigPanel';
@@ -408,7 +408,7 @@ export default function LandingBuilder() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {blocks.map((block, index) => (
+                    {blocks.map((block) => (
                       <div
                         key={block.id}
                         onClick={() => setSelectedBlockId(block.id)}
@@ -910,7 +910,7 @@ function BlockCanvasItem({ block, cssVariables }: { block: Block; cssVariables: 
           {(block.props as any).src ? (
             <img
               src={(block.props as any).src}
-              alt={(block.props as any).alt}
+              alt={(block.props as any).alt || 'Image'}
               className="max-w-full rounded"
               style={{ maxHeight: '150px' }}
             />
