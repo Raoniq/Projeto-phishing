@@ -67,6 +67,7 @@ import AdminsPage from './routes/app/configuracoes/admins.page'
 import AuditLogPage from './routes/app/configuracoes/audit-log.page'
 import DominiosPage from './routes/app/configuracoes/dominios.page'
 import NotificacoesPage from './routes/app/configuracoes/notificacoes.page'
+import PreferenciasNotificacoesPage from './routes/app/configuracoes/preferencias-notificacoes.page'
 
 // Relatorios pages
 import RelatorioExecutivoPage from './routes/app/relatorios/RelatorioExecutivoPage'
@@ -151,6 +152,7 @@ export default function App() {
             <Route path="/app/configuracoes/audit-log" element={<AuditLogPage />} />
             <Route path="/app/configuracoes/dominios" element={<DominiosPage />} />
             <Route path="/app/configuracoes/notificacoes" element={<NotificacoesPage />} />
+            <Route path="/app/configuracoes/preferencias-notificacoes" element={<PreferenciasNotificacoesPage />} />
 
             {/* Relatorios */}
             <Route path="/app/relatorios" element={<Navigate to="/app/relatorios/executivo" replace />} />

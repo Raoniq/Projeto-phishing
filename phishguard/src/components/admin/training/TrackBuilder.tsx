@@ -34,6 +34,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -67,12 +68,30 @@ interface ModuleLesson {
   sequence_order: number;
 }
 
+type QuestionType = 'multiple_choice' | 'true_false' | 'open_text';
+
+interface QuizQuestion {
+  id: string;
+  type: QuestionType;
+  question: string;
+  options?: string[];
+  correct_answer: string | boolean;
+  points: number;
+}
+
+interface QuizConfig {
+  passing_score: number;
+  max_attempts: number;
+  randomize_questions: boolean;
+  questions: QuizQuestion[];
+}
+
 interface TrackModule {
   id?: string;
   track_id?: string;
   title: string;
   sequence_order: number;
-  content_type: 'video' | 'reading' | 'interactive' | 'game';
+  content_type: 'video' | 'reading' | 'interactive' | 'game' | 'quiz';
   content_url: string;
   duration_minutes: number;
   lessons: ModuleLesson[];
@@ -96,6 +115,7 @@ const CONTENT_TYPE_CONFIG = {
   reading: { icon: BookOpen, label: 'Leitura', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
   interactive: { icon: FileText, label: 'Interativo', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
   game: { icon: Gamepad2, label: 'Jogo', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+  quiz: { icon: HelpCircle, label: 'Quiz', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
 };
 
 const DIFFICULTY_CONFIG = {
@@ -103,6 +123,327 @@ const DIFFICULTY_CONFIG = {
   intermediate: { label: 'Intermediário', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
   advanced: { label: 'Avançado', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
+
+// Quiz Editor Component
+function QuizEditor({
+  quiz,
+  onChange,
+}: {
+  quiz: QuizConfig;
+  onChange: (quiz: QuizConfig) => void;
+}) {
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
+
+  const toggleQuestion = (index: number) => {
+    setExpandedQuestions((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const updateQuestion = (index: number, updates: Partial<QuizQuestion>) => {
+    const newQuestions = [...quiz.questions];
+    newQuestions[index] = { ...newQuestions[index], ...updates };
+    onChange({ ...quiz, questions: newQuestions });
+  };
+
+  const addQuestion = (type: QuestionType) => {
+    const newQuestion: QuizQuestion = {
+      id: `q-${Date.now()}-${quiz.questions.length}`,
+      type,
+      question: '',
+      options: type === 'multiple_choice' ? ['', '', '', ''] : undefined,
+      correct_answer: type === 'true_false' ? true : '',
+      points: 10,
+    };
+    onChange({
+      ...quiz,
+      questions: [...quiz.questions, newQuestion],
+    });
+    setExpandedQuestions((prev) => new Set([...prev, quiz.questions.length]));
+  };
+
+  const removeQuestion = (index: number) => {
+    const newQuestions = quiz.questions.filter((_, i) => i !== index);
+    onChange({ ...quiz, questions: newQuestions });
+  };
+
+  const addOption = (questionIndex: number) => {
+    const question = quiz.questions[questionIndex];
+    if (question.options && question.options.length < 6) {
+      updateQuestion(questionIndex, { options: [...question.options, ''] });
+    }
+  };
+
+  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+    const question = quiz.questions[questionIndex];
+    if (question.options) {
+      const newOptions = [...question.options];
+      newOptions[optionIndex] = value;
+      updateQuestion(questionIndex, { options: newOptions });
+    }
+  };
+
+  const removeOption = (questionIndex: number, optionIndex: number) => {
+    const question = quiz.questions[questionIndex];
+    if (question.options && question.options.length > 2) {
+      const newOptions = question.options.filter((_, i) => i !== optionIndex);
+      updateQuestion(questionIndex, { options: newOptions });
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4 rounded-lg border border-[var(--color-cyan-500)]/30 bg-[var(--color-cyan-500)]/5 p-4"
+    >
+      {/* Quiz Settings */}
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
+            Pontuação mínima (%)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={quiz.passing_score}
+            onChange={(e) => onChange({ ...quiz, passing_score: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
+            className="h-9"
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
+            Tentativas máximas
+          </Label>
+          <Input
+            type="number"
+            min={1}
+            max={10}
+            value={quiz.max_attempts}
+            onChange={(e) => onChange({ ...quiz, max_attempts: Math.max(1, parseInt(e.target.value) || 1) })}
+            className="h-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="randomize_questions"
+            checked={quiz.randomize_questions}
+            onChange={(e) => onChange({ ...quiz, randomize_questions: e.target.checked })}
+            className="h-4 w-4 rounded border-[var(--color-noir-600)] bg-[var(--color-surface-0)] text-[var(--color-accent)] focus:ring-[var(--color-accent)] focus:ring-offset-[var(--color-surface-0)]"
+          />
+          <Label htmlFor="randomize_questions" className="text-xs text-[var(--color-fg-secondary)] cursor-pointer">
+            Randomizar perguntas
+          </Label>
+        </div>
+      </div>
+
+      {/* Questions */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-[var(--color-fg-secondary)]">
+            Perguntas ({quiz.questions.length})
+          </Label>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => addQuestion('multiple_choice')} className="h-7 text-xs">
+              <Plus className="h-3 w-3 mr-1" />
+              Múltipla escolha
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addQuestion('true_false')} className="h-7 text-xs">
+              <Plus className="h-3 w-3 mr-1" />
+              Verdadeiro/Falso
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => addQuestion('open_text')} className="h-7 text-xs">
+              <Plus className="h-3 w-3 mr-1" />
+              Texto aberto
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {quiz.questions.map((q, index) => (
+            <motion.div
+              key={q.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="rounded-lg border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] overflow-hidden"
+            >
+              {/* Question Header */}
+              <div
+                className="flex items-center gap-3 p-3 cursor-pointer hover:bg-[var(--color-surface-1)] transition-colors"
+                onClick={() => toggleQuestion(index)}
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded bg-[var(--color-noir-700)] text-xs font-mono text-[var(--color-fg-muted)]">
+                  {index + 1}
+                </div>
+                <Badge className={cn(
+                  'text-xs',
+                  q.type === 'multiple_choice' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                  q.type === 'true_false' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                  'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                )}>
+                  {q.type === 'multiple_choice' ? 'Múltipla escolha' :
+                   q.type === 'true_false' ? 'V/F' : 'Texto'}
+                </Badge>
+                <Input
+                  value={q.question}
+                  onChange={(e) => updateQuestion(index, { question: e.target.value })}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Digite a pergunta..."
+                  className="flex-1 h-7 text-sm bg-transparent border-transparent hover:border-[var(--color-noir-600)] focus:border-[var(--color-accent)]"
+                />
+                <span className="text-xs text-[var(--color-fg-muted)]">{q.points} pts</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                  onClick={(e) => { e.stopPropagation(); removeQuestion(index); }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+                {expandedQuestions.has(index) ? (
+                  <ChevronDown className="h-4 w-4 text-[var(--color-fg-muted)]" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-[var(--color-fg-muted)]" />
+                )}
+              </div>
+
+              {/* Question Details */}
+              <AnimatePresence>
+                {expandedQuestions.has(index) && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden border-t border-[var(--color-noir-700)]"
+                  >
+                    <div className="p-4 space-y-4">
+                      {/* Points */}
+                      <div className="flex items-center gap-4">
+                        <Label className="text-xs text-[var(--color-fg-secondary)] w-20">
+                          Pontos
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={q.points}
+                          onChange={(e) => updateQuestion(index, { points: Math.max(1, parseInt(e.target.value) || 1) })}
+                          className="w-24 h-8"
+                        />
+                      </div>
+
+                      {/* Options for Multiple Choice */}
+                      {q.type === 'multiple_choice' && q.options && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-[var(--color-fg-secondary)]">
+                            Opções de resposta
+                          </Label>
+                          {q.options.map((option, optIdx) => (
+                            <div key={optIdx} className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name={`correct-${q.id}`}
+                                checked={q.correct_answer === option}
+                                onChange={() => updateQuestion(index, { correct_answer: option })}
+                                className="h-4 w-4 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                              />
+                              <Input
+                                value={option}
+                                onChange={(e) => updateOption(index, optIdx, e.target.value)}
+                                placeholder={`Opção ${optIdx + 1}`}
+                                className="flex-1 h-8"
+                              />
+                              {q.options && q.options.length > 2 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => removeOption(index, optIdx)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          {q.options && q.options.length < 6 && (
+                            <Button variant="ghost" size="sm" onClick={() => addOption(index)} className="h-7 text-xs">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Adicionar opção
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Options for True/False */}
+                      {q.type === 'true_false' && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-[var(--color-fg-secondary)]">
+                            Resposta correta
+                          </Label>
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`tf-${q.id}`}
+                                checked={q.correct_answer === true}
+                                onChange={() => updateQuestion(index, { correct_answer: true })}
+                                className="h-4 w-4 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                              />
+                              <span className="text-sm text-[var(--color-fg-primary)]">Verdadeiro</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`tf-${q.id}`}
+                                checked={q.correct_answer === false}
+                                onChange={() => updateQuestion(index, { correct_answer: false })}
+                                className="h-4 w-4 text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                              />
+                              <span className="text-sm text-[var(--color-fg-primary)]">Falso</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Open Text Answer */}
+                      {q.type === 'open_text' && (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-[var(--color-fg-secondary)]">
+                            Resposta esperada
+                          </Label>
+                          <Input
+                            value={q.correct_answer as string}
+                            onChange={(e) => updateQuestion(index, { correct_answer: e.target.value })}
+                            placeholder="Digite a resposta esperada..."
+                            className="h-9"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+
+          {quiz.questions.length === 0 && (
+            <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-[var(--color-noir-700)] text-sm text-[var(--color-fg-muted)]">
+              Nenhuma pergunta adicionada. Clique acima para adicionar.
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 // Sortable Lesson Item
 function SortableLessonItem({
@@ -282,36 +623,70 @@ function SortableModuleItem({
                       <SelectItem value="reading">Leitura</SelectItem>
                       <SelectItem value="interactive">Interativo</SelectItem>
                       <SelectItem value="game">Jogo</SelectItem>
+                      <SelectItem value="quiz">Quiz</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="col-span-1">
-                  <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
-                    URL do conteúdo
-                  </Label>
-                  <Input
-                    value={module.content_url}
-                    onChange={(e) => onUpdate({ ...module, content_url: e.target.value })}
-                    placeholder="https://..."
-                    className="h-9"
-                  />
-                </div>
+                {module.content_type === 'quiz' ? (
+                  <>
+                    <div className="col-span-1">
+                      <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
+                        Duração (min)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={module.duration_minutes}
+                        onChange={(e) =>
+                          onUpdate({ ...module, duration_minutes: parseInt(e.target.value) || 0 })
+                        }
+                        className="h-9"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="col-span-1">
+                      <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
+                        URL do conteúdo
+                      </Label>
+                      <Input
+                        value={module.content_url}
+                        onChange={(e) => onUpdate({ ...module, content_url: e.target.value })}
+                        placeholder="https://..."
+                        className="h-9"
+                      />
+                    </div>
 
-                <div className="col-span-1">
-                  <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
-                    Duração (min)
-                  </Label>
-                  <Input
-                    type="number"
-                    value={module.duration_minutes}
-                    onChange={(e) =>
-                      onUpdate({ ...module, duration_minutes: parseInt(e.target.value) || 0 })
-                    }
-                    className="h-9"
-                  />
-                </div>
+                    <div className="col-span-1">
+                      <Label className="text-xs text-[var(--color-fg-secondary)] mb-1.5 block">
+                        Duração (min)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={module.duration_minutes}
+                        onChange={(e) =>
+                          onUpdate({ ...module, duration_minutes: parseInt(e.target.value) || 0 })
+                        }
+                        className="h-9"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
+
+              {/* Quiz Editor */}
+              {module.content_type === 'quiz' && (
+                <QuizEditor
+                  quiz={module.content_url ? JSON.parse(module.content_url) : {
+                    passing_score: 70,
+                    max_attempts: 3,
+                    randomize_questions: false,
+                    questions: [],
+                  }}
+                  onChange={(quiz) => onUpdate({ ...module, content_url: JSON.stringify(quiz) })}
+                />
+              )}
 
               {/* Lessons Section */}
               <div className="space-y-3">
