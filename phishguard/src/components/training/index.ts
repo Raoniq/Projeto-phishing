@@ -22,7 +22,6 @@ export {
   BadgeGrid,
   MiniBadgePreview,
   BADGE_CATALOG,
-  MOCK_BADGES,
   type Badge,
   type BadgeGridProps,
   type BadgeType,
@@ -32,7 +31,6 @@ export {
 export {
   LeaderboardTable,
   CompactLeaderboard,
-  MOCK_LEADERBOARD_ENTRIES,
   type LeaderboardEntry,
   type LeaderboardTableProps,
 } from './LeaderboardTable'

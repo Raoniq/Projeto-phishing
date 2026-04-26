@@ -53,58 +53,6 @@ interface GeoData {
   percentage: number;
 }
 
-// Mock data generators
-function generateMockEvents(count: number): AnalyticsEvent[] {
-  const departments = ['TI', 'Vendas', 'Marketing', 'RH', 'Financeiro', 'Operações', 'Jurídico', 'Compras'];
-  const roles = ['Analista', 'Gerente', 'Diretor', 'Coordenador', 'Estagiário', 'Assistente', 'Executor'];
-  const regions = [
-    'São Paulo - SP', 'Rio de Janeiro - RJ', 'Belo Horizonte - MG', 'Salvador - BA',
-    'Brasília - DF', 'Curitiba - PR', 'Porto Alegre - RS', 'Recife - PE',
-    'Fortaleza - CE', 'Manaus - AM', 'Goiânia - GO', 'Vitória - ES'
-  ];
-  const names = [
-    'Ana Silva', 'Bruno Costa', 'Carla Santos', 'Daniel Oliveira', 'Elena Ferreira',
-    'Fernando Lima', 'Gabriela Rocha', 'Henrique Alves', 'Isabela Martins', 'João Pereira',
-    'Karen Souza', 'Leonardo Castro', 'Marina Rodrigues', 'Nathan Pereira', 'Olivia Gomes'
-  ];
-
-  const types: AnalyticsEvent['type'][] = ['sent', 'opened', 'clicked', 'reported', 'compromised'];
-  const baseTime = new Date('2026-04-15T10:00:00Z');
-
-  return Array.from({ length: count }, (_, i) => {
-    const typeIndex = Math.random() < 0.5 ? 1 : Math.floor(Math.random() * 5);
-    const hoursOffset = Math.random() * 48;
-    const eventTime = new Date(baseTime.getTime() + hoursOffset * 60 * 60 * 1000);
-
-    return {
-      id: `event-${i}`,
-      timestamp: eventTime,
-      type: types[typeIndex],
-      userId: `user-${i % 50}`,
-      userName: names[i % names.length],
-      userEmail: `${names[i % names.length].toLowerCase().replace(' ', '.')}@empresa.com`,
-      department: departments[Math.floor(Math.random() * departments.length)],
-      role: roles[Math.floor(Math.random() * roles.length)],
-      region: regions[Math.floor(Math.random() * regions.length)]
-    };
-  }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-}
-
-function generateGeoData(): GeoData[] {
-  return [
-    { region: 'Sudeste', state: 'SP', clicks: 45, percentage: 38 },
-    { region: 'Sudeste', state: 'RJ', clicks: 22, percentage: 18 },
-    { region: 'Sudeste', state: 'MG', clicks: 12, percentage: 10 },
-    { region: 'Nordeste', state: 'BA', clicks: 10, percentage: 8 },
-    { region: 'Nordeste', state: 'PE', clicks: 8, percentage: 7 },
-    { region: 'Sul', state: 'PR', clicks: 7, percentage: 6 },
-    { region: 'Centro-Oeste', state: 'DF', clicks: 6, percentage: 5 },
-    { region: 'Sul', state: 'RS', clicks: 5, percentage: 4 },
-    { region: 'Nordeste', state: 'CE', clicks: 4, percentage: 3 },
-    { region: 'Norte', state: 'AM', clicks: 1, percentage: 1 }
-  ];
-}
-
 // Funnel data
 const FUNNEL_STEPS = [
   { label: 'Enviados', value: 150, color: 'var(--color-accent)' },
