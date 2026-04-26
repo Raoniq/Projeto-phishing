@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -38,6 +38,8 @@ import {
   auditActionLabels,
   tableNameLabels,
 } from '@/lib/rbac/audit';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface AuditEntry extends AuditLog {
   userName?: string;
@@ -72,39 +74,6 @@ const ACTION_COLORS: Record<AuditAction, string> = {
   remove: 'text-red-400',
 };
 
-// Generate mock audit data
-function generateMockAuditLogs(count: number): AuditEntry[] {
-  const actions: AuditAction[] = ['create', 'update', 'delete', 'launch', 'pause', 'approve', 'login', 'logout', 'invite', 'remove'];
-  const tables = ['campaigns', 'users', 'companies', 'domains', 'templates', 'learning_tracks'];
-  const userNames = ['Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Paula Souza', 'Roberto Lima'];
-
-  return Array.from({ length: count }, (_, i) => {
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    const tableName = tables[Math.floor(Math.random() * tables.length)];
-    const userName = userNames[Math.floor(Math.random() * userNames.length)];
-    const daysAgo = Math.floor(Math.random() * 30);
-    const hoursAgo = Math.floor(Math.random() * 24);
-
-    return {
-      id: `audit-${i + 1}`,
-      company_id: 'company-1',
-      user_id: `user-${i + 1}`,
-      action,
-      table_name: tableName,
-      record_id: `${tableName.slice(0, 4)}-${Math.random().toString(36).substr(2, 9)}`,
-      old_data: action === 'update' ? { name: 'Old Name' } : null,
-      new_data: { name: 'New Name' },
-      ip_address: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      created_at: new Date(Date.now() - (daysAgo * 24 + hoursAgo) * 60 * 60 * 1000).toISOString(),
-      userName,
-      userEmail: `${userName.toLowerCase().replace(' ', '.')}@empresa.com`,
-    };
-  });
-}
-
-const ALL_AUDIT_LOGS = generateMockAuditLogs(500);
-
 type SortField = 'created_at' | 'action' | 'table_name' | 'userName';
 type SortDirection = 'asc' | 'desc';
 const ITEMS_PER_PAGE_OPTIONS = [25, 50, 100, 200];
@@ -116,6 +85,41 @@ function SortIconComponent({ field, sortField, sortDirection }: { field: SortFie
 }
 
 export default function AuditLogPage() {
+  const { company } = useAuth();
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!company?.id) {
+      setAuditLogs([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchLogs = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .eq('company_id', company.id)
+          .order('created_at', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+
+        setAuditLogs((data || []) as AuditEntry[]);
+      } catch (err) {
+        console.error('[AuditLog] Failed to fetch logs:', err);
+        setAuditLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [company]);
+
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all');
@@ -139,7 +143,7 @@ export default function AuditLogPage() {
 
   // Filter and sort logs
   const filteredLogs = useMemo(() => {
-    let result = [...ALL_AUDIT_LOGS];
+    let result = [...auditLogs];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -244,13 +248,13 @@ export default function AuditLogPage() {
   const hasActiveFilters = searchQuery || actionFilter !== 'all' || tableFilter !== 'all' || dateFilter !== 'all';
 
   // Stats
-  const todayLogs = ALL_AUDIT_LOGS.filter(log => {
+  const todayLogs = auditLogs.filter(log => {
     const logDate = new Date(log.created_at);
     const today = new Date();
     return logDate.toDateString() === today.toDateString();
   }).length;
 
-  const criticalActions = ALL_AUDIT_LOGS.filter(log =>
+  const criticalActions = auditLogs.filter(log =>
     ['delete', 'launch', 'approve'].includes(log.action)
   ).length;
 
@@ -292,7 +296,7 @@ export default function AuditLogPage() {
                   <FileText className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{ALL_AUDIT_LOGS.length}</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{auditLogs.length}</p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Total de registros</p>
                 </div>
               </div>

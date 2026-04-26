@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -40,6 +40,8 @@ import {
   DialogFooter
 } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -54,49 +56,6 @@ interface User {
   trainingCompleted: number;
   trainingTotal: number;
 }
-
-// Generate realistic mock data
-function generateMockUsers(count: number): User[] {
-  const names = [
-    'Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Paula Souza',
-    'Roberto Lima', 'Fernanda Alves', 'Marcelo Ferreira', 'Juliana Pereira',
-    'Ricardo Gomes', 'Camila Rodrigues', 'Diego Martins', 'Beatriz Rocha',
-    'Fernando Castro', 'Isabella Ramos', 'Lucas Barbosa', 'Manuela Lopes',
-    'Thiago Mendes', 'CarolinaNovaes', 'André Ribeiro', 'Larissa Cardoso',
-    'Gustavo Hayes', 'MarianaCorreia', 'Pedro Henrique Machado', 'Adriana Vieira'
-  ];
-  const departments = ['TI', 'Financeiro', 'RH', 'Comercial', 'Marketing', 'Operações', 'Jurídico'];
-  const roles: User['role'][] = ['admin', 'manager', 'learner'];
-  const statuses: User['status'][] = ['active', 'active', 'active', 'inactive', 'pending'];
-  const risks: User['risk'][] = ['low', 'low', 'medium', 'medium', 'high'];
-
-  return Array.from({ length: count }, (_, i) => {
-    const name = names[Math.floor(Math.random() * names.length)];
-    const role = roles[Math.floor(Math.random() * roles.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const risk = risks[Math.floor(Math.random() * risks.length)];
-    const department = departments[Math.floor(Math.random() * departments.length)];
-    const trainingCompleted = Math.floor(Math.random() * 8);
-    const trainingTotal = 8;
-    const daysAgo = Math.floor(Math.random() * 60);
-
-    return {
-      id: `user-${i + 1}`,
-      name: `${name} ${String(i + 1).padStart(3, '0')}`,
-      email: `${name.toLowerCase().replace(' ', '.')}${i + 1}@empresa.com`,
-      role,
-      status,
-      department,
-      risk,
-      lastActivity: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - (daysAgo + 30) * 24 * 60 * 60 * 1000).toISOString(),
-      trainingCompleted,
-      trainingTotal,
-    };
-  });
-}
-
-const ALL_USERS = generateMockUsers(1247);
 
 type SortField = 'name' | 'email' | 'role' | 'status' | 'department' | 'risk' | 'lastActivity';
 type SortDirection = 'asc' | 'desc';
@@ -133,7 +92,53 @@ function SortIcon({ field, sortField, sortDirection }: SortIconProps) {
 }
 
 export default function UsersPage() {
+  const { company } = useAuth();
   const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!company?.id) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, email, role, department, last_login_at, created_at')
+          .eq('company_id', company.id);
+
+        if (error) throw error;
+
+        const mapped: User[] = (data || []).map(u => ({
+          id: u.id,
+          name: u.name || u.email,
+          email: u.email,
+          role: (u.role || 'learner') as User['role'],
+          status: u.last_login_at ? 'active' : 'pending',
+          department: u.department || 'Não definido',
+          risk: 'medium' as const,
+          lastActivity: u.last_login_at || u.created_at,
+          createdAt: u.created_at,
+          trainingCompleted: 0,
+          trainingTotal: 0,
+        }));
+
+        setUsers(mapped);
+      } catch (err) {
+        console.error('[UsersPage] Failed to fetch users:', err);
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [company]);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,13 +167,13 @@ export default function UsersPage() {
 
   // Get unique departments
   const departments = useMemo(() => {
-    const depts = new Set(ALL_USERS.map(u => u.department));
+    const depts = new Set(users.map(u => u.department));
     return Array.from(depts).sort();
-  }, []);
+  }, [users]);
 
   // Filter and sort users
   const filteredUsers = useMemo(() => {
-    let result = [...ALL_USERS];
+    let result = [...users];
 
     // Search filter
     if (searchQuery) {
@@ -322,10 +327,10 @@ export default function UsersPage() {
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || departmentFilter !== 'all' || riskFilter !== 'all' || roleFilter !== 'all';
 
   // Stats for summary cards
-  const totalUsers = ALL_USERS.length;
-  const activeUsers = ALL_USERS.filter(u => u.status === 'active').length;
-  const highRiskUsers = ALL_USERS.filter(u => u.risk === 'high').length;
-  const pendingUsers = ALL_USERS.filter(u => u.status === 'pending').length;
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.status === 'active').length;
+  const highRiskUsers = users.filter(u => u.risk === 'high').length;
+  const pendingUsers = users.filter(u => u.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">

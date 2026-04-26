@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -22,6 +22,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface Target {
   id: string;
@@ -36,47 +38,6 @@ interface Target {
   reportedAt: string | null;
 }
 
-// Mock targets
-function generateMockTargets(count: number): Target[] {
-  const departments = ['Financeiro', 'TI', 'RH', 'Marketing', 'Vendas', 'Operações', 'Executivo'];
-  const roles = ['Analista', 'Gerente', 'Diretor', 'Coordenador', 'Assistente', 'Estagiário'];
-  const statuses: Target['status'][] = ['pending', 'sent', 'opened', 'clicked', 'reported', 'compromised'];
-  const statusWeights = [5, 20, 30, 20, 15, 10]; // Distribution
-
-  const firstNames = ['Ana', 'Bruno', 'Carlos', 'Diana', 'Eduardo', 'Fernanda', 'Gabriel', 'Helena', 'Igor', 'Julia', 'Kleber', 'Laura', 'Marcelo', 'Nadia', 'Oscar', 'Patricia', 'Quintino', 'Raquel', 'Sérgio', 'Tatiana'];
-  const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Lima', 'Pereira', 'Costa', 'Ferreira', 'Rodrigues', 'Almeida', 'Nascimento', 'Araújo', 'Ribeiro', 'Carvalho', 'Gomes', 'Martins', 'Rocha', 'Alves', 'Melo', 'Barbosa'];
-
-  return Array.from({ length: count }, (_, i) => {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const statusRandom = Math.random() * 100;
-    let cumulative = 0;
-    let status: Target['status'] = 'pending';
-    for (let j = 0; j < statuses.length; j++) {
-      cumulative += statusWeights[j];
-      if (statusRandom <= cumulative) {
-        status = statuses[j];
-        break;
-      }
-    }
-
-    return {
-      id: `user-${i + 1}`,
-      name: `${firstName} ${lastName}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@empresa.com`,
-      department: departments[Math.floor(Math.random() * departments.length)],
-      role: roles[Math.floor(Math.random() * roles.length)],
-      status,
-      sentAt: ['sent', 'opened', 'clicked', 'reported', 'compromised'].includes(status) ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-      openedAt: ['opened', 'clicked', 'reported', 'compromised'].includes(status) ? new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString() : null,
-      clickedAt: ['clicked', 'reported', 'compromised'].includes(status) ? new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString() : null,
-      reportedAt: ['reported', 'compromised'].includes(status) ? new Date(Date.now() - Math.random() * 1 * 24 * 60 * 60 * 1000).toISOString() : null,
-    };
-  });
-}
-
-const ALL_TARGETS = generateMockTargets(156);
-
 const STATUS_CONFIG = {
   pending: { label: 'Pendente', color: 'bg-[var(--color-noir-600)] text-[var(--color-noir-300)]', icon: Clock },
   sent: { label: 'Enviado', color: 'bg-blue-500/20 text-blue-400', icon: Mail },
@@ -90,7 +51,64 @@ const DEPARTMENTS = ['Todos', 'Financeiro', 'TI', 'RH', 'Marketing', 'Vendas', '
 
 export default function CampanhaTargetsPage() {
   const { id } = useParams();
-  const [targets] = useState(ALL_TARGETS);
+  const { company } = useAuth();
+  const [targets, setTargets] = useState<Target[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id || !company?.id) {
+      setTargets([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchTargets = async () => {
+      setLoading(true);
+      try {
+        // Fetch campaign targets with employee data
+        const { data, error } = await supabase
+          .from('campaign_targets')
+          .select(`
+            id,
+            email,
+            status,
+            sent_at,
+            opened_at,
+            clicked_at,
+            reported_at,
+            employees (
+              name,
+              department
+            )
+          `)
+          .eq('campaign_id', id);
+
+        if (error) throw error;
+
+        const mapped: Target[] = (data || []).map(t => ({
+          id: t.id,
+          name: (t.employees as { name?: string } | null)?.name || t.email,
+          email: t.email,
+          department: (t.employees as { department?: string } | null)?.department || 'Não definido',
+          role: '',
+          status: (t.status || 'pending') as Target['status'],
+          sentAt: t.sent_at,
+          openedAt: t.opened_at,
+          clickedAt: t.clicked_at,
+          reportedAt: t.reported_at,
+        }));
+
+        setTargets(mapped);
+      } catch (err) {
+        console.error('[CampanhaTargets] Failed to fetch targets:', err);
+        setTargets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTargets();
+  }, [id, company]);
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -316,7 +334,7 @@ export default function CampanhaTargetsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-noir-700)]">
-              {paginatedTargets.map((target, _idx) => {
+              {paginatedTargets.map((target) => {
                 const StatusIcon = STATUS_CONFIG[target.status].icon;
                 const lastActivity = target.reportedAt || target.clickedAt || target.openedAt || target.sentAt;
 
