@@ -677,12 +677,11 @@ function SortableModuleItem({
               {/* Quiz Editor */}
               {module.content_type === 'quiz' && (
                 <QuizEditor
-                  quiz={module.content_url ? JSON.parse(module.content_url) : {
-                    passing_score: 70,
-                    max_attempts: 3,
-                    randomize_questions: false,
-                    questions: [],
-                  }}
+                  quiz={(function() {
+                    if (!module.content_url) return { passing_score: 70, max_attempts: 3, randomize_questions: false, questions: [] };
+                    try { return JSON.parse(module.content_url); }
+                    catch { return { passing_score: 70, max_attempts: 3, randomize_questions: false, questions: [] }; }
+                  })()}
                   onChange={(quiz) => onUpdate({ ...module, content_url: JSON.stringify(quiz) })}
                 />
               )}

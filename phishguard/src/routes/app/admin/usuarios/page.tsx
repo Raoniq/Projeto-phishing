@@ -468,10 +468,11 @@ export default function UsersManagementPage() {
       setIsSuspending(true);
       try {
         const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
-        await supabase
+        const { error: updateError } = await supabase
           .from('users')
           .update({ suspended_at: newStatus === 'suspended' ? new Date().toISOString() : null })
           .eq('id', user.id);
+        if (updateError) throw updateError;
         setUserList((prev) =>
           prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
         );

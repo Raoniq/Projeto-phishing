@@ -176,7 +176,7 @@ export default function NovaCampanhaQRPage() {
       if (campaignError) throw campaignError;
 
       // Create QR code entry
-      await supabase
+      const { error: qrError } = await supabase
         .from('quishing_qrcodes')
         .insert({
           campaign_id: campaign.id,
@@ -186,6 +186,11 @@ export default function NovaCampanhaQRPage() {
           background_color: formData.qrSettings.backgroundColor,
           logo_url: formData.qrSettings.logoUrl,
         });
+
+      if (qrError) {
+        console.error('QR code insert error:', qrError);
+        throw new Error('Campanha criada, mas falha ao gerar QR code. ID: ' + campaign.id);
+      }
 
       navigate('/app/campanhas/quishing');
     } catch (err) {

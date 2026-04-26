@@ -189,11 +189,12 @@ export default function BibliotecaPage() {
       }
 
       const templatesToImport = Array.isArray(imported) ? imported : [imported]
+      const errors: string[] = []
 
       for (const item of templatesToImport) {
         if (!item.name || !item.category) continue
 
-        await supabase.from('campaign_templates').insert({
+        const { error: insertError } = await supabase.from('campaign_templates').insert({
           company_id: profile.company_id,
           name: item.name,
           category: item.category,
@@ -201,6 +202,12 @@ export default function BibliotecaPage() {
           body_html: item.body_html || '',
           body_text: item.body_text || '',
         })
+        if (insertError) errors.push(item.name);
+      }
+
+      if (errors.length > 0) {
+        setToast({ message: `Falha ao importar: ${errors.join(', ')}`, type: 'error' });
+        return;
       }
 
       await fetchTemplates()
