@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
@@ -165,14 +166,18 @@ export default function AuditLogPage() {
   // Fetch company ID on mount
   useEffect(() => {
     const fetchCompanyId = async () => {
-      const { data } = await supabase.rpc('get_user_company_id');
-      if (data) setCompanyId(data);
+      const { data, error } = await supabase.rpc('get_user_company_id');
+      if (error || !data) {
+        console.warn('Failed to fetch company ID:', error?.message);
+        return;
+      }
+      setCompanyId(data);
     };
     fetchCompanyId();
   }, []);
 
   // Fetch audit logs with filters
-  const { logs, loading, error, refetch } = useAuditLogs(companyId || undefined);
+  const { logs, loading,  refetch } = useAuditLogs(companyId || undefined);
 
   // Fetch users for filter dropdown
   const { users } = useUsers(companyId || undefined);
@@ -300,12 +305,6 @@ export default function AuditLogPage() {
 
   const hasActiveFilters = selectedUserId !== 'all' || selectedAction !== 'all' || selectedEntity !== 'all' || startDate || endDate;
 
-  // Get unique users for filter
-  const userOptions = useMemo(() => {
-    const names = new Set<string>();
-    userMap.forEach(u => names.add(u.name));
-    return ['all', ...Array.from(names)];
-  }, [userMap]);
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">

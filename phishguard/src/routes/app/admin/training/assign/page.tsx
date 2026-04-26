@@ -9,14 +9,12 @@ import {
   CheckCircle2,
   XCircle,
   X,
-  UserPlus,
   Calendar,
   ChevronDown,
   Search,
   Building2,
   MapPin,
   Shield,
-  Clock,
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -28,7 +26,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
@@ -36,15 +33,6 @@ import { useTrainingTracks, useUsers } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
 
 // Types
-interface TrainingTrack {
-  id: string;
-  name: string;
-  description: string | null;
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced' | null;
-  estimated_duration_minutes: number | null;
-  is_required: boolean;
-  created_at: string;
-}
 
 interface CSVEmailEntry {
   email: string;
@@ -445,7 +433,7 @@ export default function AssignTrainingPage() {
 
   // Department/Role/Location state
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
-  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [, setRoles] = useState<{ id: string; name: string }[]>([]);
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -461,6 +449,10 @@ export default function AssignTrainingPage() {
         supabase.from('roles').select('id, name').eq('company_id', companyId),
         supabase.from('locations').select('id, name').eq('company_id', companyId),
       ]);
+
+      if (deptRes.error) console.error('Failed to fetch departments:', deptRes.error.message);
+      if (roleRes.error) console.error('Failed to fetch roles:', roleRes.error.message);
+      if (locRes.error) console.error('Failed to fetch locations:', locRes.error.message);
 
       if (deptRes.data) setDepartments(deptRes.data);
       if (roleRes.data) setRoles(roleRes.data);
@@ -544,8 +536,7 @@ export default function AssignTrainingPage() {
     if (!trackId) throw new Error('Track ID required');
 
     // Get current user (assigner)
-    const { data: { user } } = await supabase.auth.getUser();
-    const assignedBy = user?.id;
+        // assignedBy removed (unused)
 
     const results: AssignmentResult[] = [];
 

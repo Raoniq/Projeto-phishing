@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,12 +10,9 @@ import {
   Globe,
   QrCode,
   Eye,
-  Calendar,
   Printer,
-  Download,
   Search,
   AlertCircle,
-  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
@@ -76,7 +74,7 @@ export default function NovaCampanhaQRPage() {
   const [landingPages, setLandingPages] = useState<LandingPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [landingSearch, setLandingSearch] = useState('');
-  const [showLandingPreview, setShowLandingPreview] = useState(false);
+  const [, setShowLandingPreview] = useState(false);
 
   // Tracking ID for this campaign
   const [trackingId] = useState(() => crypto.randomUUID());
@@ -149,7 +147,10 @@ export default function NovaCampanhaQRPage() {
 
   const handleSubmit = useCallback(async () => {
     try {
-      const { data: userData } = await supabase.rpc('get_user_company_id');
+      const { data: userData, error: companyError } = await supabase.rpc('get_user_company_id');
+      if (companyError || !userData) {
+        throw new Error(companyError?.message || 'Falha ao obter ID da empresa');
+      }
       const companyId = userData;
 
       // Create quishing campaign

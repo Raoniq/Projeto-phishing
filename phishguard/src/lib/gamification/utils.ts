@@ -226,50 +226,67 @@ export async function getStreakData(userId: string): Promise<StreakData> {
 export async function updateStreak(userId: string): Promise<StreakData> {
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: existing } = await supabase
-    .from('user_streaks')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
+  try {
+    const { data: existing, error: fetchError } = await supabase
+      .from('user_streaks')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
 
-  if (!existing) {
-    // Create new streak record
-    await supabase.from('user_streaks').insert({
-      user_id: userId,
-      current_streak: 1,
-      longest_streak: 1,
-      last_activity_date: today,
-      streak_start_date: today,
-    })
-  } else {
-    const lastDate = existing.last_activity_date
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-
-    if (lastDate === today) {
-      // Already activity today, no change
-      return await getStreakData(userId)
-    } else if (lastDate === yesterday) {
-      // Consecutive day - increment streak
-      const newStreak = existing.current_streak + 1
-      await supabase
-        .from('user_streaks')
-        .update({
-          current_streak: newStreak,
-          longest_streak: Math.max(newStreak, existing.longest_streak ?? 0),
-          last_activity_date: today,
-        })
-        .eq('user_id', userId)
-    } else {
-      // Streak broken - reset
-      await supabase
-        .from('user_streaks')
-        .update({
-          current_streak: 1,
-          last_activity_date: today,
-          streak_start_date: today,
-        })
-        .eq('user_id', userId)
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Failed to fetch streak:', fetchError);
     }
+
+    if (!existing) {
+      // Create new streak record
+      const { error: insertError } = await supabase.from('user_streaks').insert({
+        user_id: userId,
+        current_streak: 1,
+        longest_streak: 1,
+        last_activity_date: today,
+        streak_start_date: today,
+      })
+      if (insertError) {
+        console.error('Failed to insert streak:', insertError);
+      }
+    } else {
+      const lastDate = existing.last_activity_date
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+      if (lastDate === today) {
+        // Already activity today, no change
+        return await getStreakData(userId)
+      } else if (lastDate === yesterday) {
+        // Consecutive day - increment streak
+        const newStreak = existing.current_streak + 1
+        const { error: updateError } = await supabase
+          .from('user_streaks')
+          .update({
+            current_streak: newStreak,
+            longest_streak: Math.max(newStreak, existing.longest_streak ?? 0),
+            last_activity_date: today,
+          })
+          .eq('user_id', userId)
+        if (updateError) {
+          console.error('Failed to update streak:', updateError);
+        }
+      } else {
+        // Streak broken - reset
+        const { error: updateError } = await supabase
+          .from('user_streaks')
+          .update({
+            current_streak: 1,
+            last_activity_date: today,
+            streak_start_date: today,
+          })
+          .eq('user_id', userId)
+        if (updateError) {
+          console.error('Failed to reset streak:', updateError);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('updateStreak error:', err);
   }
 
   return await getStreakData(userId)

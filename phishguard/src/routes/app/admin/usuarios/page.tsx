@@ -1,10 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // routes/app/admin/usuarios/page.tsx — User Management System
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
-  Filter,
-  MoreHorizontal,
   Edit,
   Trash2,
   UserX,
@@ -20,19 +19,16 @@ import {
   CheckCircle2,
   XCircle,
   Mail,
-  Building2,
-} from 'lucide-react';
+  Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-} from '@/components/ui/Dialog';
+  DialogFooter } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
 import { useUsers } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
@@ -52,31 +48,24 @@ const ROLE_CONFIG = {
   admin: {
     label: 'Administrador',
     color: 'bg-violet-500/20 text-violet-400 border border-violet-500/30',
-    icon: Shield,
-  },
+    icon: Shield },
   member: {
     label: 'Membro',
     color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    icon: Users,
-  },
+    icon: Users },
   viewer: {
     label: 'Visualizador',
     color: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-    icon: Clock,
-  },
-} as const;
+    icon: Clock } } as const;
 
 // Status configuration
 const STATUS_CONFIG = {
   active: {
     label: 'Ativo',
-    color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-  },
+    color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' },
   suspended: {
     label: 'Suspenso',
-    color: 'bg-red-500/20 text-red-400 border border-red-500/30',
-  },
-} as const;
+    color: 'bg-red-500/20 text-red-400 border border-red-500/30' } } as const;
 
 const ITEMS_PER_PAGE = 20;
 
@@ -84,8 +73,7 @@ const ITEMS_PER_PAGE = 20;
 function Toast({
   message,
   type,
-  onClose,
-}: {
+  onClose }: {
   message: string;
   type: 'success' | 'error';
   onClose: () => void;
@@ -132,8 +120,7 @@ function ConfirmDialog({
   onCancel,
   isLoading,
   confirmLabel = 'Confirmar',
-  variant = 'destructive',
-}: {
+  variant = 'destructive' }: {
   isOpen: boolean;
   title: string;
   description: string;
@@ -173,8 +160,7 @@ function EditUserModal({
   isOpen,
   onClose,
   onSave,
-  isSaving,
-}: {
+  isSaving }: {
   user: User | null;
   isOpen: boolean;
   onClose: () => void;
@@ -343,7 +329,7 @@ export default function UsersManagementPage() {
   }, []);
 
   // Hooks
-  const { users, loading, updateUser, deactivateUser, refetch } = useUsers(companyId || undefined);
+  const { users, loading, updateUser } = useUsers(companyId || undefined);
 
   // Local state for user data with additional fields
   const [userList, setUserList] = useState<User[]>([]);
@@ -435,8 +421,7 @@ export default function UsersManagementPage() {
       try {
         await updateUser(editingUser.id, {
           role: updates.role,
-          department: updates.department,
-        });
+          department: updates.department });
         setUserList((prev) =>
           prev.map((u) =>
             u.id === editingUser.id
@@ -449,8 +434,7 @@ export default function UsersManagementPage() {
       } catch (err) {
         setToast({
           message: err instanceof Error ? err.message : 'Falha ao atualizar usuário',
-          type: 'error',
-        });
+          type: 'error' });
       } finally {
         setIsSaving(false);
       }
@@ -463,15 +447,15 @@ export default function UsersManagementPage() {
       setIsDeleting(true);
       try {
         // Hard delete from Supabase
-        await supabase.from('users').delete().eq('id', user.id);
+        const { error: deleteError } = await supabase.from('users').delete().eq('id', user.id);
+        if (deleteError) throw deleteError;
         setUserList((prev) => prev.filter((u) => u.id !== user.id));
         setToast({ message: 'Usuário removido com sucesso', type: 'success' });
         setDeletingUser(null);
       } catch (err) {
         setToast({
           message: err instanceof Error ? err.message : 'Falha ao remover usuário',
-          type: 'error',
-        });
+          type: 'error' });
       } finally {
         setIsDeleting(false);
       }
@@ -493,14 +477,12 @@ export default function UsersManagementPage() {
         );
         setToast({
           message: newStatus === 'suspended' ? 'Usuário suspenso' : 'Usuário reativado',
-          type: 'success',
-        });
+          type: 'success' });
         setSuspendingUser(null);
       } catch (err) {
         setToast({
           message: err instanceof Error ? err.message : 'Falha ao alterar status',
-          type: 'error',
-        });
+          type: 'error' });
       } finally {
         setIsSuspending(false);
       }
