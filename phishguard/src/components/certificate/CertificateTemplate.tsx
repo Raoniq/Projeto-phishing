@@ -39,10 +39,17 @@ export function CertificateTemplate({ data, showPrintButton = true }: Certificat
   const verifyUrl = `${window.location.origin}/verify/${data.id}`;
 
   useEffect(() => {
-    generateQRCode(verifyUrl).then(url => {
-      setQrCodeUrl(url);
-      setLoading(false);
-    });
+    async function fetchQRCode() {
+      try {
+        const url = await generateQRCode(verifyUrl);
+        setQrCodeUrl(url);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to generate QR code:', error);
+        setLoading(false);
+      }
+    }
+    fetchQRCode();
   }, [verifyUrl]);
 
   const handlePrint = () => {

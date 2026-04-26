@@ -83,6 +83,9 @@ export function VideoPlayer({
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
     };
   }, [startTime, onProgress, onComplete]);
 

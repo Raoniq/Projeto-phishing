@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<typeof mockMetrics | null>(null);
   const [companyId, setCompanyId] = useState<string>('demo-company');
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch initial metrics
   useEffect(() => {
@@ -50,12 +51,14 @@ export default function DashboardPage() {
         // Try to get real company ID from auth session
         const session = await getSession();
         if (session?.user) {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('users')
             .select('company_id')
             .eq('auth_id', session.user.id)
             .single();
-          if (profile) {
+          if (profileError) {
+            console.warn('Failed to fetch user profile:', profileError.message);
+          } else if (profile) {
             companyIdToUse = profile.company_id;
           }
         }
@@ -97,6 +100,25 @@ export default function DashboardPage() {
             .eq('event_type', 'reported')
         ]);
 
+        // Check for errors in each query result
+        const queryErrors = [
+          { name: 'activeCampaigns', error: activeCampaignsResult.error },
+          { name: 'sentEvents', error: sentEventsResult.error },
+          { name: 'clickedEvents', error: clickedEventsResult.error },
+          { name: 'reportedEvents', error: reportedEventsResult.error },
+        ].filter(q => q.error !== null);
+
+        if (queryErrors.length > 0) {
+          const errorMessages = queryErrors.map(e => `${e.name}: ${e.error?.message}`).join(', ');
+          console.error('Supabase query errors:', errorMessages);
+          setError(`Failed to fetch metrics: ${errorMessages}`);
+          // Fallback to mock data on query errors
+          await new Promise(resolve => setTimeout(resolve, 800));
+          setMetrics(mockMetrics);
+          setLoading(false);
+          return;
+        }
+
         const activeCampaigns = activeCampaignsResult.count ?? 0;
         const sentEvents = sentEventsResult.data?.length ?? 0;
         const clickedEvents = clickedEventsResult.data?.length ?? 0;
@@ -124,10 +146,12 @@ export default function DashboardPage() {
         });
 
         setCompanyId(companyIdToUse);
+        setError(null);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
+      } catch (err) {
+        console.error('Error fetching metrics:', err);
         // Fallback to mock data on any error
+        setError('Failed to fetch dashboard data');
         await new Promise(resolve => setTimeout(resolve, 800));
         setMetrics(mockMetrics);
         setLoading(false);

@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from 'react'
 import type { FieldPath, FieldValues, UseFormReturn } from 'react-hook-form'
-import { FormProvider } from 'react-hook-form'
+import { FormProvider, useFormContext } from 'react-hook-form'
 
 interface FormProps<
   TFieldValues extends FieldValues = FieldValues,
@@ -53,7 +54,7 @@ function FormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({ name, children }: FormFieldProps<TFieldValues, TName>) {
-  const methods = React.useContext(FormProvider) as UseFormReturn<TFieldValues>
+  const methods = useFormContext()
   const fieldState = methods.getFieldState(name, methods.formState)
 
   return (

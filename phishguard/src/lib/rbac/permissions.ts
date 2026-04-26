@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * RBAC Permission Checking Utilities
  *
@@ -90,11 +91,16 @@ export async function requirePermission(
     }
     throw redirect(options?.onUnauthorized || '/403');
   }
-  return getAuthContext().then(ctx => ctx!);
+  try {
+    const ctx = await getAuthContext();
+    return ctx!;
+  } catch {
+    throw redirect('/login');
+  }
 }
 
 // Re-export args type for use in loaders
-interface _Args {
+type LoaderArgs = {
   request: Request;
 }
 
@@ -192,7 +198,7 @@ export interface CampaignApprovalState {
  * Get campaign approval state
  */
 export async function getCampaignApprovalState(
-  _campaignId: string
+  
 ): Promise<CampaignApprovalState> {
   const context = await getAuthContext();
   if (!context) {

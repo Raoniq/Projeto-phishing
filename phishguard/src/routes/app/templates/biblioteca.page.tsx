@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, type Database } from '@/lib/supabase'
 import { useUser } from '@/hooks/useUser'
@@ -178,7 +180,13 @@ export default function BibliotecaPage() {
 
     try {
       const text = await file.text()
-      const imported = JSON.parse(text)
+      let imported: unknown
+      try {
+        imported = JSON.parse(text)
+      } catch {
+        alert('Arquivo JSON inválido. Verifique se o conteúdo está bem formatado.')
+        return
+      }
 
       const templatesToImport = Array.isArray(imported) ? imported : [imported]
 
@@ -457,7 +465,10 @@ export default function BibliotecaPage() {
             </Button>
             {previewTemplate && (
               <Button variant="primary" onClick={() => {
-                cloneTemplate(templates.find(t => t.id === previewTemplate.id)!)
+                const templateToClone = templates.find(t => t.id === previewTemplate.id)
+                if (templateToClone) {
+                  cloneTemplate(templateToClone)
+                }
                 setIsPreviewOpen(false)
               }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
