@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { supabase } from '@/lib/supabase';
 import { isMockMode } from '@/lib/auth/session';
+import { mockSupabaseAuth } from '@/lib/auth/mockAuth';
 
 // Client logos for social proof (SVG placeholders representing company logos)
 const clientLogos = [
@@ -74,7 +75,7 @@ export default function LoginPage() {
         return;
       }
       navigate('/app/dashboard');
-    } catch (err) {
+    } catch {
       setError('Erro ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
@@ -99,7 +100,7 @@ export default function LoginPage() {
         return;
       }
       setMagicLinkSent(true);
-    } catch (err) {
+    } catch {
       setError('Erro ao enviar link mágico. Tente novamente.');
     } finally {
       setIsLoading(false);
@@ -372,8 +373,25 @@ export default function LoginPage() {
             </>
           )}
 
-          {/* Terms */}
-          <p className="mt-6 text-xs text-noir-500 text-center">
+{/* Demo Button */}
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await mockSupabaseAuth.signIn({ email: 'demo@phishguard.app', name: 'Demo User' });
+                    navigate('/app/dashboard');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition-all duration-200"
+                >
+                  <svg className="w-5 h-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">Entrar como Demo</span>
+                </button>
+              </div>
+
+              {/* Terms */}
+              <p className="mt-6 text-xs text-noir-500 text-center">
             Ao entrar, você concorda com nossos{' '}
             <Link to="/termos" className="text-amber-500/70 hover:text-amber-500 transition-colors">
               Termos de Uso
