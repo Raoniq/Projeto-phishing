@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export interface DepartmentData {
   id: string;
@@ -46,23 +48,82 @@ const DIMENSIONS = [
   { key: 'trainingCompletion', label: 'Training', description: 'Overall training completion rate across all tracks' },
 ] as const;
 
-const MOCK_DEPARTMENTS: DepartmentData[] = [
-  { id: 'dept-1', name: 'Engineering', clickRate: 12, failureRate: 8, trainingCompletion: 94, employeeCount: 45 },
-  { id: 'dept-2', name: 'Marketing', clickRate: 28, failureRate: 22, trainingCompletion: 78, employeeCount: 32 },
-  { id: 'dept-3', name: 'Finance', clickRate: 8, failureRate: 5, trainingCompletion: 98, employeeCount: 28 },
-  { id: 'dept-4', name: 'Sales', clickRate: 35, failureRate: 31, trainingCompletion: 65, employeeCount: 67 },
-  { id: 'dept-5', name: 'HR', clickRate: 15, failureRate: 12, trainingCompletion: 88, employeeCount: 18 },
-  { id: 'dept-6', name: 'Operations', clickRate: 42, failureRate: 38, trainingCompletion: 52, employeeCount: 54 },
-  { id: 'dept-7', name: 'Legal', clickRate: 6, failureRate: 4, trainingCompletion: 91, employeeCount: 12 },
-];
-
 export function DepartmentRiskHeatmap({
-  departments = MOCK_DEPARTMENTS,
+  departments: propDepartments,
   onDepartmentClick,
 }: DepartmentRiskHeatmapProps) {
+  const [departments, setDepartments] = useState<DepartmentData[]>(propDepartments || []);
+  const [loading, setLoading] = useState(false);
+  const { company } = useAuth();
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentData | null>(null);
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!company?.id) return;
+
+    const fetchDepartmentData = async () => {
+      setLoading(true);
+      try {
+        // Fetch department scores
+        const { data: scores, error: scoresError } = await supabase
+          .from('department_scores')
+          .select('*')
+          .eq('company_id', company.id);
+
+        if (scoresError) throw scoresError;
+
+        // Fetch campaign targets for additional metrics
+        const { data: targets, error: targetsError } = await supabase
+          .from('campaign_targets')
+          .select(`
+            id,
+            users!inner(
+              department,
+              company_id
+            )
+          `)
+          .eq('users.company_id', company.id);
+
+        if (targetsError) throw targetsError;
+
+        // Group targets by department to calculate clickRate and failureRate
+        const deptMetrics: Record<string, { clicks: number; failures: number; total: number }> = {};
+        
+        targets?.forEach((target: any) => {
+          const dept = target.users?.department || 'Unknown';
+          if (!deptMetrics[dept]) {
+            deptMetrics[dept] = { clicks: 0, failures: 0, total: 0 };
+          }
+          deptMetrics[dept].total++;
+          if (target.clicked_at) deptMetrics[dept].clicks++;
+          if (target.failed) deptMetrics[dept].failures++;
+        });
+
+        // Map scores to DepartmentData
+        const deptData: DepartmentData[] = (scores || []).map((score: any) => {
+          const metrics = deptMetrics[score.department_name] || { clicks: 0, failures: 0, total: 0 };
+          return {
+            id: score.department_id || score.id,
+            name: score.department_name,
+            clickRate: metrics.total > 0 ? Math.round((metrics.clicks / metrics.total) * 100) : 0,
+            failureRate: metrics.total > 0 ? Math.round((metrics.failures / metrics.total) * 100) : 0,
+            trainingCompletion: score.training_completion || 0,
+            employeeCount: score.employee_count || metrics.total,
+          };
+        });
+
+        setDepartments(deptData.length > 0 ? deptData : propDepartments || []);
+      } catch (err) {
+        console.error('Error fetching department data:', err);
+        setDepartments(propDepartments || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartmentData();
+  }, [company?.id]);
 
   const handleCellHover = useCallback(
     (department: DepartmentData, dimension: string, event: React.MouseEvent) => {

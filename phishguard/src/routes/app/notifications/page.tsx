@@ -18,7 +18,6 @@ import {
   Inbox,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { getSession, isMockMode } from '@/lib/auth/session';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -88,78 +87,11 @@ const TYPE_LABELS = {
 } as const;
 
 // ============================================================================
-// Mock Data
-// ============================================================================
-
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    user_id: user?.id || '',
-    title: 'Campanha "Phishing Q1" concluída',
-    body: 'A campanha foi finalizada com 156 cliques e 48 reportes. Taxa de reporte: 38.4%.',
-    type: 'campaign_completed',
-    read_at: null,
-    metadata: { campaign_id: 'camp-123', stats: { clicks: 156, reports: 48 } },
-    created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '2',
-    user_id: user?.id || '',
-    title: 'Novo treinamento atribuído',
-    body: 'Complete o módulo de "Reconhecimento de Phishing" até sexta-feira. Duração: 45 minutos.',
-    type: 'training_assigned',
-    read_at: null,
-    metadata: { track_id: 'track-456', deadline: '2026-04-30' },
-    created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '3',
-    user_id: user?.id || '',
-    title: 'Certificado conquistado',
-    body: 'Você completou o treinamento de Segurança Digital Básico! Baixe seu certificado.',
-    type: 'certificate_earned',
-    read_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    metadata: { certificate_id: 'cert-789' },
-    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    user_id: user?.id || '',
-    title: 'Campanha "Simulação SMS" iniciada',
-    body: 'A campanha de smishing foi iniciada com 200 alvos. Monitore os resultados em tempo real.',
-    type: 'info',
-    read_at: null,
-    metadata: { campaign_id: 'camp-456', target_count: 200 },
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '5',
-    user_id: user?.id || '',
-    title: 'Novo usuário registrado',
-    body: 'Maria Silva foi adicionada à empresa. Complete o onboarding.',
-    type: 'info',
-    read_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    metadata: { user_id: 'user-999', action: 'user_created' },
-    created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '6',
-    user_id: user?.id || '',
-    title: 'Relatório semanal disponível',
-    body: 'Seu resumo semanal de phishing está pronto. Clique para visualizar.',
-    type: 'campaign_completed',
-    read_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    metadata: { report_id: 'report-111' },
-    created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-// ============================================================================
 // Page Component
 // ============================================================================
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -167,36 +99,29 @@ export default function NotificationsPage() {
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Initialize and fetch
+  // Set userId from auth
   useEffect(() => {
-    const init = async () => {
-      const session = await getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-      }
-    };
-    init();
-  }, []);
+    if (user?.id) {
+      setUserId(user.id);
+    }
+  }, [user]);
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
+    if (!userId) return;
+
     setIsLoading(true);
     try {
-      if (isMockMode()) {
-        await new Promise(resolve => setTimeout(resolve, 600));
-        setNotifications(MOCK_NOTIFICATIONS);
-      } else if (userId) {
-        const query = supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
+      const query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-        const { data, error } = await query;
+      const { data, error } = await query;
 
-        if (!error && data) {
-          setNotifications(data as NotificationItem[]);
-        }
+      if (!error && data) {
+        setNotifications(data as NotificationItem[]);
       }
     } finally {
       setIsLoading(false);
@@ -209,7 +134,7 @@ export default function NotificationsPage() {
 
   // Realtime subscription
   useEffect(() => {
-    if (isMockMode() || !userId) return;
+    if (!userId) return;
 
     const channel = supabase
       .channel('notifications-page-realtime')
@@ -250,13 +175,6 @@ export default function NotificationsPage() {
 
   // Mark as read
   const markAsRead = async (notificationId: string) => {
-    if (isMockMode()) {
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n)
-      );
-      return;
-    }
-
     await supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
@@ -269,26 +187,19 @@ export default function NotificationsPage() {
 
   // Mark all as read
   const markAllAsRead = async () => {
-    if (!userId && !isMockMode()) return;
+    if (!userId) return;
 
     setIsMarkingAllRead(true);
     try {
-      if (isMockMode()) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
-        );
-      } else {
-        await supabase
-          .from('notifications')
-          .update({ read_at: new Date().toISOString() })
-          .eq('user_id', userId)
-          .is('read_at', null);
+      await supabase
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .is('read_at', null);
 
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
-        );
-      }
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
+      );
     } finally {
       setIsMarkingAllRead(false);
     }
@@ -298,17 +209,12 @@ export default function NotificationsPage() {
   const deleteNotification = async (notificationId: string) => {
     setIsDeleting(notificationId);
     try {
-      if (isMockMode()) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      } else {
-        await supabase
-          .from('notifications')
-          .delete()
-          .eq('id', notificationId);
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
 
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } finally {
       setIsDeleting(null);
     }

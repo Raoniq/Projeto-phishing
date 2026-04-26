@@ -1,6 +1,8 @@
 // Landing Page Preview Component
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { LandingTemplate, BuilderState, DomainMaskConfig } from './types';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface Props {
   template: LandingTemplate | null;
@@ -9,28 +11,57 @@ interface Props {
   isFullPage?: boolean;
 }
 
-// Mock data for variable interpolation
-const MOCK_DATA = {
-  FirstName: 'João',
-  LastName: 'Silva',
-  Email: 'joao.silva@empresa.com',
-  CompanyName: 'Acme Corp',
-};
-
 // Variable patterns to interpolate
 const VARIABLE_PATTERN = /\{\{(\.[a-zA-Z0-9]+)\}\}/g;
 
-function interpolateVariables(text: string): string {
+function interpolateVariables(text: string, data: Record<string, string>): string {
   return text.replace(VARIABLE_PATTERN, (_, varPath) => {
-    const key = varPath.replace('.', '') as keyof typeof MOCK_DATA;
-    return MOCK_DATA[key] || varPath;
+    const key = varPath.replace('.', '');
+    return data[key] || varPath;
   });
 }
 
 export default function LandingPreview({ template, customizations, domainMask, isFullPage }: Props) {
+  const { company } = useAuth();
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showTestResult, setShowTestResult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [landingPagesData, setLandingPagesData] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function fetchRealData() {
+      if (!company?.id) return;
+
+      // Fetch real landing pages for the company
+      const { data: pages } = await supabase
+        .from('landing_pages')
+        .select('name, slug, headline, body_text')
+        .eq('company_id', company.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+      if (pages) {
+        // Extract name from "name" field or generate from slug
+        const nameParts = pages.name?.split(' ') || pages.slug?.split('-') || [];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Use company domain to generate email
+        const emailPrefix = pages.slug?.replace(/-/g, '.') || 'user';
+        const companyDomain = company.domain || 'company.com';
+
+        setLandingPagesData({
+          FirstName: firstName,
+          LastName: lastName,
+          Email: `${emailPrefix}@${companyDomain}`,
+          CompanyName: company.name,
+        });
+      }
+    }
+
+    fetchRealData();
+  }, [company]);
 
   const handleTestSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,12 +95,12 @@ export default function LandingPreview({ template, customizations, domainMask, i
                     template.category === 'ti' ? '💻' :
                     template.category === 'gov' ? '🏛️' : '🛒';
 
-  // Interpolate content with mock variables
-  const headline = interpolateVariables(template.content.headline);
-  const subheadline = interpolateVariables(template.content.subheadline);
-  const body = interpolateVariables(template.content.body);
-  const ctaText = interpolateVariables(template.content.ctaText);
-  const footerText = interpolateVariables(template.content.footerText);
+  // Interpolate content with real data
+  const headline = interpolateVariables(template.content.headline, landingPagesData);
+  const subheadline = interpolateVariables(template.content.subheadline, landingPagesData);
+  const body = interpolateVariables(template.content.body, landingPagesData);
+  const ctaText = interpolateVariables(template.content.ctaText, landingPagesData);
+  const footerText = interpolateVariables(template.content.footerText, landingPagesData);
 
   return (
     <div
@@ -125,7 +156,7 @@ export default function LandingPreview({ template, customizations, domainMask, i
               <span>{body}</span>
             </div>
 
-            {/* Form Fields - Now with pre-filled mock data */}
+            {/* Form Fields - Pre-filled with real data */}
             <form className="space-y-4" onSubmit={handleTestSubmit}>
               {template.fields.map((field) => (
                 <div key={field.id}>
@@ -150,12 +181,12 @@ export default function LandingPreview({ template, customizations, domainMask, i
                   ) : (
                     <input
                       type={field.type}
-                      placeholder={interpolateVariables(field.placeholder)}
+                      placeholder={interpolateVariables(field.placeholder, landingPagesData)}
                       defaultValue={
-                        field.name === 'firstName' || field.name === 'first_name' ? MOCK_DATA.FirstName :
-                        field.name === 'lastName' || field.name === 'last_name' ? MOCK_DATA.LastName :
-                        field.name === 'email' ? MOCK_DATA.Email :
-                        field.name === 'company' || field.name === 'companyName' ? MOCK_DATA.CompanyName :
+                        field.name === 'firstName' || field.name === 'first_name' ? landingPagesData.FirstName :
+                        field.name === 'lastName' || field.name === 'last_name' ? landingPagesData.LastName :
+                        field.name === 'email' ? landingPagesData.Email :
+                        field.name === 'company' || field.name === 'companyName' ? landingPagesData.CompanyName :
                         ''
                       }
                       className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"

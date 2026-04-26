@@ -6,9 +6,12 @@
  * Forensic Noir theme with amber/gold accents for earned badges.
  */
 
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { Lock, Award, Star, Target, Zap, Clock, CheckCircle2, Shield, Trophy, Flame } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 // Badge type definitions
 export type BadgeType =
@@ -304,16 +307,101 @@ function BadgeItem({
 }
 
 export function BadgeGrid({
-  badges,
+  badges: initialBadges,
   earnedOnly = false,
   showDescriptions = true,
   size = 'md',
   className,
 }: BadgeGridProps) {
+  const { user, profile } = useAuth()
+  const [badges, setBadges] = useState<Badge[]>(initialBadges || [])
+  const [loading, setLoading] = useState(!initialBadges)
+
+  useEffect(() => {
+    if (initialBadges) {
+      setBadges(initialBadges)
+      setLoading(false)
+      return
+    }
+
+    async function fetchBadges() {
+      if (!user) {
+        setBadges([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Fetch earned badges from user_badges
+        const { data: userBadges, error } = await supabase
+          .from('user_badges')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('awarded_at', { ascending: false })
+
+        if (error) {
+          console.error('[BadgeGrid] Failed to fetch badges:', error.message)
+          setBadges([])
+          setLoading(false)
+          return
+        }
+
+        // Transform user_badges into Badge format
+        // Map badge_type to BADGE_CATALOG entries
+        const earnedBadges: Badge[] = (userBadges || []).map((ub) => {
+          const catalogEntry = BADGE_CATALOG[ub.badge_type as BadgeType]
+          return {
+            id: ub.id,
+            type: ub.badge_type as BadgeType,
+            name: catalogEntry?.name || ub.badge_name,
+            description: catalogEntry?.description || '',
+            icon: catalogEntry?.icon || 'Award',
+            rarity: catalogEntry?.rarity || 'common',
+            earnedAt: ub.awarded_at,
+          }
+        })
+
+        // Get all badge types that are NOT earned yet
+        const earnedTypes = new Set(earnedBadges.map((b) => b.type))
+        const lockedBadges: Badge[] = Object.entries(BADGE_CATALOG)
+          .filter(([type]) => !earnedTypes.has(type as BadgeType))
+          .map(([type, catalog]) => ({
+            id: `locked-${type}`,
+            type: type as BadgeType,
+            name: catalog.name,
+            description: catalog.description,
+            icon: catalog.icon,
+            rarity: catalog.rarity,
+          }))
+
+        setBadges([...earnedBadges, ...lockedBadges])
+      } catch (err) {
+        console.error('[BadgeGrid] Unexpected error:', err)
+        setBadges([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBadges()
+  }, [user, profile, initialBadges])
+
   const earnedBadges = badges.filter((b) => b.earnedAt)
   const lockedBadges = badges.filter((b) => !b.earnedAt)
 
   const displayBadges = earnedOnly ? earnedBadges : badges
+
+  if (loading) {
+    return (
+      <div className={cn(
+        'flex flex-col items-center justify-center rounded-xl border border-[var(--color-surface-3)] bg-[var(--color-surface-1)] p-8 text-center',
+        className
+      )}>
+        <Award className="h-10 w-10 text-[var(--color-surface-3)] mb-3 animate-pulse" />
+        <p className="text-sm text-[var(--color-fg-tertiary)]">Carregando badges...</p>
+      </div>
+    )
+  }
 
   if (displayBadges.length === 0) {
     return (
@@ -445,62 +533,3 @@ export function MiniBadgePreview({ earnedCount, totalCount, className }: MiniBad
     </motion.div>
   )
 }
-
-// Mock data for testing
-export const MOCK_BADGES: Badge[] = [
-  {
-    id: '1',
-    ...BADGE_CATALOG.first_track,
-    earnedAt: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    ...BADGE_CATALOG.speed_demon,
-    earnedAt: '2024-01-20T14:20:00Z',
-  },
-  {
-    id: '3',
-    ...BADGE_CATALOG.perfectionist,
-    earnedAt: '2024-02-05T09:15:00Z',
-  },
-  {
-    id: '4',
-    ...BADGE_CATALOG.phish_hunter,
-    earnedAt: '2024-02-28T16:45:00Z',
-  },
-  {
-    id: '5',
-    ...BADGE_CATALOG.streak_master,
-    earnedAt: '2024-03-10T11:00:00Z',
-  },
-  {
-    id: '6',
-    ...BADGE_CATALOG.quiz_whiz,
-  },
-  {
-    id: '7',
-    ...BADGE_CATALOG.track_complete,
-  },
-  {
-    id: '8',
-    ...BADGE_CATALOG.department_champion,
-  },
-  {
-    id: '9',
-    ...BADGE_CATALOG.module_complete,
-    earnedAt: '2024-01-10T08:00:00Z',
-  },
-  {
-    id: '10',
-    ...BADGE_CATALOG.security_awareness,
-    earnedAt: '2024-01-12T10:00:00Z',
-  },
-  {
-    id: '11',
-    ...BADGE_CATALOG.rapid_responder,
-  },
-  {
-    id: '12',
-    ...BADGE_CATALOG.untouchable,
-  },
-]

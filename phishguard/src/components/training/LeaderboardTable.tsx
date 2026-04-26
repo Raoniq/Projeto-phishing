@@ -7,10 +7,13 @@
  * Simplified version for training dashboard integration.
  */
 
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { Trophy, Medal, Shield, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatPoints } from '@/lib/gamification/types'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 // Leaderboard entry for training UI
 export interface LeaderboardEntry {
@@ -25,7 +28,7 @@ export interface LeaderboardEntry {
 }
 
 export interface LeaderboardTableProps {
-  entries: LeaderboardEntry[]
+  entries?: LeaderboardEntry[]
   currentUserId?: string
   showDepartment?: boolean
   showTrend?: boolean
@@ -34,6 +37,7 @@ export interface LeaderboardTableProps {
   title?: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  companyId?: string
 }
 
 // Rank icon and color helpers
@@ -218,7 +222,7 @@ function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
 }
 
 export function LeaderboardTable({
-  entries,
+  entries: propEntries,
   currentUserId,
   showDepartment = true,
   showTrend = true,
@@ -227,12 +231,80 @@ export function LeaderboardTable({
   title = 'Ranking',
   size = 'md',
   className,
+  companyId: propCompanyId,
 }: LeaderboardTableProps) {
+  const { company } = useAuth()
+  const companyId = propCompanyId ?? company?.id
+
+  const [entries, setEntries] = useState<LeaderboardEntry[]>(propEntries ?? [])
+  const [loading, setLoading] = useState(!propEntries && !!companyId)
+
+  useEffect(() => {
+    if (!companyId || propEntries !== undefined) {
+      if (propEntries !== undefined) setEntries(propEntries)
+      setLoading(false)
+      return
+    }
+
+    async function fetchLeaderboard() {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('training_progress')
+        .select(`
+          user_id,
+          points,
+          users:user_id (
+            id,
+            name,
+            avatar_url,
+            department
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('points', { ascending: false })
+        .limit(50)
+
+      if (!error && data) {
+        const mapped: LeaderboardEntry[] = data
+          .map((row, index) => ({
+            rank: index + 1,
+            userId: row.users?.id ?? row.user_id,
+            userName: row.users?.name ?? 'Usuário',
+            userAvatar: row.users?.avatar_url ?? null,
+            department: row.users?.department ?? undefined,
+            points: row.points ?? 0,
+            trend: 'stable' as const,
+          }))
+        setEntries(mapped)
+      }
+      setLoading(false)
+    }
+
+    fetchLeaderboard()
+  }, [companyId, propEntries])
+
   const displayEntries = limit ? entries.slice(0, limit) : entries
 
   // Find current user's position
   const currentUserEntry = entries.find((e) => e.userId === currentUserId)
   const currentUserRank = currentUserEntry?.rank
+
+  if (loading) {
+    return (
+      <div className={cn(
+        'rounded-xl border border-[var(--color-surface-3)] bg-[var(--color-surface-1)] p-6',
+        className
+      )}>
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="h-5 w-5 text-[var(--color-warning)]" />
+          <h3 className="font-display text-base font-semibold text-[var(--color-fg-primary)]">
+            {title}
+          </h3>
+        </div>
+        <LeaderboardSkeleton rows={5} />
+      </div>
+    )
+  }
 
   if (entries.length === 0) {
     return (
@@ -346,16 +418,3 @@ export function CompactLeaderboard({
   )
 }
 
-// Mock data for testing
-export const MOCK_LEADERBOARD_ENTRIES: LeaderboardEntry[] = [
-  { rank: 1, userId: 'u1', userName: 'Maria Silva', points: 2450, department: 'Engenharia', trend: 'up' },
-  { rank: 2, userId: 'u2', userName: 'João Santos', points: 2180, department: 'Marketing', trend: 2 },
-  { rank: 3, userId: 'u3', userName: 'Ana Costa', points: 1950, department: 'Vendas', trend: 'down' },
-  { rank: 4, userId: 'u4', userName: 'Pedro Oliveira', points: 1820, department: 'RH', trend: 'stable' },
-  { rank: 5, userId: 'u5', userName: 'Carla Mendes', points: 1650, department: 'Financeiro', trend: 1 },
-  { rank: 6, userId: 'u6', userName: 'Rafael Lima', points: 1490, department: 'TI', trend: 'up' },
-  { rank: 7, userId: 'u7', userName: 'Lucia Ferreira', points: 1320, department: 'Marketing', trend: 'down' },
-  { rank: 8, userId: 'u8', userName: 'Bruno Almeida', points: 1180, department: 'Engenharia', trend: 3 },
-  { rank: 9, userId: 'u9', userName: 'Fernanda Rocha', points: 950, department: 'Vendas', trend: 'stable' },
-  { rank: 10, userId: 'u10', userName: 'Carlos Souza', points: 820, department: 'RH', trend: 'up' },
-]

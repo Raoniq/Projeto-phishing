@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FileText, Download, Eye, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface AttachmentStat {
   id: string;
@@ -18,32 +20,12 @@ interface AttachmentTrackingProps {
   className?: string;
 }
 
-// Mock data for demonstration - replace with actual Supabase query
-const MOCK_ATTACHMENTS: AttachmentStat[] = [
-  {
-    id: '1',
-    attachment_name: 'Invoice_February_2024.pdf',
-    attachment_hash: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd',
-    opened_count: 23,
-    opened_at: '2024-02-15T14:30:00Z',
-  },
-  {
-    id: '2',
-    attachment_name: 'Q4_Report.xlsx',
-    attachment_hash: 'b2c3d4e5f67890123456789012345678901234567890123456789012345abcde',
-    opened_count: 15,
-    opened_at: '2024-02-14T09:15:00Z',
-  },
-  {
-    id: '3',
-    attachment_name: 'Contract_Draft.docx',
-    attachment_hash: 'c3d4e5f678901234567890123456789012345678901234567890123456abcdef',
-    opened_count: 8,
-    opened_at: '2024-02-13T16:45:00Z',
-  },
-];
-
-function formatDate(dateString: string | null): string {
+export function AttachmentTracking({
+  campaignId: _campaignId,
+  className,
+}: AttachmentTrackingProps) {
+  const { company } = useAuth();
+  const [attachments, setAttachments] = useState<AttachmentStat[]>([]);
   if (!dateString) return 'Never';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
@@ -77,20 +59,62 @@ export function AttachmentTracking({
   const [sortBy, setSortBy] = useState<'name' | 'count' | 'date'>('count');
 
   useEffect(() => {
-    // Simulate loading data
-    // Replace with actual Supabase query:
-    // const { data } = await supabase
-    //   .from('attachment_tracking')
-    //   .select('*')
-    //   .order('opened_count', { ascending: false })
+    if (!company?.id) return;
+
     const loadData = async () => {
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setAttachments(MOCK_ATTACHMENTS);
+
+      const { data, error } = await supabase
+        .from('campaign_events')
+        .select(`
+          id,
+          event_type,
+          created_at,
+          campaign_target:campaign_targets(
+            id,
+            attachment_name,
+            attachment_hash
+          )
+        `)
+        .eq('company_id', company.id)
+        .eq('event_type', 'attachment_opened')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading attachment data:', error);
+        setAttachments([]);
+      } else {
+        // Aggregate attachment stats
+        const statsMap = new Map<string, AttachmentStat>();
+        for (const event of data || []) {
+          const target = event.campaign_target as unknown as { id: string; attachment_name: string; attachment_hash: string } | null;
+          if (!target) continue;
+
+          const key = target.attachment_hash;
+          const existing = statsMap.get(key);
+          if (existing) {
+            existing.opened_count += 1;
+            if (!existing.opened_at || event.created_at > existing.opened_at) {
+              existing.opened_at = event.created_at;
+            }
+          } else {
+            statsMap.set(key, {
+              id: target.id,
+              attachment_name: target.attachment_name,
+              attachment_hash: key,
+              opened_count: 1,
+              opened_at: event.created_at,
+            });
+          }
+        }
+        setAttachments(Array.from(statsMap.values()));
+      }
+
       setLoading(false);
     };
+
     loadData();
-  }, [_campaignId]);
+  }, [company?.id]);
 
   const sortedAttachments = [...attachments].sort((a, b) => {
     switch (sortBy) {

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -21,6 +21,8 @@ import {
   DialogFooter
 } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface Group {
   id: string;
@@ -32,72 +34,6 @@ interface Group {
   managers: string[];
 }
 
-const MOCK_GROUPS: Group[] = [
-  {
-    id: 'group-1',
-    name: 'TI',
-    description: 'Tecnologia da Informação',
-    userCount: 124,
-    riskLevel: 'medium',
-    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Carlos Santos', 'Ana Silva'],
-  },
-  {
-    id: 'group-2',
-    name: 'Financeiro',
-    description: 'Departamento Financeiro',
-    userCount: 89,
-    riskLevel: 'high',
-    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Roberto Lima'],
-  },
-  {
-    id: 'group-3',
-    name: 'RH',
-    description: 'Recursos Humanos',
-    userCount: 45,
-    riskLevel: 'low',
-    createdAt: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Maria Oliveira'],
-  },
-  {
-    id: 'group-4',
-    name: 'Comercial',
-    description: 'Departamento Comercial',
-    userCount: 156,
-    riskLevel: 'medium',
-    createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['João Costa', 'Fernanda Alves'],
-  },
-  {
-    id: 'group-5',
-    name: 'Marketing',
-    description: 'Departamento de Marketing',
-    userCount: 67,
-    riskLevel: 'low',
-    createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Paula Souza'],
-  },
-  {
-    id: 'group-6',
-    name: 'Operações',
-    description: 'Departamento de Operações',
-    userCount: 203,
-    riskLevel: 'high',
-    createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Marcelo Ferreira'],
-  },
-  {
-    id: 'group-7',
-    name: 'Jurídico',
-    description: 'Departamento Jurídico',
-    userCount: 32,
-    riskLevel: 'low',
-    createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
-    managers: ['Ricardo Gomes'],
-  },
-];
-
 const RISK_CONFIG = {
   high: { label: 'Alto', color: 'bg-red-500/20 text-red-400' },
   medium: { label: 'Médio', color: 'bg-amber-500/20 text-amber-400' },
@@ -106,8 +42,9 @@ const RISK_CONFIG = {
 
 export default function GroupsPage() {
   const navigate = useNavigate();
+  const { company } = useAuth();
 
-  const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [deleteDialog, setDeleteDialog] = useState<Group | null>(null);
   const [editDialog, setEditDialog] = useState<Group | null>(null);
   const [createDialog, setCreateDialog] = useState(false);
@@ -119,60 +56,153 @@ export default function GroupsPage() {
     description: '',
     managers: '',
   });
+  const [loading, setLoading] = useState(true);
 
-  const handleCreate = useCallback(async () => {
-    if (!formData.name.trim()) return;
+  useEffect(() => {
+    if (!company?.id) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
 
-    setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const fetchGroups = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('company_id', company.id);
 
-    const newGroup: Group = {
-      id: `group-${Date.now()}`,
-      name: formData.name,
-      description: formData.description,
-      userCount: 0,
-      riskLevel: 'low',
-      createdAt: new Date().toISOString(),
-      managers: formData.managers.split(',').map(m => m.trim()).filter(Boolean),
+        if (error) throw error;
+
+        // Fetch user count per group
+        const groupsWithCounts = await Promise.all(
+          (data || []).map(async (g) => {
+            const { count } = await supabase
+              .from('users')
+              .select('*', { count: 'exact', head: true })
+              .eq('group_id', g.id);
+
+            return {
+              id: g.id,
+              name: g.name,
+              description: g.description || '',
+              userCount: count || 0,
+              riskLevel: (g.risk_level || 'medium') as Group['riskLevel'],
+              createdAt: g.created_at,
+              managers: g.managers || [],
+            };
+          })
+        );
+
+        setGroups(groupsWithCounts);
+      } catch (err) {
+        console.error('[GroupsPage] Failed to fetch groups:', err);
+        setGroups([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setGroups(prev => [...prev, newGroup]);
-    setCreateDialog(false);
-    setFormData({ name: '', description: '', managers: '' });
-    setIsProcessing(false);
-  }, [formData]);
+    fetchGroups();
+  }, [company]);
+
+  const handleCreate = useCallback(async () => {
+    if (!formData.name.trim() || !company?.id) return;
+
+    setIsProcessing(true);
+    try {
+      const managers = formData.managers.split(',').map(m => m.trim()).filter(Boolean);
+
+      const { data, error } = await supabase
+        .from('groups')
+        .insert({
+          name: formData.name,
+          description: formData.description,
+          managers,
+          company_id: company.id,
+          risk_level: 'medium',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setGroups(prev => [...prev, {
+        id: data.id,
+        name: data.name,
+        description: data.description || '',
+        userCount: 0,
+        riskLevel: (data.risk_level || 'medium') as Group['riskLevel'],
+        createdAt: data.created_at,
+        managers: data.managers || [],
+      }]);
+      setCreateDialog(false);
+      setFormData({ name: '', description: '', managers: '' });
+    } catch (err) {
+      console.error('[GroupsPage] Failed to create group:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [formData, company]);
 
   const handleUpdate = useCallback(async () => {
     if (!editDialog || !formData.name.trim()) return;
 
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const managers = formData.managers.split(',').map(m => m.trim()).filter(Boolean);
 
-    setGroups(prev => prev.map(g =>
-      g.id === editDialog.id
-        ? {
-            ...g,
-            name: formData.name,
-            description: formData.description,
-            managers: formData.managers.split(',').map(m => m.trim()).filter(Boolean),
-          }
-        : g
-    ));
+      const { error } = await supabase
+        .from('groups')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          managers,
+        })
+        .eq('id', editDialog.id);
 
-    setEditDialog(null);
-    setFormData({ name: '', description: '', managers: '' });
-    setIsProcessing(false);
+      if (error) throw error;
+
+      setGroups(prev => prev.map(g =>
+        g.id === editDialog.id
+          ? {
+              ...g,
+              name: formData.name,
+              description: formData.description,
+              managers,
+            }
+          : g
+      ));
+
+      setEditDialog(null);
+      setFormData({ name: '', description: '', managers: '' });
+    } catch (err) {
+      console.error('[GroupsPage] Failed to update group:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   }, [editDialog, formData]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteDialog) return;
 
     setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', deleteDialog.id);
 
-    setGroups(prev => prev.filter(g => g.id !== deleteDialog.id));
-    setDeleteDialog(null);
-    setIsProcessing(false);
+      if (error) throw error;
+
+      setGroups(prev => prev.filter(g => g.id !== deleteDialog.id));
+      setDeleteDialog(null);
+    } catch (err) {
+      console.error('[GroupsPage] Failed to delete group:', err);
+    } finally {
+      setIsProcessing(false);
+    }
   }, [deleteDialog]);
 
   const openEditDialog = useCallback((group: Group) => {

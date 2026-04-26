@@ -7,16 +7,8 @@ import {
   DialogDescription,
 } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
-
-// Template variable mock data
-const MOCK_DATA = {
-  '{{.FirstName}}': 'João',
-  '{{.LastName}}': 'Silva',
-  '{{.Email}}': 'joao.silva@empresa.com',
-  '{{.CompanyName}}': 'Acme Corp',
-  '{{.CampaignName}}': 'Test Campaign',
-  '{{.Department}}': 'TI',
-};
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface TemplatePreviewModalProps {
   isOpen: boolean;
@@ -39,6 +31,8 @@ export function TemplatePreviewModal({
   onClose,
   template,
 }: TemplatePreviewModalProps) {
+  const { company } = useAuth();
+  const [templateData, setTemplateData] = useState<Record<string, string>>({});
   const [previewMode, setPreviewMode] = useState<PreviewMode>('desktop');
   const [tooltipState, setTooltipState] = useState<{
     visible: boolean;
@@ -48,14 +42,71 @@ export function TemplatePreviewModal({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
+  // Fetch real template variables from database
+  useEffect(() => {
+    async function fetchTemplateVariables() {
+      if (!company?.id) return;
+
+      try {
+        // Fetch company data for variables
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('name, industry, employee_count')
+          .eq('id', company.id)
+          .single();
+
+        if (companyError) throw companyError;
+
+        // Fetch campaigns for CampaignName variable
+        const { data: campaignData } = await supabase
+          .from('campaigns')
+          .select('name')
+          .eq('company_id', company.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Fetch a sample user for template variables
+        const { data: userData } = await supabase
+          .from('users')
+          .select('first_name, last_name, email, department')
+          .eq('company_id', company.id)
+          .limit(1)
+          .single();
+
+        setTemplateData({
+          '{{.FirstName}}': userData?.first_name || 'Usuario',
+          '{{.LastName}}': userData?.last_name || '',
+          '{{.Email}}': userData?.email || 'usuario@empresa.com',
+          '{{.CompanyName}}': companyData?.name || company?.name || 'Empresa',
+          '{{.CampaignName}}': campaignData?.name || 'Campanha',
+          '{{.Department}}': userData?.department || 'Geral',
+        });
+      } catch (error) {
+        console.error('Error fetching template variables:', error);
+        // Fallback to basic values
+        setTemplateData({
+          '{{.FirstName}}': 'Usuario',
+          '{{.LastName}}': '',
+          '{{.Email}}': 'usuario@empresa.com',
+          '{{.CompanyName}}': company?.name || 'Empresa',
+          '{{.CampaignName}}': 'Campanha',
+          '{{.Department}}': 'Geral',
+        });
+      }
+    }
+
+    fetchTemplateVariables();
+  }, [company]);
+
   // Interpolate variables in HTML content
   const interpolateVariables = useCallback((html: string): string => {
     let result = html;
-    for (const [variable, value] of Object.entries(MOCK_DATA)) {
+    for (const [variable, value] of Object.entries(templateData)) {
       result = result.split(variable).join(value);
     }
     return result;
-  }, []);
+  }, [templateData]);
 
   // Inject styles and intercept CTA clicks
   const processHtmlContent = useCallback((html: string): string => {
