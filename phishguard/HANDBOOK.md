@@ -254,6 +254,19 @@ O projeto usa **dois métodos de deploy** em paralelo:
 - `VITE_SUPABASE_URL` = `https://dqalvguekknmwrrkeibx.supabase.co`
 - `VITE_SUPABASE_ANON_KEY` = configurado no GitHub
 
+### Supabase Production Credentials
+
+**Project:** `MRPhishing` (ref: `dqalvguekknmwrrkeibx`)
+**Region:** us-east-2 | **Status:** ACTIVE_HEALTHY
+
+| Credential | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://dqalvguekknmwrrkeibx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYWx2Z3Vla2tubXdycmtlaWJ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjU0ODE4NiwiZXhwIjoyMDkyMTI0MTg2fQ._H3JPCTJqyzvTm0uK5DyyRlFMfwYiL0ad0_3kYcYIkU` |
+| `SUPABASE_PAT` | `sbp_64ddb7cc36273caa068dfc7be6c23fcdf84fc2bd` |
+
+**Database host:** `db.dqalvguekknmwrrkeibx.supabase.co` (port 5432)
+
 ---
 
 ## 4. Development Commands

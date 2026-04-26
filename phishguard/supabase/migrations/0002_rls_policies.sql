@@ -60,11 +60,13 @@ CREATE POLICY "No companies deletion"
 -- Users Policies
 -- ============================================
 
--- Users: Users can view all users in their company
+-- Users: Users can view all users in their company (including themselves)
+-- Note: auth.uid() = users.auth_id handles the case where user is not yet in users table (new signup)
 CREATE POLICY "Users can view company users"
     ON users FOR SELECT
     USING (
-        auth.uid() IN (
+        auth.uid() = users.auth_id
+        OR auth.uid() IN (
             SELECT auth_id FROM users WHERE company_id = users.company_id
         )
     );

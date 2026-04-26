@@ -46,6 +46,8 @@ export { Separator } from "./Separator";
 
 export { Switch } from "./Switch";
 
+export { Checkbox } from "./Checkbox";
+
 export { Textarea } from "./Textarea";
 export type { TextareaProps } from "./Textarea";
 

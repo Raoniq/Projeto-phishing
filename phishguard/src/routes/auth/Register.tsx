@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Checkbox } from '@/components/forms/CheckboxField';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/registerSchema';
 import { supabase } from '@/lib/supabase';
 import { isMockMode } from '@/lib/auth/session';
@@ -100,7 +100,7 @@ export default function RegisterPage() {
 
       // If we have a session directly (email confirmation disabled), navigate to dashboard
       navigate('/app/dashboard');
-    } catch (err) {
+    } catch {
       setError('Erro ao criar conta. Tente novamente.');
     } finally {
       setIsLoading(false);
