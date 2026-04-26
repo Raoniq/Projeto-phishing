@@ -30,16 +30,6 @@ export function DragAndDropCanvas({
   });
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const _handleDragStart = useCallback((type: BlockType) => {
-    setDragState(prev => ({ ...prev, isDragging: true, draggedBlock: type }));
-  }, []);
-
-  const _handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (dragState.isDragging) {
-      setDragState(prev => ({ ...prev, dragOverIndex: index }));
-    }
-  }, [dragState.isDragging]);
 
   const handleDrop = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
@@ -270,7 +260,4 @@ export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
     </div>
   );
 
-  function _handleDragStart(_type: BlockType) {
-    // Drag handled by parent state
-  }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";

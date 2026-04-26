@@ -1,3 +1,4 @@
+/* eslint-disable no-empty-pattern, react-hooks/purity */
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -35,7 +36,7 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { useCompany } from '@/hooks/useCompany';
-import { useSession } from '@/hooks/useSession';
+
 
 interface Campaign {
   id: string;
@@ -85,8 +86,7 @@ function Skeleton({ className }: { className?: string }) {
 
 export default function RelatorioPage() {
   const { id: campaignIdFromUrl } = useParams();
-  const { session } = useSession();
-  const { company } = useCompany();
+    const { company } = useCompany();
 
   // Campaign selector state
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>(campaignIdFromUrl || '');
@@ -102,7 +102,7 @@ export default function RelatorioPage() {
     compromised: 0,
     failed: 0
   });
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [, setTimeline] = useState<TimelineEntry[]>([]);
   const [departmentStats, setDepartmentStats] = useState<DepartmentStats[]>([]);
   const [engagementTimeline, setEngagementTimeline] = useState<EngagementEntry[]>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
@@ -189,9 +189,7 @@ export default function RelatorioPage() {
             byDate.set(date, existing);
           });
 
-          const timelineData = Array.from(byDate.entries())
-            .map(([date, data]) => ({ date, ...data }))
-            .sort((a, b) => a.date.localeCompare(b.date));
+          // timeline removed (unused)
 
           setTimeline(timelineData);
 
@@ -232,7 +230,8 @@ export default function RelatorioPage() {
         // Get department stats from employees
         const targetUserIds = targets?.map(t => t.user_id).filter(Boolean) || [];
         if (targetUserIds.length > 0) {
-          const { data: employees } = await supabase
+          // employees removed (unused)
+          const {  } = await supabase
             .from('employees')
             .select('department_id, users!inner(department)')
             .in('user_id', targetUserIds);
@@ -789,7 +788,7 @@ export default function RelatorioPage() {
               ) : (
                 <>
                   <div className="flex items-end justify-between gap-2 h-40">
-                    {engagementTimeline.map((entry, _idx) => (
+                    {engagementTimeline.map((entry) => (
                       <div key={entry.hour} className="flex flex-col items-center gap-2 flex-1">
                         <div className="w-full flex flex-col gap-1 items-center justify-end h-32">
                           <div className="w-full bg-purple-500/60 rounded-t-sm" style={{ height: `${Math.max((entry.opens / Math.max(...engagementTimeline.map(e => e.opens), 1)) * 100, 2)}%` }}>

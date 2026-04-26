@@ -22,7 +22,7 @@ interface TooltipState {
   y: number;
 }
 
-function getRiskColor(value: number, inverse = false): string {
+function getRiskColor(value: number): string {
   // For click rate and failure rate: higher = worse (red)
   // For training completion: higher = better (green)
   // But task says "green (low) → yellow → red (high)" for all

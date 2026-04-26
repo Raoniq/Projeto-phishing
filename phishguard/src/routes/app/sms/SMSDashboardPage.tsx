@@ -1,15 +1,14 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useMemo } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   ArrowLeft,
-  MessageSquare,
   Send,
   CheckCircle,
   XCircle,
   MousePointerClick,
   MessageSquareOff,
   TrendingUp,
-  TrendingDown,
   Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
 import { MetricCard } from '@/components/data-viz/MetricCard';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface SMSMetrics {
   sent: number;
@@ -82,6 +82,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function SMSDashboardPage() {
+  const { company } = useAuth();
   const [metrics, setMetrics] = useState<SMSMetrics | null>(null);
   const [timelineData, setTimelineData] = useState<TimelineDataPoint[]>([]);
   const [timeToClickData, setTimeToClickData] = useState<TimeToClickBucket[]>([]);
@@ -90,23 +91,80 @@ export default function SMSDashboardPage() {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    // Load mock data
-    const mockMetrics: SMSMetrics = {
-      sent: 12847,
-      delivered: 11423,
-      failed: 1424,
-      clicked: 1847,
-      optOut: 89,
-      deliveryRate: 88.9,
-      clickRate: 16.2,
-      optOutRate: 0.78,
+    if (!company?.id) {
+      setMetrics(null);
+      setTimelineData([]);
+      setTimeToClickData([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        // Fetch SMS campaign stats
+        const { data: smsData } = await supabase
+          .from('sms_campaigns')
+          .select('sent_count, failed_count')
+          .eq('company_id', company.id);
+
+        const sent = smsData?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0;
+        const failed = smsData?.reduce((sum, c) => sum + (c.failed_count || 0), 0) || 0;
+        const delivered = sent - failed;
+        const deliveryRate = sent > 0 ? parseFloat(((delivered / sent) * 100).toFixed(1)) : 0;
+
+        // Fetch SMS message logs for click data
+        const { data: logsData } = await supabase
+          .from('sms_message_logs')
+          .select('status')
+          .eq('company_id', company.id)
+          .limit(1000);
+
+        const clicked = logsData?.filter(l => l.status === 'clicked').length || 0;
+        const clickRate = delivered > 0 ? parseFloat(((clicked / delivered) * 100).toFixed(1)) : 0;
+
+        setMetrics({
+          sent,
+          delivered,
+          failed,
+          clicked,
+          optOut: 0,
+          deliveryRate,
+          clickRate,
+          optOutRate: 0
+        });
+
+        // Generate timeline from last 30 days
+        const now = new Date();
+        const timeline: TimelineDataPoint[] = [];
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          timeline.push({
+            date: date.toISOString().split('T')[0],
+            sent: 0,
+            delivered: 0,
+            clicked: 0
+          });
+        }
+        setTimelineData(timeline);
+
+        setTimeToClickData([
+          { range: '< 1min', count: 0, percentage: 0 },
+          { range: '1-5min', count: 0, percentage: 0 },
+          { range: '5-15min', count: 0, percentage: 0 },
+          { range: '15-30min', count: 0, percentage: 0 },
+          { range: '> 30min', count: 0, percentage: 0 }
+        ]);
+
+      } catch (err) {
+        console.error('[SMSDashboard] Failed to fetch:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setMetrics(mockMetrics);
-    setTimelineData(generateMockTimelineData());
-    setTimeToClickData(generateMockTimeToClickData());
-    setLoading(false);
-  }, []);
+    fetchData();
+  }, [company]);
 
   const maxTimelineValue = useMemo(() => {
     if (!timelineData.length) return 100;

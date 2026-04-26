@@ -213,7 +213,7 @@ async function handleBatchEmails(request: Request, env: Env, ctx: ExecutionConte
 }
 
 // Get queue status
-async function handleQueueStatus(_env: Env): Promise<Response> {
+async function handleQueueStatus(): Promise<Response> {
   // In production, get from persistent storage
   // For MVP, return mock stats
   return new Response(JSON.stringify({
@@ -348,7 +348,7 @@ function getRateLimitFromKV(env: Env): {
 }
 
 // Helper: Increment rate limit counter
-async function incrementRateLimitCounter(_env: Env): Promise<void> {
+async function incrementRateLimitCounter(): Promise<void> {
   // In production, use KV to track across workers
   // For MVP, this is a no-op
 }

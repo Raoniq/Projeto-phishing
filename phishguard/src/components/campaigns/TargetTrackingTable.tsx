@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useCallback, useMemo } from 'react';
 import {
   ChevronUp,
@@ -24,6 +25,18 @@ import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { TimeToClickChart, TimeBucket } from '@/components/data-viz/TimeToClickChart';
+
+// Sort icon component
+const SortIcon = ({ field, sortField, sortDirection }: { field: SortField; sortField: SortField; sortDirection: 'asc' | 'desc' }) => {
+  if (sortField !== field) {
+    return <ChevronsUpDown className="h-4 w-4 text-[var(--color-fg-muted)]" />;
+  }
+  return sortDirection === 'asc' ? (
+    <ChevronUp className="h-4 w-4 text-[var(--color-accent)]" />
+  ) : (
+    <ChevronDown className="h-4 w-4 text-[var(--color-accent)]" />
+  );
+};
 
 // Time bucket thresholds in milliseconds
 const TIME_BUCKETS = [
@@ -261,7 +274,7 @@ export function TargetTrackingTable({
   }, [campaignId]);
 
   // Initial load
-  useMemo(() => {
+  useEffect(() => {
     if (campaignId) {
       loadData();
     }
@@ -400,18 +413,6 @@ export function TargetTrackingTable({
     setFilters({ statuses: [], department: '', search: '' });
     setCurrentPage(1);
   }, []);
-
-  // Sort icon component
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) {
-      return <ChevronsUpDown className="h-4 w-4 text-[var(--color-fg-muted)]" />;
-    }
-    return sortDirection === 'asc' ? (
-      <ChevronUp className="h-4 w-4 text-[var(--color-accent)]" />
-    ) : (
-      <ChevronDown className="h-4 w-4 text-[var(--color-accent)]" />
-    );
-  };
 
   const hasActiveFilters = filters.statuses.length > 0 || filters.department || filters.search;
 
@@ -558,7 +559,7 @@ export function TargetTrackingTable({
                       >
                         <div className="flex items-center gap-2">
                           Email
-                          <SortIcon field="email" />
+                          <SortIcon field="email" sortField={sortField} sortDirection={sortDirection} />
                         </div>
                       </th>
                       <th
@@ -567,7 +568,7 @@ export function TargetTrackingTable({
                       >
                         <div className="flex items-center gap-2">
                           Nome
-                          <SortIcon field="nome" />
+                          <SortIcon field="nome" sortField={sortField} sortDirection={sortDirection} />
                         </div>
                       </th>
                       <th
@@ -576,7 +577,7 @@ export function TargetTrackingTable({
                       >
                         <div className="flex items-center gap-2">
                           Departamento
-                          <SortIcon field="departamento" />
+                          <SortIcon field="departamento" sortField={sortField} sortDirection={sortDirection} />
                         </div>
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--color-fg-tertiary)]">
@@ -588,7 +589,7 @@ export function TargetTrackingTable({
                       >
                         <div className="flex items-center gap-2">
                           Tempo até ação
-                          <SortIcon field="tempo_ate_acao" />
+                          <SortIcon field="tempo_ate_acao" sortField={sortField} sortDirection={sortDirection} />
                         </div>
                       </th>
                     </tr>

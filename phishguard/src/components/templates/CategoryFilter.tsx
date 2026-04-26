@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * CategoryFilter Component
  * Forensic Noir design system for template filtering
@@ -181,10 +183,7 @@ export function CategoryFilter({
     fetchCategoryStats();
   }, [fetchCategoryStats]);
 
-  const totalTemplates = categories.find(c => c.category === 'all')?.count ?? 0;
-  const totalClickRate = categories.find(c => c.category === 'all')?.avgClickRate;
-
-  return (
+      return (
     <div className={cn('flex flex-wrap gap-2', className)}>
       {categories.map((cat) => {
         const config = CATEGORY_CONFIG[cat.category];

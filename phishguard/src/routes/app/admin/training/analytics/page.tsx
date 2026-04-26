@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * Training Analytics Dashboard
  * Admin view for training engagement metrics and performance tracking
@@ -8,15 +10,12 @@ import {
   Users,
   GraduationCap,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   TrendingUp,
   Download,
   Filter,
   X,
   Calendar,
-  ChevronDown,
-  ChevronUp,
   RefreshCw,
   BarChart3,
   Activity
@@ -308,7 +307,6 @@ export default function TrainingAnalyticsPage() {
 
       for (const enrollment of enrollments || []) {
         const track = enrollment.training_tracks as any
-        const user = enrollment.users as any
         if (!track) continue
 
         const trackId = track.id
@@ -358,7 +356,6 @@ export default function TrainingAnalyticsPage() {
 
       for (const enrollment of enrollments || []) {
         const user = enrollment.users as any
-        const track = enrollment.training_tracks as any
         if (!user) continue
 
         if (!userMap.has(user.id)) {

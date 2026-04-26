@@ -55,7 +55,7 @@ export async function analyzeTable(tableName: string): Promise<{ success: boolea
 
     if (error) {
       // Fallback: try via direct query if RPC not available
-      const { data: fallbackData, error: fallbackError } = await supabase
+      const { error: fallbackError } = await supabase
         .from(tableName)
         .select('*')
         .limit(1)
@@ -77,7 +77,7 @@ export async function analyzeTable(tableName: string): Promise<{ success: boolea
  * Generates EXPLAIN ANALYZE output for a query.
  * Use this to identify slow queries and optimize them.
  */
-export async function explainQuery<T = unknown>(
+export async function explainQuery(
   query: string,
   params?: unknown[]
 ): Promise<QueryAnalysisResult> {
@@ -130,7 +130,7 @@ export async function explainQuery<T = unknown>(
       executionTime: plan?.plan?.['Execution Time'],
       recommendations
     }
-  } catch (err) {
+  } catch {
     return {
       query,
       plan: null,

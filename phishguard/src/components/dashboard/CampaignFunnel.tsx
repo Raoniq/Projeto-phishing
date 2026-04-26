@@ -46,7 +46,7 @@ export function CampaignFunnel({ stages, loading, className }: CampaignFunnelPro
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {stages.map((stage, _index) => {
+          {stages.map((stage) => {
             const percentage = (stage.value / stage.maxValue) * 100;
             return (
               <div key={stage.label}>

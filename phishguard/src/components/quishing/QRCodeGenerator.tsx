@@ -1,11 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { Download, Share2, QrCode, Image, Palette } from 'lucide-react';
+import { Download, Share2, Image } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { cn } from '@/lib/utils';
 
 export interface QRCodeSettings {
   foregroundColor: string;

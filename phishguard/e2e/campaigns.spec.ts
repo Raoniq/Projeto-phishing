@@ -50,7 +50,7 @@ test.describe('Campaigns Flow', () => {
       const currentUrl = page.url();
       if (currentUrl.includes('/app/campanhas/')) {
         // Look for analytics elements or stats
-        const statsElements = page.locator('text=Enviados, text=Abertos, text=Cliques');
+        // // statsElements removed (unused) page.locator('text=Enviados, text=Abertos, text=Cliques');
         // At least the page should load
         await expect(page).toHaveURL(/\/app\/campanhas\/./);
       }

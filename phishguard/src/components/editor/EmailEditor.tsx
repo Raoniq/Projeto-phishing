@@ -175,7 +175,7 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
   const previewWidth = previewMode === 'mobile' ? 375 : '100%';
 
   // Filter templates by selected category
-  const filteredAndFilteredTemplates = templateGallery.filter(tpl => {
+  const filteredAndFilteredTemplates = templateGallery.filter(() => {
     if (selectedCategory === 'all') return true;
     // For now, show all templates since we don't have category info in templateGallery
     // In production, you'd fetch templates from campaign_templates table with category

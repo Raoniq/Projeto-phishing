@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Twilio SMS Client
  *
@@ -88,7 +89,6 @@ export interface OptOutResult {
  * Simple in-memory rate limiter.
  * For production, use Redis or similar distributed store.
  */
-const messageQueue: Array<{ to: string; message: string; resolve: (result: SendSMSResult) => void }> = [];
 let lastSentTime = 0;
 const MIN_INTERVAL_MS = 1000; // 1 message per second (10DLC limit)
 
@@ -124,7 +124,6 @@ const MIN_INTERVAL_MS = 1000; // 1 message per second (10DLC limit)
  * - StatusCallback: webhook URL for delivery updates
  */
 export async function sendSMS(options: SendSMSOptions): Promise<SendSMSResult> {
-  const { to, message, config, campaignId, statusCallback } = options;
 
   // Validate E.164 format
   if (!/^\+[1-9]\d{1,14}$/.test(to)) {
@@ -217,7 +216,7 @@ export function handleDeliveryWebhook(
     MessageSid,
     MessageStatus,
     ErrorCode,
-    ErrorMessage,
+
   } = payload;
 
   const isError = MessageStatus === 'failed' || MessageStatus === 'undelivered';

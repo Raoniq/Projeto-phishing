@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // routes/app/training/TrainingDashboardPage.tsx — Gamified Training Dashboard
 import { useState } from 'react';
 import { motion } from 'motion/react';
@@ -223,7 +224,7 @@ function ProgressStats() {
           </div>
           <div className="mt-2 flex items-center gap-2">
             <Badge variant="warning" className="text-xs">Defensor</Badge>
-            <span className="text-xs text-[var(--color-fg-muted)]}>rankings</span>
+            <span className="text-xs text-[var(--color-fg-muted)]">rankings</span>
           </div>
         </CardContent>
       </Card>

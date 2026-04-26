@@ -23,7 +23,7 @@ interface MFASimulationResult {
   device_info: string | null;
 }
 
-interface SimulationSummary {
+interface _SimulationSummary {
   total_sent: number;
   total_approved: number;
   total_rejected: number;

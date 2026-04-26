@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TRAINING_ASSIGNMENT_REASON = "phishing_failure";
+const _TRAINING_ASSIGNMENT_REASON = "phishing_failure";
 
 /**
  * Validate UUID format

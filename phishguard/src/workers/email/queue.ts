@@ -194,7 +194,7 @@ export class EmailQueue {
         this.queue.completed.push(job);
 
         console.log(`✅ EmailQueue: Completed job ${job.id}`);
-      } catch (_error) {
+      } catch {
         // Handle failure
         this.queue.processing = this.queue.processing.filter(j => j.id !== job.id);
 

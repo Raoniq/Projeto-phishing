@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { FileText, Download, Eye, TrendingUp, Loader2 } from 'lucide-react';
+import { FileText, Download, Eye, TrendingUp } from 'lucide-react';
 
 interface AttachmentStat {
   id: string;

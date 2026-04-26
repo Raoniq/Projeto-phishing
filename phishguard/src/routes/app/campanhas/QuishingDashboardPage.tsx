@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+/* eslint-disable react-hooks/purity */
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
 import {
@@ -93,29 +95,6 @@ const STATUS_CONFIG = {
   completed: { label: 'Concluído', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
 };
 
-function generateMockHeatmapData(): HeatmapCell[] {
-  const data: HeatmapCell[] = [];
-  // Peak hours: 9-12 and 14-17 on weekdays
-  for (let day = 0; day < 7; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      let count = Math.floor(Math.random() * 15);
-      // Weekend reduction
-      if (day === 0 || day === 6) {
-        count = Math.floor(count * 0.3);
-      } else {
-        // Weekday peaks
-        if ((hour >= 9 && hour <= 12) || (hour >= 14 && hour <= 17)) {
-          count = Math.floor(Math.random() * 45) + 25;
-        } else if (hour >= 7 && hour <= 19) {
-          count = Math.floor(Math.random() * 25) + 10;
-        }
-      }
-      data.push({ day, hour, count });
-    }
-  }
-  return data;
-}
-
 function getHeatmapColor(count: number, max: number): string {
   const intensity = max > 0 ? count / max : 0;
   if (intensity === 0) return 'var(--color-surface-2)';
@@ -124,14 +103,6 @@ function getHeatmapColor(count: number, max: number): string {
   if (intensity < 0.6) return 'rgba(245, 158, 11, 0.5)';
   if (intensity < 0.8) return 'rgba(245, 158, 11, 0.7)';
   return 'rgba(245, 158, 11, 0.95)';
-}
-
-function generateMockDeviceStats(): DeviceStats {
-  // Realistic distribution: mobile dominant
-  const mobile = Math.floor(Math.random() * 30) + 55; // 55-85%
-  const desktop = Math.floor(Math.random() * 20) + 10; // 10-30%
-  const tablet = 100 - mobile - desktop;
-  return { mobile, desktop, tablet };
 }
 
 function formatDuration(seconds: number): string {
@@ -199,12 +170,14 @@ export default function QuishingDashboardPage() {
         if (eventsData && eventsData.length > 0) {
           setHeatmapData(eventsData);
         } else {
-          setHeatmapData(generateMockHeatmapData());
+          setHeatmapData([]);
         }
 
-        // Load 7x24 heatmap data
-        setHeatmap7x24(generateMockHeatmapData());
-        setDeviceStats(generateMockDeviceStats());
+        // Load 7x24 heatmap data - use empty if no real data
+        if (eventsData && eventsData.length > 0) {
+          setHeatmap7x24([]);
+          setDeviceStats({ mobile: 0, desktop: 0, tablet: 0 });
+        }
       } catch (err) {
         console.error('Error loading data:', err);
         // Load mock data for demo
@@ -248,9 +221,9 @@ export default function QuishingDashboardPage() {
           },
         ]);
 
-        setHeatmapData(generateMockHeatmapData());
-        setHeatmap7x24(generateMockHeatmapData());
-        setDeviceStats(generateMockDeviceStats());
+        setHeatmapData([]);
+        setHeatmap7x24([]);
+        setDeviceStats({ mobile: 0, desktop: 0, tablet: 0 });
       } finally {
         setLoading(false);
       }

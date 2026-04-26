@@ -102,7 +102,7 @@ export default function DomainMaskingPanel() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`https://${config.customDomain}`, {
+      await fetch(`https://${config.customDomain}`, {
         method: 'HEAD',
         mode: 'no-cors',
         signal: controller.signal,
@@ -190,7 +190,7 @@ export default function DomainMaskingPanel() {
       } else {
         setDnsResult({ resolved: false, error: 'Falha ao consultar DNS' });
       }
-    } catch (err) {
+    } catch {
       setDnsResult({ resolved: false, error: 'Timeout na consulta DNS' });
     } finally {
       setIsResolving(false);

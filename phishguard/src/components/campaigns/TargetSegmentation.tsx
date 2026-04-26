@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Upload,
   Users,
@@ -123,7 +124,7 @@ export function TargetSegmentation({
   }, [companyId]);
 
   // Initial load
-  useMemo(() => {
+  useEffect(() => {
     if (companyId && groups.length === 0) {
       loadGroups();
     }

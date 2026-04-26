@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, react-refresh/only-export-components */
 /**
  * LeaderboardTable Component
  *
@@ -268,7 +269,7 @@ export function LeaderboardTable({
 
       {/* Entries */}
       <div className={size === 'sm' ? 'p-2 space-y-1' : 'p-4 space-y-2'}>
-        {displayEntries.map((entry, index) => (
+        {displayEntries.map((entry) => (
           <LeaderboardRow
             key={entry.userId}
             entry={entry}

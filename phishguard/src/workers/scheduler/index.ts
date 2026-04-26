@@ -59,7 +59,6 @@ interface Env {
 
 // Scheduler state
 let schedulerState: 'idle' | 'running' | 'paused' = 'idle';
-let currentCampaignId: string | null = null;
 const metrics: SchedulerMetrics = {
   status: 'idle',
   emailsProcessed: 0,
@@ -92,7 +91,7 @@ export default {
   async scheduled(
     controller: ScheduledController,
     env: Env,
-    _ctx: ExecutionContext
+    _: ExecutionContext
   ): Promise<void> {
     console.log('⏰ Scheduler: Cron triggered at', new Date().toISOString());
 
@@ -141,7 +140,7 @@ export default {
   },
 
   // HTTP handler for manual triggers and control
-  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
 

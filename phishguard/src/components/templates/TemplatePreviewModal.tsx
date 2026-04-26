@@ -148,7 +148,7 @@ export function TemplatePreviewModal({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'CTA_CLICK' || event.data?.type === 'FORM_SUBMIT_ATTEMPT') {
-        const { x, y, text } = event.data.data;
+        const { x, y } = event.data.data;
         setTooltipState({
           visible: true,
           x,

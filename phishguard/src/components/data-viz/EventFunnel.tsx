@@ -53,6 +53,7 @@ function AnimatedNumber({
 
   useEffect(() => {
     if (shouldReduceMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Animation initialization: state sync is intentional for reduced motion
       setDisplayValue(value);
       return;
     }

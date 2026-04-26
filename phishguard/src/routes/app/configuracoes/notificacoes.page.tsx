@@ -8,7 +8,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Hash,
   MessageSquare,
   TestTube,
   Save,

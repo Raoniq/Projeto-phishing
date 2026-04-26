@@ -48,7 +48,7 @@ export function ActivityFeed({
   useEffect(() => {
     let subscription: { unsubscribe: () => void } | null = null;
 
-    const formatActivityMessage = (action: string, _log: Record<string, unknown>): string => {
+    const formatActivityMessage = (action: string): string => {
       switch (action) {
         case 'open':
           return 'E-mail aberto por usuário';

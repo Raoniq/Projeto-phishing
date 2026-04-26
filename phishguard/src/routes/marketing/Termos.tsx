@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   Shield,
@@ -11,10 +10,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Globe,
-  Copyright,
   Scale,
   Ban,
-  Gavel,
 } from "lucide-react";
 
 // Hook for scroll-triggered animations

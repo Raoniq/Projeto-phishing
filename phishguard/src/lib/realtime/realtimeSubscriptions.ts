@@ -4,7 +4,6 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // ============================================================================
 // Types

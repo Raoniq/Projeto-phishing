@@ -231,7 +231,7 @@ const CAMPAIGN_STATUS_CONFIG = {
 const INITIAL_TIMESTAMP = Date.now();
 
 export default function UserDetailPage() {
-  const { id: _id } = useParams<{ id: string }>();
+  useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'activity' | 'campaigns' | 'training'>('activity');

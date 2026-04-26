@@ -116,7 +116,6 @@ function buildBenchmarks(sector: SectorData, companyClickRate: number): Benchmar
 }
 
 export function BenchmarkComparison({
-  companyId: _companyId,
   loading = false,
   className,
 }: BenchmarkComparisonProps) {

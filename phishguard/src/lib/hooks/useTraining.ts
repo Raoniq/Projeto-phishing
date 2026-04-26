@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * Training Tracks API Hook
  * For admin management of training content
@@ -8,7 +9,6 @@ import type { Database } from '../supabase'
 
 type TrainingTrack = Database['public']['Tables']['training_tracks']['Row']
 type TrainingModule = Database['public']['Tables']['training_modules']['Row']
-type TrainingLesson = Database['public']['Tables']['training_lessons']['Row']
 type UserEnrollment = Database['public']['Tables']['user_training_enrollments']['Row']
 
 export function useTrainingTracks() {

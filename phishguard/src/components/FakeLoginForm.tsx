@@ -110,7 +110,7 @@ export default function FakeLoginForm({
       }));
 
       onSubmitSuccess?.();
-    } catch (_err) {
+    } catch {
       setForm((prev) => ({
         ...prev,
         isSubmitting: false,

@@ -21,7 +21,7 @@ interface GenerateCertificateInput {
 export async function handleGenerate(
   request: Request,
   env: Env,
-  _ctx: ExecutionContext
+  _: ExecutionContext
 ): Promise<Response> {
   // Only accept POST
   if (request.method !== 'POST') {

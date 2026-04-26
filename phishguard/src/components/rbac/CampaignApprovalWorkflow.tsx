@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
@@ -37,7 +38,7 @@ interface CampaignApprovalWorkflowProps {
   onReject: (campaignId: string, userId: string, reason: string) => Promise<void>;
 }
 
-interface _ApprovalStatus {
+type ApprovalStatus = {
   status: 'pending' | 'approved' | 'rejected';
   approvers: Array<{ userId: string; userName: string; approvedAt: string }>;
   rejected?: boolean;

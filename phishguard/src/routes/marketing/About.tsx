@@ -10,7 +10,6 @@ import {
   Clock,
   Globe,
   Mail,
-  Link,
   ArrowRight,
 } from "lucide-react";
 

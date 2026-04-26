@@ -188,15 +188,15 @@ export default function PreferenciasNotificacoesPage() {
   }, [preferences]);
 
   // Check if channel has any enabled preferences
-  const getChannelStats = (channel: Channel) => {
-    const channelPrefs = preferences.filter(p => p.channel === channel);
+  const getChannelStats = (channelKey: Channel) => {
+    const channelPrefs = preferences.filter(p => p.channel === channelKey);
     const enabled = channelPrefs.filter(p => p.enabled).length;
     const total = channelPrefs.length;
     return { enabled, total };
   };
 
   // Check if event has any enabled preferences
-  const getEventStats = (eventType: EventType) => {
+  const _getEventStats = (eventType: EventType) => {
     const eventPrefs = preferences.filter(p => p.eventType === eventType);
     const enabled = eventPrefs.filter(p => p.enabled).length;
     const total = eventPrefs.length;
@@ -334,7 +334,7 @@ export default function PreferenciasNotificacoesPage() {
               <div className="divide-y divide-[var(--color-noir-700)]">
                 {EVENT_TYPES.map((event, eventIdx) => {
                   const EventIcon = event.icon;
-                  const stats = getEventStats(event.key);
+                  // stats removed (unused)
                   const isSecurityAlert = event.key === 'security_alert';
 
                   return (

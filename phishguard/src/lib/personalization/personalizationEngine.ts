@@ -41,9 +41,6 @@ const VARIABLE_PATTERN = /\{\{\.(\w+)\}\}/g
 /**
  * Escape special regex characters in a string.
  */
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 // =============================================================================
 // PERSONALIZATION ENGINE

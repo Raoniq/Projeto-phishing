@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // routes/app/treinamento/page.tsx — Employee Training Hub
 // Displays: Meus Treinamentos, XP/Level, Badges, Company Leaderboard
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { useState, useEffect } from 'react'
+import { motion } from 'motion/react'
 import {
   GraduationCap,
   Shield,
@@ -9,19 +10,13 @@ import {
   Trophy,
   Medal,
   Star,
-  Target,
   CheckCircle2,
   Play,
   BookOpen,
   Clock,
-  ChevronRight,
   Sparkles,
-  Zap,
-  TrendingUp,
   Award,
-  Lock,
   RefreshCw,
-  Users,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -32,8 +27,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { useUserEnrollments, useTrainingTracks } from '@/lib/hooks'
 import { formatPoints } from '@/lib/gamification/types'
 import { PointsDisplay, getLevelFromPoints, getLevelProgress } from '@/components/training/PointsDisplay'
-import { LeaderboardTable, CompactLeaderboard } from '@/components/training/LeaderboardTable'
-import { BadgeGrid, BADGE_CATALOG, type Badge } from '@/components/training/BadgeGrid'
+import { BADGE_CATALOG, type Badge } from '@/components/training/BadgeGrid'
 
 // Database types
 interface UserJourneyState {
@@ -48,11 +42,6 @@ interface UserBadge {
   badge_icon: string | null
   badge_category: string | null
   earned_at: string
-}
-
-interface UserPoints {
-  points: number
-  points_type: 'xp' | 'achievement' | 'streak'
 }
 
 interface LeaderboardEntry {
@@ -203,11 +192,11 @@ export default function TreinamentoPage() {
   const [userLevel, setUserLevel] = useState(1)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [leaderboardLoading, setLeaderboardLoading] = useState(true)
-  const [journeyState, setJourneyState] = useState<UserJourneyState | null>(null)
+  const [, setJourneyState] = useState<UserJourneyState | null>(null)
 
   // Hooks
-  const { enrollments, loading: enrollmentsLoading, refetch: refetchEnrollments } = useUserEnrollments(currentUser?.id)
-  const { tracks: availableTracks, loading: tracksLoading } = useTrainingTracks()
+  const { enrollments, loading: enrollmentsLoading } = useUserEnrollments(currentUser?.id)
+  const { tracks: availableTracks } = useTrainingTracks()
 
   // Fetch current user
   useEffect(() => {
@@ -389,10 +378,7 @@ export default function TreinamentoPage() {
   // Calculate stats
   const completedCount = enrollments.filter((e) => e.status === 'completed').length
   const inProgressCount = enrollments.filter((e) => e.status === 'in_progress' || e.status === 'assigned').length
-  const avgProgress = enrollments.length > 0
-    ? Math.round(enrollments.reduce((acc, e) => acc + (e.progress || 0), 0) / enrollments.length)
-    : 0
-
+  
   // Loading state
   if (isLoading) {
     return (

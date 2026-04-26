@@ -95,7 +95,7 @@ export default function CampanhasPage() {
   const { company } = useCompany();
   const companyId = company?.id
 
-  const { campaigns: dbCampaigns, loading } = useCampaigns(companyId)
+  const { campaigns: dbCampaigns } = useCampaigns(companyId)
 
   // Transform database campaigns to UI format
   const realCampaigns: Campaign[] = useMemo(() => {

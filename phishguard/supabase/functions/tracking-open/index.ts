@@ -54,7 +54,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const rateLimit = checkRateLimit(clientIp)
 
   if (!rateLimit.allowed) {
-    return new Response PIXEL_BYTES, {
+    return new Response(PIXEL_BYTES, {
       status: 429,
       headers: {
         'Content-Type': 'image/gif',

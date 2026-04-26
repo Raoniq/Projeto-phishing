@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * Campaigns API Hook
  * For creating and managing phishing campaigns

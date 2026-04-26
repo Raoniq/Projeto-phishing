@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components, react-hooks/static-components */
 /**
  * BadgeGrid Component
  *

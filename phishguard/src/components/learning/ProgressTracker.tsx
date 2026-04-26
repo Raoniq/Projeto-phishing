@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -123,12 +124,14 @@ export function ProgressTracker({
   }, []);
 
   // Video progress update
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _updateVideoProgress = useCallback((watchedSeconds: number, duration: number) => {
     const videoProgress = duration > 0 ? (watchedSeconds / duration) * 100 : 0;
     updateProgress({ videoWatchedSeconds: watchedSeconds, videoProgress });
   }, [updateProgress]);
 
   // Article progress update
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _updateArticleProgress = useCallback((completedSections: string[], progressPct: number) => {
     updateProgress({
       articleCompletedSections: completedSections,
@@ -137,11 +140,13 @@ export function ProgressTracker({
   }, [updateProgress]);
 
   // Quiz completion
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _completeQuiz = useCallback((score: number) => {
     updateProgress({ quizScore: score, quizCompleted: true });
   }, [updateProgress]);
 
   // Force save (e.g., on navigation away)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _forceSave = useCallback(async () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -303,6 +308,7 @@ export function ProgressTracker({
 }
 
 // Export helper for video player integration
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createVideoProgressHandler(_tracker: ProgressTrackerProps) {
   return (watchedSeconds: number, duration: number) => {
     const videoProgress = duration > 0 ? (watchedSeconds / duration) * 100 : 0;

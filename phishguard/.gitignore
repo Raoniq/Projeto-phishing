@@ -27,3 +27,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sisyphus working directory
+.sisyphus/
+
+# PowerShell scripts (dev only)
+*.ps1
+
+# Test results
+test-results/
+
+# Boulder files
+boulder.json

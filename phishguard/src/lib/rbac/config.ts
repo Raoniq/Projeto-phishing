@@ -152,7 +152,7 @@ export function hasAllPermissions(role: Role, permissions: Permission[]): boolea
  */
 export function getPermissions(role: Role): Permission[] {
   return Object.entries(rolePermissions)
-    .filter(([_, roles]) => roles.has(role))
+    .filter(([, roles]) => roles.has(role))
     .map(([permission]) => permission as Permission);
 }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/Select';
 import { CampaignFunnel } from '@/components/data-viz/CampaignFunnel';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 // Types
 interface AnalyticsEvent {
@@ -136,22 +138,75 @@ const REGION_COLORS: Record<string, string> = {
 
 export default function CampaignAnalyticsPage() {
   const { id } = useParams();
-  const [events] = useState<AnalyticsEvent[]>(() => generateMockEvents(150));
-  const [geoData] = useState<GeoData[]>(() => generateGeoData());
+  const { company } = useAuth();
+  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id || !company?.id) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('campaign_events')
+          .select('*')
+          .eq('campaign_id', id)
+          .order('created_at', { ascending: false })
+          .limit(200);
+
+        if (error) throw error;
+
+        const mapped: AnalyticsEvent[] = (data || []).map((e, i) => ({
+          id: e.id,
+          timestamp: new Date(e.created_at),
+          type: e.event_type as AnalyticsEvent['type'],
+          userId: e.campaign_target_id || `user-${i}`,
+          userName: 'Usuário',
+          userEmail: 'usuario@empresa.com',
+          department: 'Geral',
+          role: '',
+          region: 'BR'
+        }));
+
+        setEvents(mapped);
+      } catch (err) {
+        console.error('[Analytics] Failed to fetch events:', err);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [id, company]);
+
+  // Calculate stats from events
+  const stats = useMemo(() => {
+    const sent = events.filter(e => e.type === 'sent').length;
+    const opened = events.filter(e => e.type === 'opened').length;
+    const clicked = events.filter(e => e.type === 'clicked').length;
+    const reported = events.filter(e => e.type === 'reported').length;
+    const compromised = events.filter(e => e.type === 'compromised').length;
+    return { sent, opened, clicked, reported, compromised };
+  }, [events]);
+
+  // Calculate funnel steps from events
+  const funnelSteps = useMemo(() => [
+    { label: 'Enviados', value: stats.sent, color: 'var(--color-accent)' },
+    { label: 'Abertos', value: stats.opened, color: '#8b5cf6' },
+    { label: 'Clicados', value: stats.clicked, color: '#f59e0b' },
+    { label: 'Reportados', value: stats.reported, color: '#22c55e' }
+  ], [stats]);
 
   // Filters
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
-
-  // Stats
-  const stats = {
-    sent: 150,
-    opened: 89,
-    clicked: 12,
-    reported: 3,
-    compromised: 2
-  };
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -393,7 +448,7 @@ ${filteredEvents.slice(0, 50).map(e =>
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CampaignFunnel steps={FUNNEL_STEPS} height={240} />
+                <CampaignFunnel steps={funnelSteps} height={240} />
 
                 {/* Conversion rates */}
                 <div className="mt-6 grid grid-cols-3 gap-3">

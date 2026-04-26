@@ -271,7 +271,7 @@ export const itHelpDeskTemplate: LandingPageTemplate = {
     bullets: [
       'Fake IT domain: "support.internal-it-reset.net" - NOT official company IT',
       'Real IT never asks for password through external forms',
-      'Fake urgency: Real IT gives advance notice and doesn't block suddenly',
+      'Fake urgency: Real IT gives advance notice and doesn\'t block suddenly',
       'Requests multiple credentials at once (username, email, new password)',
       'External domain instead of company-internal portal',
       'No proper IT ticketing system reference number',

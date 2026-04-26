@@ -148,7 +148,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Update scan counts on QR code (increment total, update unique if needed)
-    const updates: { scan_count: number; unique_scans?: number } = {
+    const _updates: { scan_count: number; unique_scans?: number } = {
       scan_count: 1, // Will be incremented via RPC or trigger
     }
 

@@ -11,7 +11,7 @@ import {
   Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+
 import { Label } from '@/components/ui/Label';
 import {
   Select,

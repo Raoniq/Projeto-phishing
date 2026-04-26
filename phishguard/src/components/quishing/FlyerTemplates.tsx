@@ -1,11 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Printer, Download, QrCode, Info, AlertTriangle } from 'lucide-react';
+import { Printer, QrCode, Info } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Label } from '@/components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { cn } from '@/lib/utils';
-import { QRCodeGenerator } from './QRCodeGenerator';
 
 interface FlyerTemplatesProps {
   trackingId: string;
@@ -23,24 +20,10 @@ interface FlyerTemplatesProps {
 
 type TemplateType = 'a4' | 'a3' | 'business-card' | 'bathroom-poster' | 'email-signature' | 'sms-invite' | 'whatsapp' | 'physical-meeting';
 
-const A4_SIZE = { width: 210, height: 297 }; // mm
-const A3_SIZE = { width: 297, height: 420 }; // mm
-const BC_SIZE = { width: 85, height: 54 }; // mm (standard business card)
-const BATHROOM_SIZE = { width: 148, height: 210 }; // mm (A5)
-const EMAIL_SIG_SIZE = { width: 350, height: 100 }; // px
-const SMS_SIZE = { width: 74, height: 48 }; // mm (standard business card)
-const WHATSAPP_SIZE = { width: 74, height: 48 }; // mm (business card)
-const PHYSICAL_SIZE = { width: 210, height: 297 }; // mm (A4)
 
 export function FlyerTemplates({
   trackingId,
-  qrSettings = {
-    foregroundColor: '#1a1a2e',
-    backgroundColor: '#ffffff',
-    size: 300,
-    logoUrl: null,
-    margin: 2,
-  },
+
   companyName = 'Sua Empresa',
   campaignName = 'Campanha QR',
   baseUrl = typeof window !== 'undefined' ? window.location.origin : '',
@@ -48,7 +31,8 @@ export function FlyerTemplates({
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('a4');
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const handlePrint = useCallback((template: TemplateType) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+const handlePrint = useCallback((template: TemplateType) => {
     setIsPrinting(true);
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;

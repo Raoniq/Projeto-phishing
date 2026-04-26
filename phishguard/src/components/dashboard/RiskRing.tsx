@@ -1,5 +1,5 @@
 // components/dashboard/RiskRing.tsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface RiskRingProps {
@@ -16,7 +16,6 @@ export function RiskRing({
   className,
 }: RiskRingProps) {
   const [animatedValue, setAnimatedValue] = useState(0);
-  const _requestRef = useRef<number>();
 
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;

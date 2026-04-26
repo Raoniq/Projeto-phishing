@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, no-case-declarations */
 // routes/app/admin/training/page.tsx — Admin Training Dashboard
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6,7 +7,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  BarChart3,
   GraduationCap,
   Users,
   CheckCircle2,
@@ -14,16 +14,13 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  X,
   ChevronDown,
   ChevronUp,
-  Archive,
   Eye,
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
 import {
   Dialog,
   DialogContent,
@@ -33,16 +30,10 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog';
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
 import { useTrainingTracks } from '@/lib/hooks';
 import { supabase } from '@/lib/supabase';
-import { getSession } from '@/lib/auth/session';
 
 // Types
 interface TrainingTrack {

@@ -60,9 +60,7 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
   );
 
   // For now, use the actual config (edit mode would require API backend)
-  const _currentPermissions = editMode ? pendingChanges : rolePermissions;
-
-  const handleTogglePermission = (role: Role, permission: Permission) => {
+    const handleTogglePermission = (role: Role, permission: Permission) => {
     if (!editMode) return;
 
     setPendingChanges(prev => {
@@ -87,7 +85,7 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
   };
 
   const roles: Role[] = ['super_admin', 'admin', 'manager', 'viewer'];
-  const allPermissions = Object.entries(permissionCategories).flatMap(([_, perms]) => perms);
+  const allPermissions = Object.entries(permissionCategories).flatMap(([, perms]) => perms);
 
   // Calculate permissions per role for summary
   const permissionsByRole = useMemo(() => {

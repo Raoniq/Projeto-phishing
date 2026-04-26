@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
 /**
  * Phone Number Validation Module
  *

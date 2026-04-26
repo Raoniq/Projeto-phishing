@@ -115,8 +115,7 @@ function getPercentileLabel(percentile: number): string {
 }
 
 export function BenchmarkComparison({
-  companyId: _companyId,
-  loading = false,
+    loading = false,
   className,
 }: BenchmarkComparisonProps) {
   const [selectedIndustry, setSelectedIndustry] = useState<Industry>('finance');

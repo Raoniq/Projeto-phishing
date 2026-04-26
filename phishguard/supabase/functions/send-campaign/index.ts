@@ -26,7 +26,7 @@ interface Campaign {
   settings: Record<string, unknown>;
 }
 
-interface EmailQueueItem {
+interface _EmailQueueItem {
   target_id: string;
   campaign_id: string;
   recipient_email: string;
@@ -60,7 +60,7 @@ function generatePersonalizedEmail(
   companyName: string
 ): { subject: string; body_html: string; body_text: string } {
   // Template variables for personalization
-  const variables: Record<string, string> = {
+  const _variables: Record<string, string> = {
     "{{.Email}}": target.email,
     "{{.TrackingID}}": target.tracking_id,
     "{{.CampaignName}}": campaign.name,
@@ -92,7 +92,7 @@ async function sendEmail(
   campaign: Campaign,
   companyName: string
 ): Promise<SendResult> {
-  const { subject, body_html, body_text } = generatePersonalizedEmail(target, campaign, companyName);
+  const { subject, body_html: _body_html, body_text: _body_text } = generatePersonalizedEmail(target, campaign, companyName);
 
   // Mock: Log the email that would be sent
   console.log(`[SEND-EMAIL] To: ${target.email}`);

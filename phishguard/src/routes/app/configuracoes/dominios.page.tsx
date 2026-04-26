@@ -1,6 +1,6 @@
 // src/routes/app/configuracoes/dominios.page.tsx
 // Domain pool management page - Isca Pool
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Globe,
@@ -14,7 +14,8 @@ import {
   Copy,
   Trash2,
   RotateCw,
-  Zap
+  Zap,
+  Server
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -28,53 +29,32 @@ import {
   DialogFooter
 } from '@/components/ui/Dialog';
 import { cn } from '@/lib/utils';
-import {
-  SAMPLE_DOMAIN_POOL,
-  DEFAULT_DNS_CONFIG,
-  HEALTH_THRESHOLDS,
-  WARMING_VOLUME_SCHEDULE
-} from '@/workers/domains/types';
-
-// Generate 25 mock domains with realistic data
-function generateMockDomains() {
-  const healthOptions: ('healthy' | 'warming' | 'burned')[] = ['healthy', 'healthy', 'healthy', 'warming', 'warming', 'burned'];
-  const statusOptions: ('active' | 'inactive' | 'retired')[] = ['active', 'active', 'active', 'active', 'retired'];
-
-  return SAMPLE_DOMAIN_POOL.slice(0, 25).map((domain, index) => {
-    const health = healthOptions[Math.floor(Math.random() * healthOptions.length)];
-    const status = health === 'burned' ? 'retired' : statusOptions[Math.floor(Math.random() * statusOptions.length)];
-    const isConfigured = Math.random() > 0.15;
-
-    return {
-      id: `domain-${index + 1}`,
-      domain,
-      health,
-      status,
-      reputationScore: health === 'burned'
-        ? Math.floor(Math.random() * 25)
-        : health === 'warming'
-          ? Math.floor(50 + Math.random() * 30)
-          : Math.floor(70 + Math.random() * 30),
-      usedInCampaigns: health === 'burned' ? 2 : Math.floor(Math.random() * 2),
-      lastUsedAt: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-      warmingPhase: health === 'warming' ? 'warmup' : health === 'healthy' ? 'active' : null,
-      spfConfigured: isConfigured,
-      dkimConfigured: isConfigured && Math.random() > 0.1,
-      dmarcConfigured: isConfigured && Math.random() > 0.2,
-      registeredAt: new Date(Date.now() - (90 + Math.random() * 180) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      expiresAt: new Date(Date.now() + (180 + Math.random() * 180) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      dayInWarming: health === 'warming' ? Math.floor(Math.random() * 14) : null,
-    };
-  });
-}
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { HEALTH_THRESHOLDS, WARMING_VOLUME_SCHEDULE, DEFAULT_DNS_CONFIG } from '@/workers/domains/types';
 
 type TabType = 'pool' | 'warming' | 'dns' | 'retired';
 type HealthType = 'healthy' | 'warming' | 'burned' | 'unknown';
 
-const MOCK_DOMAINS = generateMockDomains();
+interface DomainData {
+  id: string;
+  domain: string;
+  health: 'healthy' | 'warming' | 'burned' | 'unknown';
+  status: 'active' | 'inactive' | 'retired';
+  reputationScore: number;
+  usedInCampaigns: number;
+  lastUsedAt: string | null;
+  warmingPhase: 'warmup' | 'active' | null;
+  spfConfigured: boolean;
+  dkimConfigured: boolean;
+  dmarcConfigured: boolean;
+  registeredAt: string;
+  expiresAt: string;
+  dayInWarming: number | null;
+}
 
 // Extracted component to avoid static-components lint error
-function WarmingScheduleVisualComponent({ domains }: { domains: typeof MOCK_DOMAINS }) {
+function WarmingScheduleVisualComponent({ domains }: { domains: DomainData[] }) {
   const weeks = [
     { week: 1, dayStart: 0, dayEnd: 7, volume: '5-15', label: 'Cold Start', progress: 0.2 },
     { week: 2, dayStart: 7, dayEnd: 14, volume: '15-40', label: 'Ramp Up', progress: 0.4 },
@@ -229,7 +209,7 @@ function WarmingScheduleVisualComponent({ domains }: { domains: typeof MOCK_DOMA
 }
 
 // DNS Guide Section component
-function DNSGuideSectionComponent() {
+function DNSGuideSectionComponent({ domains }: { domains: DomainData[] }) {
   const [selectedDomainForDNS, setSelectedDomainForDNS] = useState<string | null>(null);
 
   const dnsRecords = [
@@ -332,7 +312,7 @@ function DNSGuideSectionComponent() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            {MOCK_DOMAINS.filter(d => d.health === 'healthy').slice(0, 4).map((domain) => (
+            {domains.filter(d => d.health === 'healthy').slice(0, 4).map((domain) => (
               <button
                 key={domain.id}
                 onClick={() => setSelectedDomainForDNS(domain.domain)}
@@ -359,13 +339,57 @@ function DNSGuideSectionComponent() {
 }
 
 export default function DominiosPage() {
+  const { company } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('pool');
   const [showAddDomain, setShowAddDomain] = useState(false);
-  const [domains, setDomains] = useState(MOCK_DOMAINS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [domains, setDomains] = useState<DomainData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [retireDialog, setRetireDialog] = useState<string | null>(null);
   const [rotationEnabled, setRotationEnabled] = useState(true);
   const [showDNSGuide, setShowDNSGuide] = useState(false);
+
+  useEffect(() => {
+    const fetchDomains = async () => {
+      if (!company?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('isca_domains')
+          .select('*')
+          .eq('company_id', company.id);
+
+        if (error) throw error;
+
+        const mappedDomains: DomainData[] = (data || []).map((d: any) => ({
+          id: d.id,
+          domain: d.domain,
+          health: d.health || 'unknown',
+          status: d.status || 'inactive',
+          reputationScore: d.reputation_score || 50,
+          usedInCampaigns: d.used_in_campaigns || 0,
+          lastUsedAt: d.last_used_at || null,
+          warmingPhase: d.warming_phase || null,
+          spfConfigured: d.spf_configured || false,
+          dkimConfigured: d.dkim_configured || false,
+          dmarcConfigured: d.dmarc_configured || false,
+          registeredAt: d.registered_at || new Date().toISOString().split('T')[0],
+          expiresAt: d.expires_at || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          dayInWarming: d.day_in_warming || null,
+        }));
+
+        setDomains(mappedDomains);
+      } catch (error) {
+        console.error('Error fetching domains:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDomains();
+  }, [company?.id]);
 
   // Stats
   const stats = {
@@ -587,7 +611,7 @@ export default function DominiosPage() {
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border border-[var(--color-noir-700)] bg-[var(--color-surface-1)] p-6"
               >
-<DNSGuideSectionComponent />
+<DNSGuideSectionComponent domains={domains} />
                 <div className="mt-4 flex justify-end">
                   <Button variant="secondary" onClick={() => setShowDNSGuide(false)}>
                     Fechar
@@ -825,7 +849,7 @@ export default function DominiosPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <DNSGuideSection />
+              <DNSGuideSectionComponent domains={domains} />
             </motion.div>
           )}
 
