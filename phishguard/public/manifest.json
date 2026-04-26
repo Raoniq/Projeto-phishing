@@ -1,0 +1,16 @@
+{
+  "name": "PhishGuard - Treinamento contra phishing",
+  "short_name": "PhishGuard",
+  "description": "Plataforma SaaS de simulação de phishing e treinamento de segurança para empresas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0C0E",
+  "theme_color": "#D97757",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
