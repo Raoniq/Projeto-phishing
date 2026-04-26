@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+
+# Logs
+*.log
+dev-server.log
+dev.log
+err.log
+vite-err.log
+vite-out.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Sisyphus working directory (not for production)
+.sisyphus/
+
+# Playwright MCP state
+.playwright-mcp/
+
+# Test scripts (development only)
+test-connection.js
+test-e2e.js
+start-dev.bat
+
+# Lock files at root (project lives in phishguard/)
+bun.lock
+package-lock.json
+
+# Supabase local config (if at root level)
+supabase/
+
+# Boulder files
+boulder.json

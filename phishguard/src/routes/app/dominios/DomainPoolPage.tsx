@@ -44,6 +44,7 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 // =============================================================================
 // TYPES
@@ -1501,7 +1502,9 @@ function WarmingProgressChart({ domains }: WarmingProgressChartProps) {
 // =============================================================================
 
 export default function DomainPoolPage() {
-  const [domains, setDomains] = useState<Domain[]>(MOCK_DOMAINS);
+  const { company } = useAuth();
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DomainStats>({
     total: 0,
     healthy: 0,
@@ -1529,25 +1532,37 @@ export default function DomainPoolPage() {
     setStats({ total, healthy, warming, burned, averageReputation });
   }, [domains]);
 
-  // Fetch domains from Supabase (production)
+  // Fetch domains from Supabase
   useEffect(() => {
     async function fetchDomains() {
+      if (!company?.id) {
+        setDomains([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       try {
         const { data, error } = await supabase
           .from('isca_domains')
           .select('*')
+          .eq('company_id', company.id)
           .order('domain', { ascending: true });
 
-        if (!error && data) {
-          // Transform Supabase data to Domain interface if needed
-          // setDomains(data);
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          setDomains(data);
         }
-      } catch {
-        console.warn('Using mock data - Supabase not configured');
+      } catch (err) {
+        console.error('[DomainPoolPage] Failed to fetch domains:', err);
+        setDomains([]);
+      } finally {
+        setLoading(false);
       }
     }
     fetchDomains();
-  }, []);
+  }, [company]);
 
   const handleSort = (column: typeof sortBy) => {
     if (sortBy === column) {
@@ -1575,10 +1590,12 @@ export default function DomainPoolPage() {
   };
 
   const handleAddDomain = (domain: string) => {
+    if (!company?.id) return;
+
     const newDomain: Domain = {
       id: `d-${Date.now()}`,
       domain,
-      companyId: 'company-1',
+      companyId: company.id,
       health: 'unknown',
       status: 'inactive',
       reputationScore: 0,

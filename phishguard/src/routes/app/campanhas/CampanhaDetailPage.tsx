@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { CampaignFunnel } from '@/components/data-viz/CampaignFunnel';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
 // Types
@@ -98,27 +99,6 @@ const EVENT_LABELS = {
   reported: 'reportou',
   failed: 'falhou',
 } as const;
-
-// Mock campaign data
-const MOCK_CAMPAIGN: Campaign = {
-  id: 'campaign-1',
-  name: 'Black Friday 2026',
-  template: 'Black Friday Promo',
-  tier: 2,
-  status: 'running',
-  createdAt: '2026-04-15T10:00:00Z',
-  scheduledAt: '2026-04-20T09:00:00Z',
-  completedAt: null,
-  description: 'Simulação de phishing baseada em promoções falsas de Black Friday.',
-  stats: {
-    sent: 150,
-    opened: 89,
-    clicked: 12,
-    reported: 3,
-    submitted: 2,
-    compromised: 1,
-  },
-};
 
 // Animated counter component
 function AnimatedCounter({ value, duration = 1 }: { value: number; duration?: number }) {
@@ -241,32 +221,89 @@ function ActivityItem({ event }: ActivityItemProps) {
 export default function CampanhaDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [campaign] = useState<Campaign>(MOCK_CAMPAIGN);
-  const [stats, setStats] = useState<CampaignStats>(MOCK_CAMPAIGN.stats);
+  const { company } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [stats, setStats] = useState<CampaignStats>({ sent: 0, opened: 0, clicked: 0, reported: 0, submitted: 0, compromised: 0 });
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isPaused, setIsPaused] = useState(false);
   const [activities, setActivities] = useState<CampaignEvent[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Load initial activities
+  // Load campaign and initial data
   useEffect(() => {
-    async function loadActivities() {
-      // Mock activities for demo
-      const mockActivities: CampaignEvent[] = [
-        { id: '1', campaign_target_id: 'ct1', event_type: 'opened', ip_address: null, user_agent: null, metadata: {}, created_at: new Date(Date.now() - 120000).toISOString(), target_email: 'maria.silva@empresa.com' },
-        { id: '2', campaign_target_id: 'ct2', event_type: 'clicked', ip_address: null, user_agent: null, metadata: {}, created_at: new Date(Date.now() - 300000).toISOString(), target_email: 'joao.santos@empresa.com' },
-        { id: '3', campaign_target_id: 'ct3', event_type: 'sent', ip_address: null, user_agent: null, metadata: {}, created_at: new Date(Date.now() - 600000).toISOString(), target_email: 'ana.ferreira@empresa.com' },
-        { id: '4', campaign_target_id: 'ct4', event_type: 'reported', ip_address: null, user_agent: null, metadata: {}, created_at: new Date(Date.now() - 900000).toISOString(), target_email: 'pedro.rodrigues@empresa.com' },
-        { id: '5', campaign_target_id: 'ct5', event_type: 'opened', ip_address: null, user_agent: null, metadata: {}, created_at: new Date(Date.now() - 1200000).toISOString(), target_email: 'carlos.oliveira@empresa.com' },
-      ];
-      setActivities(mockActivities);
+    if (!id || !company) return;
+
+    async function loadData() {
+      setLoading(true);
+      try {
+        // Fetch campaign
+        const { data: campaignData, error: campaignError } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', id)
+          .eq('company_id', company.id)
+          .single();
+
+        if (campaignError || !campaignData) {
+          navigate('/app/campanhas');
+          return;
+        }
+
+        setCampaign(campaignData as Campaign);
+
+        // Fetch stats from campaign_targets aggregated
+        const { data: targetsData } = await supabase
+          .from('campaign_targets')
+          .select('status, events(event_type)')
+          .eq('campaign_id', id);
+
+        const computedStats: CampaignStats = { sent: 0, opened: 0, clicked: 0, reported: 0, submitted: 0, compromised: 0 };
+        targetsData?.forEach((target: any) => {
+          if (target.status === 'sent' || target.status === 'delivered') computedStats.sent++;
+          if (target.status === 'opened') computedStats.opened++;
+          if (target.status === 'clicked') computedStats.clicked++;
+          if (target.status === 'reported') computedStats.reported++;
+          if (target.status === 'submitted') computedStats.submitted++;
+          if (target.status === 'compromised') computedStats.compromised++;
+        });
+        setStats(computedStats);
+
+        // Fetch initial activities
+        const { data: activitiesData } = await supabase
+          .from('campaign_events')
+          .select('*')
+          .in('campaign_target_id', targetsData?.map((t: any) => t.id) || [])
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (activitiesData) {
+          // Enrich with target emails
+          const enrichedActivities = await Promise.all(
+            activitiesData.map(async (event) => {
+              const { data: target } = await supabase
+                .from('campaign_targets')
+                .select('email')
+                .eq('id', event.campaign_target_id)
+                .single();
+              return { ...event, target_email: target?.email } as CampaignEvent;
+            })
+          );
+          setActivities(enrichedActivities);
+        }
+      } catch (error) {
+        console.error('Error loading campaign:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-    loadActivities();
-  }, [id]);
+
+    loadData();
+  }, [id, company, navigate]);
 
   // Supabase realtime subscription
   useEffect(() => {
-    if (!id || campaign.status !== 'running' || isPaused) return;
+    if (!id || !campaign || campaign.status !== 'running' || isPaused) return;
 
     const channel = supabase
       .channel(`campaign-${id}`)
@@ -322,51 +359,7 @@ export default function CampanhaDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, campaign.status, isPaused]);
-
-  // Simulated real-time updates (for demo when not connected to Supabase)
-  useEffect(() => {
-    if (campaign.status !== 'running' || isPaused) return;
-
-    const interval = setInterval(() => {
-      setStats((prev) => {
-        const delta = {
-          sent: 0,
-          opened: Math.random() > 0.7 ? 1 : 0,
-          clicked: Math.random() > 0.85 ? 1 : 0,
-          reported: Math.random() > 0.95 ? 1 : 0,
-        };
-        const newOpened = Math.min(prev.opened + delta.opened, prev.sent);
-        const newClicked = Math.min(prev.clicked + delta.clicked, newOpened);
-        const newReported = Math.min(prev.reported + delta.reported, newClicked);
-
-        if (delta.opened || delta.clicked || delta.reported) {
-          const newActivity: CampaignEvent = {
-            id: Date.now().toString(),
-            campaign_target_id: 'ct-demo',
-            event_type: delta.reported ? 'reported' : delta.clicked ? 'clicked' : 'opened',
-            ip_address: null,
-            user_agent: null,
-            metadata: {},
-            created_at: new Date().toISOString(),
-            target_email: `demo${Math.floor(Math.random() * 100)}@empresa.com`,
-          };
-          setActivities((prevActs) => [newActivity, ...prevActs].slice(0, 20));
-          setLastUpdate(new Date());
-        }
-
-        return {
-          ...prev,
-          sent: prev.sent,
-          opened: newOpened,
-          clicked: newClicked,
-          reported: newReported,
-        };
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [campaign.status, isPaused]);
+  }, [id, campaign?.status, isPaused]);
 
   // Calculate rates
   const openRate = stats.sent > 0 ? (stats.opened / stats.sent) * 100 : 0;
@@ -396,6 +389,22 @@ export default function CampanhaDetailPage() {
     // In real implementation, delete campaign via Supabase
     navigate('/app/campanhas');
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--color-surface-0)]">
+        <p className="text-[var(--color-fg-tertiary)]">Campanha não encontrada</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">

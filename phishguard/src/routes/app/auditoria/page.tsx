@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   ChevronLeft,
@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 type ActionType = 'login' | 'campaign_created' | 'campaign_launched' | 'user_added' | 'settings_changed' | 'report_exported';
 
@@ -41,30 +43,6 @@ const ACTION_COLORS: Record<ActionType, string> = {
   report_exported: 'bg-gray-500/20 text-gray-400',
 };
 
-const MOCK_LOGS: AuditLogEntry[] = [
-  { id: '1', timestamp: new Date('2026-04-24T09:15:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'login', details: ' login no sistema', ip: '192.168.1.45' },
-  { id: '2', timestamp: new Date('2026-04-24T09:22:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_created', details: 'Campanha "Black Friday 2026" criada', ip: '192.168.1.102' },
-  { id: '3', timestamp: new Date('2026-04-24T09:45:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'user_added', details: 'Usuário joao.costa@empresa.com adicionado ao grupo Marketing', ip: '192.168.1.78' },
-  { id: '4', timestamp: new Date('2026-04-24T10:12:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'campaign_launched', details: 'Campanha "Reminder LGPD" iniciada', ip: '192.168.1.45' },
-  { id: '5', timestamp: new Date('2026-04-24T10:30:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'report_exported', details: 'Relatório executivo - Abril 2026 exportado', ip: '192.168.1.200' },
-  { id: '6', timestamp: new Date('2026-04-24T11:05:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'settings_changed', details: 'Configuração de notificação por email alterada', ip: '192.168.1.33' },
-  { id: '7', timestamp: new Date('2026-04-24T11:45:00'), userName: 'João Costa', userEmail: 'joao.costa@empresa.com', action: 'login', details: 'Login no sistema', ip: '192.168.1.88' },
-  { id: '8', timestamp: new Date('2026-04-24T12:20:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_created', details: 'Campanha "Phishing Teste Q1" criada', ip: '192.168.1.102' },
-  { id: '9', timestamp: new Date('2026-04-24T13:00:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'report_exported', details: 'Relatório de métricas detalhado exportado', ip: '192.168.1.45' },
-  { id: '10', timestamp: new Date('2026-04-24T13:30:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'user_added', details: 'Usuário fernanda.rocha@empresa.com adicionado ao grupo Vendas', ip: '192.168.1.78' },
-  { id: '11', timestamp: new Date('2026-04-23T08:00:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'login', details: 'Login no sistema', ip: '192.168.1.200' },
-  { id: '12', timestamp: new Date('2026-04-23T08:30:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'settings_changed', details: 'Limite de emails diarios alterado para 500', ip: '192.168.1.45' },
-  { id: '13', timestamp: new Date('2026-04-23T09:15:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'campaign_launched', details: 'Campanha "Update Financeiro" iniciada', ip: '192.168.1.33' },
-  { id: '14', timestamp: new Date('2026-04-23T10:00:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'campaign_created', details: 'Campanha "Verificação de Segurança" criada', ip: '192.168.1.102' },
-  { id: '15', timestamp: new Date('2026-04-23T11:30:00'), userName: 'João Costa', userEmail: 'joao.costa@empresa.com', action: 'report_exported', details: 'Relatório de treinamento exportado', ip: '192.168.1.88' },
-  { id: '16', timestamp: new Date('2026-04-22T14:20:00'), userName: 'Maria Oliveira', userEmail: 'maria.oliveira@empresa.com', action: 'user_added', details: 'Usuário pedro.alves@empresa.com adicionado ao grupo TI', ip: '192.168.1.78' },
-  { id: '17', timestamp: new Date('2026-04-22T15:00:00'), userName: 'Roberto Lima', userEmail: 'roberto.lima@empresa.com', action: 'campaign_launched', details: 'Campanha "Recall de Política" iniciada', ip: '192.168.1.200' },
-  { id: '18', timestamp: new Date('2026-04-22T16:30:00'), userName: 'Ana Silva', userEmail: 'ana.silva@empresa.com', action: 'settings_changed', details: 'Template de email padrão alterado', ip: '192.168.1.45' },
-  { id: '19', timestamp: new Date('2026-04-21T09:00:00'), userName: 'Paula Souza', userEmail: 'paula.souza@empresa.com', action: 'login', details: 'Login no sistema', ip: '192.168.1.33' },
-  { id: '20', timestamp: new Date('2026-04-21T10:45:00'), userName: 'Carlos Santos', userEmail: 'carlos.santos@empresa.com', action: 'report_exported', details: 'Exportação de lista de usuários em CSV', ip: '192.168.1.102' },
-];
-
-const USERS = ['Todos', 'Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Paula Souza', 'Roberto Lima'];
 const ACTION_TYPES: { value: ActionType | 'all'; label: string }[] = [
   { value: 'all', label: 'Todas as ações' },
   { value: 'login', label: 'Login' },
@@ -76,14 +54,85 @@ const ACTION_TYPES: { value: ActionType | 'all'; label: string }[] = [
 ];
 
 const ITEMS_PER_PAGE = 20;
-const TOTAL_ITEMS = MOCK_LOGS.length;
+
+interface Stats {
+  total: number;
+  campaignsCreated: number;
+  campaignsLaunched: number;
+  usersAdded: number;
+}
 
 export default function AuditoriaPage() {
+  const { company } = useAuth();
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
+  const [users, setUsers] = useState<string[]>(['Todos']);
+  const [stats, setStats] = useState<Stats>({ total: 0, campaignsCreated: 0, campaignsLaunched: 0, usersAdded: 0 });
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(TOTAL_ITEMS / ITEMS_PER_PAGE);
 
+  const totalItems = logs.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, TOTAL_ITEMS);
+  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!company?.id) return;
+
+      setLoading(true);
+
+      // Fetch audit logs
+      const { data: logsData, error: logsError } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false });
+
+      if (logsError) {
+        console.error('Error fetching audit logs:', logsError);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch unique users for filter
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('company_id', company.id)
+        .not('full_name', 'is', null);
+
+      const userNames = profilesData
+        ? ['Todos', ...new Set(profilesData.map(p => p.full_name).filter(Boolean))]
+        : ['Todos'];
+
+      // Calculate stats
+      const campaignCreatedCount = logsData?.filter(l => l.action === 'campaign_created').length || 0;
+      const campaignLaunchedCount = logsData?.filter(l => l.action === 'campaign_launched').length || 0;
+      const userAddedCount = logsData?.filter(l => l.action === 'user_added').length || 0;
+
+      const formattedLogs: AuditLogEntry[] = (logsData || []).map(log => ({
+        id: log.id,
+        timestamp: new Date(log.created_at),
+        userName: log.user_name || 'Usuário',
+        userEmail: log.user_email || '',
+        action: log.action as ActionType,
+        details: log.details || '',
+        ip: log.ip_address || '',
+      }));
+
+      setLogs(formattedLogs);
+      setUsers(userNames);
+      setStats({
+        total: formattedLogs.length,
+        campaignsCreated: campaignCreatedCount,
+        campaignsLaunched: campaignLaunchedCount,
+        usersAdded: userAddedCount,
+      });
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [company?.id]);
 
   return (
     <div>
@@ -104,7 +153,7 @@ export default function AuditoriaPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-[var(--color-accent)]/10 px-3 py-1 text-sm font-medium text-[var(--color-accent)]">
-              {TOTAL_ITEMS} registros
+              {loading ? '...' : `${totalItems} registros`}
             </span>
           </div>
         </div>
@@ -124,7 +173,9 @@ export default function AuditoriaPage() {
                   <FileText className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">{TOTAL_ITEMS}</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
+                    {loading ? '...' : stats.total}
+                  </p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Total de registros</p>
                 </div>
               </div>
@@ -144,7 +195,9 @@ export default function AuditoriaPage() {
                   <User className="h-5 w-5 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">8</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
+                    {loading ? '...' : stats.campaignsCreated}
+                  </p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Campanhas criadas</p>
                 </div>
               </div>
@@ -164,7 +217,9 @@ export default function AuditoriaPage() {
                   <Calendar className="h-5 w-5 text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">3</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
+                    {loading ? '...' : stats.campaignsLaunched}
+                  </p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Campanhas iniciadas</p>
                 </div>
               </div>
@@ -184,7 +239,9 @@ export default function AuditoriaPage() {
                   <User className="h-5 w-5 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">5</p>
+                  <p className="text-2xl font-display font-bold text-[var(--color-fg-primary)]">
+                    {loading ? '...' : stats.usersAdded}
+                  </p>
                   <p className="text-xs text-[var(--color-fg-tertiary)]">Usuários adicionados</p>
                 </div>
               </div>
@@ -220,7 +277,7 @@ export default function AuditoriaPage() {
           <div className="flex items-center gap-2">
             <label className="text-xs text-[var(--color-fg-tertiary)]">Usuário:</label>
             <select className="h-8 rounded-[var(--radius-sm)] border border-[var(--color-noir-700)] bg-[var(--color-surface-2)] px-2 text-xs text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none">
-              {USERS.map(user => (
+              {users.map(user => (
                 <option key={user} value={user === 'Todos' ? 'all' : user}>{user}</option>
               ))}
             </select>
@@ -266,50 +323,64 @@ export default function AuditoriaPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-noir-700)]">
-              {MOCK_LOGS.map((log) => (
-                <tr
-                  key={log.id}
-                  className="hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="text-sm text-[var(--color-fg-primary)]">
-                        {log.timestamp.toLocaleDateString('pt-BR')}
-                      </p>
-                      <p className="text-xs text-[var(--color-fg-muted)]">
-                        {log.timestamp.toLocaleTimeString('pt-BR')}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-xs text-[var(--color-accent)]">
-                        {log.userName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--color-fg-primary)]">{log.userName}</p>
-                        <p className="text-xs text-[var(--color-fg-muted)]">{log.userEmail}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium',
-                      ACTION_COLORS[log.action]
-                    )}>
-                      {ACTION_LABELS[log.action]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[var(--color-fg-secondary)]">
-                    {log.details}
-                  </td>
-                  <td className="px-4 py-3">
-                    <code className="text-xs text-[var(--color-fg-muted)] bg-[var(--color-surface-2)] px-2 py-1 rounded">
-                      {log.ip}
-                    </code>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-[var(--color-fg-muted)]">
+                    Carregando...
                   </td>
                 </tr>
-              ))}
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-[var(--color-fg-muted)]">
+                    Nenhum registro encontrado
+                  </td>
+                </tr>
+              ) : (
+                logs.slice(startItem - 1, endItem).map((log) => (
+                  <tr
+                    key={log.id}
+                    className="hover:bg-[var(--color-surface-2)]/50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-sm text-[var(--color-fg-primary)]">
+                          {log.timestamp.toLocaleDateString('pt-BR')}
+                        </p>
+                        <p className="text-xs text-[var(--color-fg-muted)]">
+                          {log.timestamp.toLocaleTimeString('pt-BR')}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)]/10 text-xs text-[var(--color-accent)]">
+                          {log.userName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[var(--color-fg-primary)]">{log.userName}</p>
+                          <p className="text-xs text-[var(--color-fg-muted)]">{log.userEmail}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium',
+                        ACTION_COLORS[log.action]
+                      )}>
+                        {ACTION_LABELS[log.action]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-fg-secondary)]">
+                      {log.details}
+                    </td>
+                    <td className="px-4 py-3">
+                      <code className="text-xs text-[var(--color-fg-muted)] bg-[var(--color-surface-2)] px-2 py-1 rounded">
+                        {log.ip}
+                      </code>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -317,7 +388,7 @@ export default function AuditoriaPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between border-t border-[var(--color-noir-700)] px-4 py-3">
           <span className="text-sm text-[var(--color-fg-muted)]">
-            Mostrando {startItem}-{endItem} de {TOTAL_ITEMS} registros
+            {loading ? '...' : `Mostrando ${startItem}-${endItem} de ${totalItems} registros`}
           </span>
 
           <div className="flex items-center gap-2">
@@ -326,7 +397,7 @@ export default function AuditoriaPage() {
               size="icon"
               className="h-8 w-8"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loading}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -335,7 +406,7 @@ export default function AuditoriaPage() {
               size="icon"
               className="h-8 w-8"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loading}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

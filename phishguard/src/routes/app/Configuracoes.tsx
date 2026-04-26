@@ -1,5 +1,5 @@
 // routes/app/Configuracoes.tsx — Settings page with tabs
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -7,10 +7,23 @@ import { PermissionMatrix } from '@/components/rbac/PermissionMatrix';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Settings, Shield, Bell, Globe, Users, FileText, Lock } from 'lucide-react';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function ConfiguracoesPage() {
   const location = useLocation();
+  const { company } = useAuth();
+  const [companyData, setCompanyData] = useState({ name: '', domain: '' });
   const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'domains' | 'admins' | 'audit' | 'permissions'>('general');
+
+  // Fetch real company data
+  useEffect(() => {
+    if (company) {
+      setCompanyData({
+        name: company.name || '',
+        domain: company.domain || '',
+      });
+    }
+  }, [company]);
 
   // Determine active tab from URL
   const currentPath = location.pathname;
@@ -60,7 +73,7 @@ export default function ConfiguracoesPage() {
           {tabs.map((tab) => (
             <Link
               key={tab.id}
-              to={tab.id === 'general' || tab.id === 'security' || tab.id === 'notifications' ? '/app/configuracoes' : `/app/configuracoes/${tab.id === 'audit' ? 'audit-log' : tab.id}`}
+              to={tab.id === 'general' || tab.id === 'security' || tab.id === 'notifications' || tab.id === 'permissions' ? '/app/configuracoes' : `/app/configuracoes/${tab.id === 'audit' ? 'audit-log' : tab.id === 'domains' ? 'dominios' : tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap',
@@ -94,7 +107,7 @@ export default function ConfiguracoesPage() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="Acme Corp"
+                      defaultValue={companyData.name}
                       className="w-full rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                     />
                   </div>
@@ -104,7 +117,7 @@ export default function ConfiguracoesPage() {
                     </label>
                     <input
                       type="text"
-                      defaultValue="acme.com"
+                      defaultValue={companyData.domain}
                       className="w-full rounded-[var(--radius-md)] border border-[var(--color-noir-700)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-fg-primary)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
                     />
                   </div>

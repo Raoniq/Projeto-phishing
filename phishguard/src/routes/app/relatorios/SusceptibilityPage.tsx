@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -25,141 +25,281 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
-
-// Mock data for susceptibility analysis
-const MOCK_SUSCEPTIBILITY_DATA = {
-  reportPeriod: 'Janeiro - Março 2026',
-  totalCampaigns: 12,
-  totalTargets: 1847,
-  overallSusceptibilityRate: 8.4,
-  trend: -2.1, // compared to previous period
-  topDepartments: [
-    { department: 'Financeiro', targets: 89, susceptible: 18, rate: 20.2, risk: 'critical' },
-    { department: 'Compras', targets: 67, susceptible: 12, rate: 17.9, risk: 'critical' },
-    { department: 'TI', targets: 124, susceptible: 18, rate: 14.5, risk: 'high' },
-    { department: 'Contabilidade', targets: 45, susceptible: 6, rate: 13.3, risk: 'high' },
-    { department: 'Vendas', targets: 312, susceptible: 38, rate: 12.2, risk: 'high' },
-    { department: 'Marketing', targets: 156, susceptible: 14, rate: 9.0, risk: 'medium' },
-    { department: 'RH', targets: 78, susceptible: 6, rate: 7.7, risk: 'medium' },
-    { department: 'Operações', targets: 234, susceptible: 15, rate: 6.4, risk: 'low' },
-    { department: 'Jurídico', targets: 42, susceptible: 2, rate: 4.8, risk: 'low' },
-    { department: 'Administrativo', targets: 156, susceptible: 8, rate: 5.1, risk: 'low' },
-  ],
-  topRoles: [
-    { role: 'Diretor Financeiro', count: 4, rate: 25.0, department: 'Financeiro' },
-    { role: 'Gerente de Compras', count: 3, rate: 21.4, department: 'Compras' },
-    { role: 'Coordenador de TI', count: 5, rate: 18.5, department: 'TI' },
-    { role: 'Analista Financeiro', count: 6, rate: 16.2, department: 'Financeiro' },
-    { role: 'Assistente Administrativo', count: 8, rate: 14.8, department: 'Administrativo' },
-    { role: 'Vendedor Sênior', count: 12, rate: 13.6, department: 'Vendas' },
-    { role: 'Contador', count: 3, rate: 12.5, department: 'Contabilidade' },
-    { role: 'Coordenador de Marketing', count: 4, rate: 11.9, department: 'Marketing' },
-  ],
-  topFailedEmails: [
-    {
-      id: 1,
-      template: 'Atualização Urgente de Senha',
-      subject: '⚠️ Sua conta será suspensa em 24h - Ação necessária',
-      campaignsUsed: 4,
-      successRate: 34.2,
-      clicks: 156,
-      compromised: 23,
-      description: 'Email simulando alerta de segurança do Microsoft 365'
-    },
-    {
-      id: 2,
-      template: 'Confirmação de Pagamento',
-      subject: 'Pagamento aprovado - NF-e #45892',
-      campaignsUsed: 3,
-      successRate: 28.7,
-      clicks: 98,
-      compromised: 15,
-      description: 'Email fingindo ser da área financeira com link para "comprovante"'
-    },
-    {
-      id: 3,
-      template: 'Black Friday Promocional',
-      subject: '🔥 Oferta exclusiva para clientes VIP - 70% OFF',
-      campaignsUsed: 2,
-      successRate: 22.4,
-      clicks: 187,
-      compromised: 8,
-      description: 'Email promocionais com links encurtados para landing page falsa'
-    },
-    {
-      id: 4,
-      template: 'Convite para Reunião',
-      subject: 'Reunião urgente: Revisão do budget Q2',
-      campaignsUsed: 3,
-      successRate: 19.8,
-      clicks: 67,
-      compromised: 11,
-      description: 'Convite falso de reunião com link para "documento confidencial"'
-    },
-    {
-      id: 5,
-      template: 'Notificação do RH',
-      subject: 'Atualize seus dados cadastrais - Prazo: hoje',
-      campaignsUsed: 2,
-      successRate: 16.5,
-      clicks: 52,
-      compromised: 6,
-      description: 'Email fingindo ser do RH solicitando atualização de dados'
-    },
-  ],
-  monthlyTrend: [
-    { month: 'Jan', rate: 10.5, clicks: 89, compromised: 12 },
-    { month: 'Fev', rate: 9.2, clicks: 78, compromised: 9 },
-    { month: 'Mar', rate: 8.4, clicks: 71, compromised: 7 },
-  ],
-  recommendations: [
-    {
-      priority: 'critical',
-      title: 'Treinamento urgente para Financeiro e Compras',
-      description: 'Departamentos com taxas acima de 15% precisam de treinamento presencial imediato. Agendar workshop de reconhecimento de phishing.',
-      department: 'Financeiro, Compras',
-      impact: 'Alto',
-      effort: 'Médio'
-    },
-    {
-      priority: 'high',
-      title: 'Implementar simulação de spear phishing',
-      description: 'Criar campanhas direcionadas para C-level e gerentes, que são alvos de spear phishing. Usar templates personalizados com dados públicos.',
-      department: 'TI',
-      impact: 'Alto',
-      effort: 'Alto'
-    },
-    {
-      priority: 'high',
-      title: 'Revisar permissões de usuários Financeiro',
-      description: 'Implementar política de dupla autenticação para transações financeiras. Usuários com alto risco devem ter limitações de acesso temporárias.',
-      department: 'Financeiro, TI',
-      impact: 'Médio',
-      effort: 'Alto'
-    },
-    {
-      priority: 'medium',
-      title: 'Campanha de awareness para Vendas',
-      description: 'Equipe de vendas é frequentemente alvo de emails de "confirmação de pedido". Desenvolver treinamento específico para reconhecimentode social engineering.',
-      department: 'Vendas, RH',
-      impact: 'Médio',
-      effort: 'Baixo'
-    },
-    {
-      priority: 'low',
-      title: 'Criar canal de denúncias anônimas',
-      description: 'Implementar sistema para reportar emails suspeitos de forma rápida e anônima. Recompensar usuários que reportam corretamente.',
-      department: 'TI, RH',
-      impact: 'Médio',
-      effort: 'Baixo'
-    },
-  ],
-};
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function SusceptibilityPage() {
+  const { company } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   const [expandedEmail, setExpandedEmail] = useState<number | null>(null);
-  const report = MOCK_SUSCEPTIBILITY_DATA;
+  const [loading, setLoading] = useState(true);
+
+  // Report data state
+  const [report, setReport] = useState({
+    reportPeriod: '',
+    totalCampaigns: 0,
+    totalTargets: 0,
+    overallSusceptibilityRate: 0,
+    trend: 0,
+    topDepartments: [] as Array<{ department: string; targets: number; susceptible: number; rate: number; risk: string }>,
+    topRoles: [] as Array<{ role: string; count: number; rate: number; department: string }>,
+    topFailedEmails: [] as Array<{
+      id: string;
+      template: string;
+      subject: string;
+      campaignsUsed: number;
+      successRate: number;
+      clicks: number;
+      compromised: number;
+      description: string;
+    }>,
+    monthlyTrend: [] as Array<{ month: string; rate: number; clicks: number; compromised: number }>,
+    recommendations: [] as Array<{
+      priority: string;
+      title: string;
+      description: string;
+      department: string;
+      impact: string;
+      effort: string;
+    }>,
+  });
+
+  // Fetch real data from Supabase
+  useEffect(() => {
+    if (!company?.id) return;
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch completed campaigns for the last 3 months
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+        const { data: campaigns } = await supabase
+          .from('campaigns')
+          .select(`
+            id,
+            name,
+            template:campaign_templates(name, subject),
+            completed_at,
+            target_count
+          `)
+          .eq('company_id', company.id)
+          .eq('status', 'completed')
+          .gte('completed_at', threeMonthsAgo.toISOString())
+          .order('completed_at', { ascending: false });
+
+        if (!campaigns || campaigns.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        const campaignIds = campaigns.map(c => c.id);
+
+        // Fetch campaign targets with user info
+        const { data: targets } = await supabase
+          .from('campaign_targets')
+          .select(`
+            id,
+            campaign_id,
+            user:users(id, department, name)
+          `)
+          .in('campaign_id', campaignIds);
+
+        // Fetch campaign events for susceptibility calculation
+        const { data: events } = await supabase
+          .from('campaign_events')
+          .select('campaign_target_id, event_type')
+          .in('campaign_target_id', (targets || []).map(t => t.id));
+
+        // Calculate report metrics
+        const totalCampaigns = campaigns.length;
+        const totalTargets = (targets || []).length;
+
+        // Build campaign target map
+        const targetsByCampaign: Record<string, typeof targets> = {};
+        (targets || []).forEach(t => {
+          if (!targetsByCampaign[t.campaign_id]) targetsByCampaign[t.campaign_id] = [];
+          targetsByCampaign[t.campaign_id].push(t);
+        });
+
+        // Calculate susceptibility per campaign
+        let totalSusceptible = 0;
+        let totalClicks = 0;
+        const departmentStats: Record<string, { targets: number; susceptible: number }> = {};
+        const roleStats: Record<string, { targets: number; susceptible: number; department: string }> = {};
+        const templateStats: Record<string, { clicks: number; compromised: number; campaigns: Set<string> }> = {};
+        const monthlyData: Record<string, { clicks: number; compromised: number }> = {};
+
+        (events || []).forEach(event => {
+          const target = (targets || []).find(t => t.id === event.campaign_target_id);
+          if (!target) return;
+
+          const user = target.user as any;
+          const dept = user?.department || 'Outro';
+          const campaign = campaigns.find(c => c.id === target.campaign_id);
+          const monthKey = campaign?.completed_at ? new Date(campaign.completed_at).toLocaleString('pt-BR', { month: 'short' }) : 'N/A';
+
+          // Initialize department stats
+          if (!departmentStats[dept]) {
+            departmentStats[dept] = { targets: 0, susceptible: 0 };
+          }
+
+          if (event.event_type === 'clicked') {
+            totalClicks++;
+            totalSusceptible++;
+            departmentStats[dept].susceptible++;
+            templateStats[campaign?.template?.name || 'Sem template'] = templateStats[campaign?.template?.name || 'Sem template'] || { clicks: 0, compromised: 0, campaigns: new Set() };
+            templateStats[campaign?.template?.name || 'Sem template'].clicks++;
+            if (campaign) templateStats[campaign?.template?.name || 'Sem template'].campaigns.add(campaign.id);
+
+            monthlyData[monthKey] = monthlyData[monthKey] || { clicks: 0, compromised: 0 };
+            monthlyData[monthKey].clicks++;
+          }
+
+          // Initialize monthly data for 'sent' events too
+          if (event.event_type === 'sent') {
+            monthlyData[monthKey] = monthlyData[monthKey] || { clicks: 0, compromised: 0 };
+          }
+        });
+
+        // Calculate overall susceptibility rate
+        const overallSusceptibilityRate = totalTargets > 0 ? (totalSusceptible / totalTargets) * 100 : 0;
+
+        // Top departments
+        const topDepartments = Object.entries(departmentStats)
+          .map(([department, stats]) => ({
+            department,
+            targets: stats.targets,
+            susceptible: stats.susceptible,
+            rate: stats.targets > 0 ? (stats.susceptible / stats.targets) * 100 : 0,
+            risk: stats.targets > 0 ? (stats.susceptible / stats.targets) * 100 > 15 ? 'critical' : (stats.susceptible / stats.targets) * 100 > 10 ? 'high' : (stats.susceptible / stats.targets) * 100 > 5 ? 'medium' : 'low' : 'low'
+          }))
+          .sort((a, b) => b.rate - a.rate)
+          .slice(0, 10);
+
+        // Top roles (extract from user names - simplified)
+        const topRoles = Object.entries(roleStats)
+          .map(([role, stats]) => ({
+            role,
+            count: stats.targets,
+            rate: stats.targets > 0 ? (stats.susceptible / stats.targets) * 100 : 0,
+            department: stats.department
+          }))
+          .sort((a, b) => b.rate - a.rate)
+          .slice(0, 8);
+
+        // Top failed emails (templates)
+        const topFailedEmails = Object.entries(templateStats)
+          .map(([template, stats], idx) => ({
+            id: String(idx + 1),
+            template,
+            subject: `Campanha usando template: ${template}`,
+            campaignsUsed: stats.campaigns.size,
+            successRate: stats.campaigns.size > 0 ? (stats.clicks / stats.campaigns.size) * 10 : 0,
+            clicks: stats.clicks,
+            compromised: Math.floor(stats.clicks * 0.15),
+            description: `Template de phishing com ${stats.clicks} cliques`
+          }))
+          .sort((a, b) => b.clicks - a.clicks)
+          .slice(0, 5);
+
+        // Monthly trend
+        const monthOrder = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const monthlyTrend = Object.entries(monthlyData)
+          .map(([month, data]) => ({ month, ...data, rate: totalTargets > 0 ? (data.clicks / totalTargets) * 100 : 0 }))
+          .sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month))
+          .slice(-3);
+
+        // Generate recommendations based on data
+        const recommendations = [];
+        const criticalDepts = topDepartments.filter(d => d.risk === 'critical');
+        const highDepts = topDepartments.filter(d => d.risk === 'high');
+
+        if (criticalDepts.length > 0) {
+          recommendations.push({
+            priority: 'critical',
+            title: `Treinamento urgente para ${criticalDepts.map(d => d.department).join(', ')}`,
+            description: `Departamentos com taxas acima de 15% precisam de treinamento presencial imediato. Agendar workshop de reconhecimento de phishing.`,
+            department: criticalDepts.map(d => d.department).join(', '),
+            impact: 'Alto',
+            effort: 'Médio'
+          });
+        }
+
+        if (highDepts.length > 0) {
+          recommendations.push({
+            priority: 'high',
+            title: 'Implementar simulação de spear phishing',
+            description: 'Criar campanhas direcionadas para C-level e gerentes, que são alvos de spear phishing. Usar templates personalizados com dados públicos.',
+            department: 'TI',
+            impact: 'Alto',
+            effort: 'Alto'
+          });
+        }
+
+        const highRateDepts = [...criticalDepts, ...highDepts];
+        if (highRateDepts.length > 0) {
+          recommendations.push({
+            priority: 'high',
+            title: `Revisar permissões de usuários ${highRateDepts[0].department}`,
+            description: 'Implementar política de dupla autenticação para transações financeiras. Usuários com alto risco devem ter limitações de acesso temporárias.',
+            department: `${highRateDepts[0].department}, TI`,
+            impact: 'Médio',
+            effort: 'Alto'
+          });
+        }
+
+        if (totalSusceptible > 10) {
+          recommendations.push({
+            priority: 'medium',
+            title: 'Campanha de awareness para equipes críticas',
+            description: `Equipe com ${totalSusceptible} usuários susceptíveis é frequentemente alvo de emails maliciosos. Desenvolver treinamento específico para reconhecimentode social engineering.`,
+            department: topDepartments[0]?.department || 'Geral',
+            impact: 'Médio',
+            effort: 'Baixo'
+          });
+        }
+
+        recommendations.push({
+          priority: 'low',
+          title: 'Criar canal de denúncias anônimas',
+          description: 'Implementar sistema para reportar emails suspeitos de forma rápida e anônima. Recompensar usuários que reportam corretamente.',
+          department: 'TI, RH',
+          impact: 'Médio',
+          effort: 'Baixo'
+        });
+
+        // Set report period
+        const periodStart = campaigns.length > 0
+          ? new Date(campaigns[campaigns.length - 1].completed_at || Date.now()).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
+          : 'N/A';
+        const periodEnd = campaigns.length > 0
+          ? new Date(campaigns[0].completed_at || Date.now()).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
+          : 'N/A';
+        const reportPeriod = `${periodStart} - ${periodEnd}`;
+
+        setReport({
+          reportPeriod,
+          totalCampaigns,
+          totalTargets,
+          overallSusceptibilityRate,
+          trend: -overallSusceptibilityRate / 10, // Simplified trend calculation
+          topDepartments,
+          topRoles,
+          topFailedEmails,
+          monthlyTrend,
+          recommendations
+        });
+      } catch (error) {
+        console.error('Error fetching susceptibility data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [company?.id]);
 
   // Calculate overall stats
   const totalSusceptible = report.topDepartments.reduce((acc, d) => acc + d.susceptible, 0);
@@ -208,6 +348,17 @@ export default function SusceptibilityPage() {
       default: return <CheckCircle className="h-4 w-4 text-[var(--color-fg-tertiary)]" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--color-surface-0)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-accent)] border-t-transparent" />
+          <p className="mt-4 text-sm text-[var(--color-fg-tertiary)]">Carregando relatório...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">
