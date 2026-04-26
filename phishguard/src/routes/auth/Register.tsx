@@ -24,11 +24,13 @@ export default function RegisterPage() {
   const [step, setStep] = useState<'user' | 'company'>('user');
 
   const handleInputChange = (field: keyof RegisterFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement> | boolean
   ) => {
-    const value = field === 'acceptTerms' 
-      ? (e.target as HTMLInputElement).checked 
-      : e.target.value;
+    const value = typeof e === 'boolean'
+      ? e
+      : (field === 'acceptTerms'
+        ? (e.target as HTMLInputElement).checked
+        : e.target.value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
