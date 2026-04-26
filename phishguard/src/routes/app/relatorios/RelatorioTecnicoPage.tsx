@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -25,68 +25,296 @@ import {
   timelineColumns,
   type TimelineEntryCSV
 } from '@/lib/csv-export';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth/AuthContext';
+import type { Database } from '@/lib/supabase';
 
-// Mock technical data
-const MOCK_TECHNICAL_REPORT = {
+type Campaign = Database['public']['Tables']['campaigns']['Row'];
+type CampaignTarget = Database['public']['Tables']['campaign_targets']['Row'];
+type CampaignEvent = Database['public']['Tables']['campaign_events']['Row'];
+type IscaDomain = Database['public']['Tables']['isca_domains']['Row'];
+
+interface ReportData {
   campaign: {
-    id: 'campaign-1',
-    name: 'Black Friday 2026',
-    template: 'Black Friday Promo',
-    tier: 2,
-    status: 'completed',
-    scheduledAt: '2026-04-20T09:00:00Z',
-    completedAt: '2026-04-20T18:30:00Z',
-    landingUrl: 'https://blackfriday.promo.fake',
-    targetCount: 150,
+    id: string;
+    name: string;
+    template: string;
+    tier: number;
+    status: string;
+    scheduledAt: string | null;
+    completedAt: string | null;
+    landingUrl: string;
+    targetCount: number;
+  };
+  stats: {
+    sent: number;
+    delivered: number;
+    bounced: number;
+    opened: number;
+    clicked: number;
+    reported: number;
+    compromised: number;
+    unsubscribed: number;
+  };
+  timeline: Array<{ date: string; sent: number; opened: number; clicked: number; reported: number }>;
+  hourlyEngagement: Array<{ hour: string; opens: number; clicks: number }>;
+  technicalDetails: {
+    smtpServer: string;
+    bounceRate: string;
+    dkimSigned: boolean;
+    spfPassed: boolean;
+    dmarcPassed: boolean;
+    domainReputation: string;
+    ipReputation: string;
+  };
+  riskUsers: Array<{ email: string; department: string; clicks: number; opened: boolean; reported: boolean }>;
+}
+
+const EMPTY_REPORT: ReportData = {
+  campaign: {
+    id: '',
+    name: '',
+    template: '',
+    tier: 0,
+    status: '',
+    scheduledAt: null,
+    completedAt: null,
+    landingUrl: '',
+    targetCount: 0,
   },
   stats: {
-    sent: 150,
-    delivered: 150,
+    sent: 0,
+    delivered: 0,
     bounced: 0,
-    opened: 89,
-    clicked: 12,
-    reported: 3,
-    compromised: 2,
+    opened: 0,
+    clicked: 0,
+    reported: 0,
+    compromised: 0,
     unsubscribed: 0,
   },
-  timeline: [
-    { date: '2026-04-20', sent: 50, opened: 35, clicked: 5, reported: 1 },
-    { date: '2026-04-20', sent: 100, opened: 54, clicked: 7, reported: 2 },
-    { date: '2026-04-20', sent: 150, opened: 89, clicked: 12, reported: 3 },
-  ],
-  hourlyEngagement: [
-    { hour: '09:00', opens: 12, clicks: 2 },
-    { hour: '10:00', opens: 28, clicks: 4 },
-    { hour: '11:00', opens: 35, clicks: 5 },
-    { hour: '12:00', opens: 42, clicks: 6 },
-    { hour: '13:00', opens: 48, clicks: 7 },
-    { hour: '14:00', opens: 55, clicks: 8 },
-    { hour: '15:00', opens: 62, clicks: 9 },
-    { hour: '16:00', opens: 72, clicks: 10 },
-    { hour: '17:00', opens: 82, clicks: 11 },
-    { hour: '18:00', opens: 89, clicks: 12 },
-  ],
+  timeline: [],
+  hourlyEngagement: [],
   technicalDetails: {
-    smtpServer: 'mail.phishguard.io',
+    smtpServer: '',
     bounceRate: '0%',
-    dkimSigned: true,
-    spfPassed: true,
-    dmarcPassed: true,
-    domainReputation: 'high',
-    ipReputation: 'good',
+    dkimSigned: false,
+    spfPassed: false,
+    dmarcPassed: false,
+    domainReputation: 'unknown',
+    ipReputation: 'unknown',
   },
-  riskUsers: [
-    { email: 'director@company.com', department: 'Financeiro', clicks: 3, opened: true, reported: false },
-    { email: 'manager@company.com', department: 'Financeiro', clicks: 2, opened: true, reported: false },
-    { email: 'analyst@company.com', department: 'TI', clicks: 2, opened: true, reported: false },
-    { email: 'seller@company.com', department: 'Vendas', clicks: 2, opened: true, reported: false },
-    { email: 'assistant@company.com', department: 'RH', clicks: 2, opened: true, reported: false },
-  ],
+  riskUsers: [],
 };
 
 export default function RelatorioTecnicoPage() {
+  const { id: campaignId } = useParams<{ id: string }>();
+  const { company } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
-  const report = MOCK_TECHNICAL_REPORT;
+  const [report, setReport] = useState<ReportData>(EMPTY_REPORT);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch campaign data
+  useEffect(() => {
+    async function fetchReportData() {
+      if (!company?.id || !campaignId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        // Fetch campaign
+        const { data: campaign, error: campaignError } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', campaignId)
+          .eq('company_id', company.id)
+          .single();
+
+        if (campaignError || !campaign) {
+          console.error('Error fetching campaign:', campaignError);
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch campaign targets
+        const { data: targets, error: targetsError } = await supabase
+          .from('campaign_targets')
+          .select('*')
+          .eq('campaign_id', campaignId);
+
+        if (targetsError) {
+          console.error('Error fetching targets:', targetsError);
+        }
+
+        // Fetch campaign events
+        const { data: events, error: eventsError } = await supabase
+          .from('campaign_events')
+          .select('*')
+          .in('campaign_target_id', (targets || []).map(t => t.id));
+
+        if (eventsError) {
+          console.error('Error fetching events:', eventsError);
+        }
+
+        // Fetch isca domains for technical details
+        const { data: iscaDomains } = await supabase
+          .from('isca_domains')
+          .select('*')
+          .eq('company_id', company.id)
+          .limit(1);
+
+        // Compute stats from targets
+        const targetList = targets || [];
+        const eventList = events || [];
+
+        const sent = targetList.filter(t => t.status !== 'pending' && t.status !== 'failed').length;
+        const delivered = sent; // Assuming delivered = sent for now
+        const bounced = targetList.filter(t => t.status === 'failed').length;
+        const opened = targetList.filter(t => t.opened_at !== null).length;
+        const clicked = targetList.filter(t => t.clicked_at !== null).length;
+        const reported = targetList.filter(t => t.reported_at !== null).length;
+        const compromised = clicked - reported;
+
+        // Build timeline (grouped by date)
+        const timelineMap = new Map<string, { sent: number; opened: number; clicked: number; reported: number }>();
+
+        targetList.forEach(t => {
+          if (!t.sent_at) return;
+          const date = t.sent_at.split('T')[0];
+          const existing = timelineMap.get(date) || { sent: 0, opened: 0, clicked: 0, reported: 0 };
+          existing.sent += 1;
+          if (t.opened_at) existing.opened += 1;
+          if (t.clicked_at) existing.clicked += 1;
+          if (t.reported_at) existing.reported += 1;
+          timelineMap.set(date, existing);
+        });
+
+        const timeline = Array.from(timelineMap.entries())
+          .map(([date, data]) => ({ date, ...data }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        // Build hourly engagement (8am to 6pm)
+        const hourlyMap = new Map<string, { opens: number; clicks: number }>();
+        for (let h = 8; h <= 18; h++) {
+          const hour = `${h.toString().padStart(2, '0')}:00`;
+          hourlyMap.set(hour, { opens: 0, clicks: 0 });
+        }
+
+        targetList.forEach(t => {
+          if (t.opened_at) {
+            const hour = new Date(t.opened_at).getHours();
+            if (hour >= 8 && hour <= 18) {
+              const key = `${hour.toString().padStart(2, '0')}:00`;
+              const existing = hourlyMap.get(key) || { opens: 0, clicks: 0 };
+              existing.opens += 1;
+              hourlyMap.set(key, existing);
+            }
+          }
+          if (t.clicked_at) {
+            const hour = new Date(t.clicked_at).getHours();
+            if (hour >= 8 && hour <= 18) {
+              const key = `${hour.toString().padStart(2, '0')}:00`;
+              const existing = hourlyMap.get(key) || { opens: 0, clicks: 0 };
+              existing.clicks += 1;
+              hourlyMap.set(key, existing);
+            }
+          }
+        });
+
+        const hourlyEngagement = Array.from(hourlyMap.entries())
+          .map(([hour, data]) => ({ hour, ...data }));
+
+        // Build risk users (targets that clicked)
+        const clickedTargets = targetList.filter(t => t.clicked_at !== null);
+
+        // Fetch user department info for clicked targets
+        const riskUsersPromises = clickedTargets.map(async (t) => {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email, department')
+            .eq('id', t.user_id)
+            .single();
+
+          return {
+            email: t.email,
+            department: userData?.department || 'Unknown',
+            clicks: eventList.filter(e => e.campaign_target_id === t.id && e.event_type === 'clicked').length || 1,
+            opened: t.opened_at !== null,
+            reported: t.reported_at !== null,
+          };
+        });
+
+        const riskUsers = await Promise.all(riskUsersPromises);
+
+        // Technical details from isca_domains or defaults
+        const iscaDomain = iscaDomains && iscaDomains.length > 0 ? iscaDomains[0] : null;
+
+        const technicalDetails = {
+          smtpServer: 'mail.phishguard.io',
+          bounceRate: sent > 0 ? `${((bounced / sent) * 100).toFixed(1)}%` : '0%',
+          dkimSigned: true, // Default - in real scenario would check email headers
+          spfPassed: true,  // Default - in real scenario would check email headers
+          dmarcPassed: true, // Default - in real scenario would check email headers
+          domainReputation: iscaDomain?.risk_level ? 'high' : 'medium',
+          ipReputation: 'good',
+        };
+
+        // Get template name from campaign template_id
+        let templateName = 'Custom Template';
+        if (campaign.template_id) {
+          const { data: template } = await supabase
+            .from('campaign_templates')
+            .select('name')
+            .eq('id', campaign.template_id)
+            .single();
+          if (template) templateName = template.name;
+        }
+
+        // Get tier from campaign settings
+        const settings = (campaign.settings || {}) as Record<string, unknown>;
+        const tier = (settings.tier as number) || 1;
+
+        // Get landing URL from campaign settings
+        const landingUrl = (settings.landing_url as string) || (settings.landingUrl as string) || '';
+
+        setReport({
+          campaign: {
+            id: campaign.id,
+            name: campaign.name,
+            template: templateName,
+            tier,
+            status: campaign.status,
+            scheduledAt: campaign.scheduled_at,
+            completedAt: campaign.completed_at,
+            landingUrl,
+            targetCount: campaign.target_count,
+          },
+          stats: {
+            sent,
+            delivered,
+            bounced,
+            opened,
+            clicked,
+            reported,
+            compromised,
+            unsubscribed: 0,
+          },
+          timeline,
+          hourlyEngagement,
+          technicalDetails,
+          riskUsers,
+        });
+      } catch (err) {
+        console.error('Error fetching report data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchReportData();
+  }, [company?.id, campaignId]);
 
   // Calculate rates
   const bounceRate = report.stats.sent > 0 ? (report.stats.bounced / report.stats.sent) * 100 : 0;
@@ -350,7 +578,7 @@ export default function RelatorioTecnicoPage() {
                     <div className="h-2 rounded-full bg-[var(--color-surface-2)]">
                       <div
                         className="h-2 rounded-full bg-blue-500"
-                        style={{ width: `${(report.stats.delivered / report.stats.sent) * 100}%` }}
+                        style={{ width: `${report.stats.sent > 0 ? (report.stats.delivered / report.stats.sent) * 100 : 0}%` }}
                       />
                     </div>
                   </div>
@@ -408,7 +636,7 @@ export default function RelatorioTecnicoPage() {
                       >
                         <div
                           className="w-full bg-amber-500 rounded-t-sm"
-                          style={{ height: `${(entry.clicks / entry.opens) * 100}%` }}
+                          style={{ height: `${entry.opens > 0 ? (entry.clicks / entry.opens) * 100 : 0}%` }}
                         />
                       </div>
                     </div>

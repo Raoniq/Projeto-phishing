@@ -43,35 +43,6 @@ interface TimeToClickBucket {
   percentage: number;
 }
 
-function generateMockTimelineData(): TimelineDataPoint[] {
-  const data: TimelineDataPoint[] = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const baseSent = Math.floor(Math.random() * 50) + 20;
-    const delivered = Math.floor(baseSent * (0.85 + Math.random() * 0.1));
-    const clicked = Math.floor(delivered * (0.05 + Math.random() * 0.15));
-    data.push({
-      date: date.toISOString().split('T')[0],
-      sent: baseSent,
-      delivered,
-      clicked,
-    });
-  }
-  return data;
-}
-
-function generateMockTimeToClickData(): TimeToClickBucket[] {
-  return [
-    { range: '< 1min', count: 127, percentage: 23 },
-    { range: '1-5min', count: 198, percentage: 36 },
-    { range: '5-15min', count: 142, percentage: 26 },
-    { range: '15-30min', count: 48, percentage: 9 },
-    { range: '> 30min', count: 35, percentage: 6 },
-  ];
-}
-
 function formatNumber(num: number): string {
   return num.toLocaleString('pt-BR');
 }
@@ -135,26 +106,82 @@ export default function SMSDashboardPage() {
 
         // Generate timeline from last 30 days
         const now = new Date();
-        const timeline: TimelineDataPoint[] = [];
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        const { data: timelineLogs } = await supabase
+          .from('sms_message_logs')
+          .select('created_at, status')
+          .eq('company_id', company.id)
+          .gte('created_at', thirtyDaysAgo.toISOString());
+
+        // Group by date
+        const timelineMap = new Map<string, { sent: number; delivered: number; clicked: number }>();
         for (let i = 29; i >= 0; i--) {
           const date = new Date(now);
           date.setDate(date.getDate() - i);
-          timeline.push({
-            date: date.toISOString().split('T')[0],
-            sent: 0,
-            delivered: 0,
-            clicked: 0
-          });
+          timelineMap.set(date.toISOString().split('T')[0], { sent: 0, delivered: 0, clicked: 0 });
         }
+
+        timelineLogs?.forEach(log => {
+          const date = new Date(log.created_at).toISOString().split('T')[0];
+          const entry = timelineMap.get(date);
+          if (entry) {
+            entry.sent += 1;
+            if (log.status === 'delivered' || log.status === 'clicked') {
+              entry.delivered += 1;
+            }
+            if (log.status === 'clicked') {
+              entry.clicked += 1;
+            }
+          }
+        });
+
+        const timeline: TimelineDataPoint[] = Array.from(timelineMap.entries()).map(([date, values]) => ({
+          date,
+          sent: values.sent,
+          delivered: values.delivered,
+          clicked: values.clicked,
+        }));
         setTimelineData(timeline);
 
-        setTimeToClickData([
-          { range: '< 1min', count: 0, percentage: 0 },
-          { range: '1-5min', count: 0, percentage: 0 },
-          { range: '5-15min', count: 0, percentage: 0 },
-          { range: '15-30min', count: 0, percentage: 0 },
-          { range: '> 30min', count: 0, percentage: 0 }
-        ]);
+        // Time to click distribution
+        const { data: clickLogs } = await supabase
+          .from('sms_message_logs')
+          .select('clicked_at, created_at')
+          .eq('company_id', company.id)
+          .eq('status', 'clicked')
+          .not('clicked_at', 'is', null)
+          .not('created_at', 'is', null);
+
+        const buckets = [
+          { range: '< 1min', count: 0, maxSeconds: 60 },
+          { range: '1-5min', count: 0, maxSeconds: 300 },
+          { range: '5-15min', count: 0, maxSeconds: 900 },
+          { range: '15-30min', count: 0, maxSeconds: 1800 },
+          { range: '> 30min', count: 0, maxSeconds: Infinity },
+        ];
+
+        clickLogs?.forEach(log => {
+          const createdAt = new Date(log.created_at).getTime();
+          const clickedAt = new Date(log.clicked_at).getTime();
+          const diffSeconds = (clickedAt - createdAt) / 1000;
+
+          for (const bucket of buckets) {
+            if (diffSeconds < bucket.maxSeconds) {
+              bucket.count++;
+              break;
+            }
+          }
+        });
+
+        const totalClicks = clickLogs?.length || 1;
+        const timeToClickData: TimeToClickBucket[] = buckets.map(b => ({
+          range: b.range,
+          count: b.count,
+          percentage: Math.round((b.count / totalClicks) * 100),
+        }));
+        setTimeToClickData(timeToClickData);
 
       } catch (err) {
         console.error('[SMSDashboard] Failed to fetch:', err);

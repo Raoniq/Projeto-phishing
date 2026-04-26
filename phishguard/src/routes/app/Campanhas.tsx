@@ -2,6 +2,7 @@
 
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
 import { Plus, Mail, Eye, MousePointer, Flag, Send, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -12,6 +13,8 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/DropdownMenu';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface Campaign {
   id: string;
@@ -27,33 +30,6 @@ interface Campaign {
   };
 }
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-  {
-    id: '1',
-    name: 'Black Friday 2026',
-    template: 'E-commerce Promo',
-    status: 'active',
-    sentAt: '2026-04-20',
-    stats: { sent: 150, opened: 89, clicked: 12, reported: 3 },
-  },
-  {
-    id: '2',
-    name: 'Novo template QR Code',
-    template: 'QR Code Scan',
-    status: 'draft',
-    sentAt: '-',
-    stats: { sent: 0, opened: 0, clicked: 0, reported: 0 },
-  },
-  {
-    id: '3',
-    name: 'Reminder LGPD',
-    template: 'Política Mandatory',
-    status: 'completed',
-    sentAt: '2026-04-15',
-    stats: { sent: 200, opened: 180, clicked: 8, reported: 1 },
-  },
-];
-
 const STATUS_CONFIG = {
   active: { label: 'Ativa', color: 'bg-green-500/20 text-green-400', dot: 'bg-green-400' },
   draft: { label: 'Rascunho', color: 'bg-[var(--color-surface-3)] text-[var(--color-fg-secondary)]', dot: 'bg-[var(--color-fg-tertiary)]' },
@@ -62,7 +38,41 @@ const STATUS_CONFIG = {
 } as const;
 
 export default function CampanhasPage() {
-  const campaigns = MOCK_CAMPAIGNS;
+  const { company } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!company?.id) return;
+
+    const fetchCampaigns = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setCampaigns(data.map(c => ({
+          id: c.id,
+          name: c.name,
+          template: c.template_name || '-',
+          status: c.status,
+          sentAt: c.sent_at || '-',
+          stats: {
+            sent: c.stats_sent || 0,
+            opened: c.stats_opened || 0,
+            clicked: c.stats_clicked || 0,
+            reported: c.stats_reported || 0,
+          },
+        })));
+      }
+      setLoading(false);
+    };
+
+    fetchCampaigns();
+  }, [company?.id]);
 
   // Stats
   const activeCampaigns = campaigns.filter(c => c.status === 'active').length;

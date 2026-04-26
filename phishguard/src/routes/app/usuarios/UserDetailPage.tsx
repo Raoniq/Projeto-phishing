@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -63,136 +65,6 @@ interface CampaignResult {
   status: 'sent' | 'opened' | 'clicked' | 'reported' | 'compromised';
 }
 
-// Mock user data
-const MOCK_USER: UserDetail = {
-  id: 'user-1',
-  name: 'Ana Silva 001',
-  email: 'ana.silva.001@empresa.com',
-  role: 'manager',
-  status: 'active',
-  department: 'TI',
-  risk: 'medium',
-  lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-  phone: '+55 11 98765-4321',
-  manager: 'Carlos Santos',
-  location: 'São Paulo, SP',
-  trainingCompleted: 6,
-  trainingTotal: 8,
-  lastTraining: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-};
-
-// Mock activity history
-function generateActivityLog(): ActivityLog[] {
-  const activities: ActivityLog[] = [];
-  const types: ActivityLog['type'][] = ['campaign', 'training', 'login', 'status_change'];
-  const campaigns = [
-    { name: 'Phishing Awareness - Básico', id: 'camp-1' },
-    { name: 'LGPD Reminder Fevereiro', id: 'camp-2' },
-    { name: 'Password Expiry Alert', id: 'camp-3' },
-    { name: 'Security Update Required', id: 'camp-4' },
-    { name: 'Invoice Due Notice', id: 'camp-5' },
-  ];
-
-  for (let i = 0; i < 50; i++) {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const daysAgo = Math.floor(Math.random() * 90);
-    let activity: ActivityLog;
-
-    switch (type) {
-      case 'campaign': {
-        const campaign = campaigns[Math.floor(Math.random() * campaigns.length)];
-        const statuses: CampaignResult['status'][] = ['sent', 'opened', 'clicked', 'reported', 'compromised'];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-        activity = {
-          id: `activity-${i}`,
-          type: 'campaign',
-          title: `Campanha: ${campaign.name}`,
-          description: status === 'compromised' 
-            ? 'Usuário caiu no phishing e teve credenciais expostas'
-            : status === 'reported'
-            ? 'Usuário reportou a campanha como suspeita'
-            : status === 'clicked'
-            ? 'Usuário clicou no link malicioso'
-            : status === 'opened'
-            ? 'Usuário abriu o email'
-            : 'Email enviado',
-          timestamp: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-        };
-        break;
-      }
-      case 'training': {
-        activity = {
-          id: `activity-${i}`,
-          type: 'training',
-          title: 'Treinamento concluído',
-          description: 'Phishing Awareness - Básico',
-          timestamp: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        break;
-      }
-      case 'login': {
-        activity = {
-          id: `activity-${i}`,
-          type: 'login',
-          title: 'Login no sistema',
-          description: 'Acesso ao painel PhishGuard',
-          timestamp: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        break;
-      }
-      case 'status_change': {
-        activity = {
-          id: `activity-${i}`,
-          type: 'status_change',
-          title: 'Status alterado',
-          description: daysAgo > 60 ? 'Conta criada' : 'Perfil atualizado',
-          timestamp: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        break;
-      }
-    }
-
-    activities.push(activity);
-  }
-
-  return activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
-
-// Mock campaign results
-function generateCampaignResults(): CampaignResult[] {
-  const campaigns = [
-    { name: 'Phishing Awareness - Básico', template: 'Black Friday Promo' },
-    { name: 'LGPD Reminder Fevereiro', template: 'LGPD Reminder' },
-    { name: 'Password Expiry Alert', template: 'Password Expiry' },
-    { name: 'Security Update Required', template: 'Security Update' },
-    { name: 'Invoice Due Notice', template: 'Invoice Due' },
-    { name: 'VPN Maintenance', template: 'VPN Maintenance' },
-  ];
-
-  return campaigns.map((c, i) => {
-    const sentAt = new Date(Date.now() - (i + 1) * 30 * 24 * 60 * 60 * 1000);
-    const statuses: CampaignResult['status'][] = ['sent', 'opened', 'clicked', 'reported', 'compromised'];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-    return {
-      id: `result-${i}`,
-      campaignName: c.name,
-      template: c.template,
-      sentAt: sentAt.toISOString(),
-      openedAt: status !== 'sent' ? new Date(sentAt.getTime() + 2 * 60 * 60 * 1000).toISOString() : null,
-      clickedAt: status === 'clicked' || status === 'reported' || status === 'compromised' 
-        ? new Date(sentAt.getTime() + 4 * 60 * 60 * 1000).toISOString() : null,
-      reportedAt: status === 'reported' || status === 'compromised' 
-        ? new Date(sentAt.getTime() + 6 * 60 * 60 * 1000).toISOString() : null,
-      compromisedAt: status === 'compromised' 
-        ? new Date(sentAt.getTime() + 8 * 60 * 60 * 1000).toISOString() : null,
-      status,
-    };
-  });
-}
 
 const STATUS_CONFIG = {
   active: { label: 'Ativo', color: 'bg-green-500/20 text-green-400', icon: CheckCircle },
@@ -231,18 +103,143 @@ const CAMPAIGN_STATUS_CONFIG = {
 const INITIAL_TIMESTAMP = Date.now();
 
 export default function UserDetailPage() {
-  useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { company } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'activity' | 'campaigns' | 'training'>('activity');
+  const [user, setUser] = useState<UserDetail | null>(null);
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+  const [campaignResults, setCampaignResults] = useState<CampaignResult[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const user = MOCK_USER;
-  const activityLog = useMemo(() => generateActivityLog(), []);
-  const campaignResults = useMemo(() => generateCampaignResults(), []);
+  useEffect(() => {
+    if (!company?.id || !params.id) {
+      setUser(null);
+      setActivityLog([]);
+      setCampaignResults([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchUserData = async () => {
+      setLoading(true);
+      try {
+        // Fetch user from users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', params.id)
+          .eq('company_id', company.id)
+          .single();
+
+        if (userError) throw userError;
+
+        // Map to UserDetail interface
+        const mappedUser: UserDetail = {
+          id: userData.id,
+          name: userData.name || userData.email,
+          email: userData.email,
+          role: (userData.role === 'admin' ? 'admin' : userData.role === 'member' ? 'manager' : 'learner') as UserDetail['role'],
+          status: userData.last_login_at ? 'active' : 'pending',
+          department: userData.department || 'Não definido',
+          risk: 'medium',
+          lastActivity: userData.last_login_at || userData.created_at,
+          createdAt: userData.created_at,
+          phone: '',
+          manager: '',
+          location: '',
+          trainingCompleted: 0,
+          trainingTotal: 0,
+          lastTraining: userData.last_login_at || userData.created_at,
+        };
+
+        setUser(mappedUser);
+
+        // Fetch audit logs for this user
+        const { data: auditData } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .eq('user_id', params.id)
+          .eq('company_id', company.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        // Map audit logs to ActivityLog
+        const mappedActivities: ActivityLog[] = (auditData || []).map((log, i) => {
+          let type: ActivityLog['type'] = 'login';
+          let title = log.action;
+          let description = log.table_name || '';
+
+          if (log.action.includes('campaign') || log.table_name === 'campaign_targets') {
+            type = 'campaign';
+            title = 'Campanha';
+          } else if (log.action.includes('training') || log.table_name === 'user_training_enrollments') {
+            type = 'training';
+            title = 'Treinamento';
+          } else if (log.action === 'login' || log.action === 'logout') {
+            type = 'login';
+            title = log.action === 'login' ? 'Login no sistema' : 'Logout';
+          } else {
+            type = 'status_change';
+            title = 'Status alterado';
+          }
+
+          return {
+            id: log.id || `activity-${i}`,
+            type,
+            title,
+            description,
+            timestamp: log.created_at,
+            campaignId: log.record_id || undefined,
+          };
+        });
+
+        setActivityLog(mappedActivities);
+
+        // Fetch campaign targets for this user
+        const { data: targetsData } = await supabase
+          .from('campaign_targets')
+          .select('*, campaigns:campaigns(name)')
+          .eq('user_id', params.id)
+          .order('sent_at', { ascending: false });
+
+        // Map campaign targets to CampaignResult
+        const mappedResults: CampaignResult[] = (targetsData || []).map((target) => {
+          const campaignName = (target.campaigns as { name?: string } | null)?.name || 'Campanha';
+          const status = target.status === 'failed' ? 'compromised' : target.status;
+
+          return {
+            id: target.id,
+            campaignName,
+            template: '',
+            sentAt: target.sent_at || target.created_at,
+            openedAt: target.opened_at,
+            clickedAt: target.clicked_at,
+            reportedAt: target.reported_at,
+            compromisedAt: null,
+            status: status as CampaignResult['status'],
+          };
+        });
+
+        setCampaignResults(mappedResults);
+      } catch (err) {
+        console.error('[UserDetailPage] Failed to fetch user data:', err);
+        setUser(null);
+        setActivityLog([]);
+        setCampaignResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [company, params.id]);
 
   const daysSinceLastActivity = useMemo(() => {
+    if (!user?.lastActivity) return 0;
     return Math.floor((INITIAL_TIMESTAMP - new Date(user.lastActivity).getTime()) / (24 * 60 * 60 * 1000));
-  }, [user.lastActivity]);
+  }, [user?.lastActivity]);
 
   const riskScore = useMemo(() => {
     const compromised = campaignResults.filter(r => r.status === 'compromised').length;
@@ -250,6 +247,24 @@ export default function UserDetailPage() {
     const clicked = campaignResults.filter(r => r.status === 'clicked').length;
     return Math.min(100, compromised * 30 + reported * 15 + clicked * 10);
   }, [campaignResults]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="text-[var(--color-fg-muted)]">Carregando...</div>
+      </div>
+    );
+  }
+
+  // User not found
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="text-[var(--color-fg-muted)]">Usuário não encontrado</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">

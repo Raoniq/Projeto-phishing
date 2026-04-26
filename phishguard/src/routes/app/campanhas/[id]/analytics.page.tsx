@@ -156,6 +156,7 @@ export default function CampaignAnalyticsPage() {
           .from('campaign_events')
           .select('*')
           .eq('campaign_id', id)
+          .eq('company_id', company.id)
           .order('created_at', { ascending: false })
           .limit(200);
 
