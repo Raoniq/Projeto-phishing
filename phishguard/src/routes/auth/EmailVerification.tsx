@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { isMockMode } from '@/lib/auth/session';
@@ -9,9 +9,17 @@ export default function EmailVerificationPage() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
   const token = searchParams.get('token');
-  
-  const [status, setStatus] = useState<'pending' | 'verifying' | 'success' | 'error'>('pending');
-  const [errorMessage, setErrorMessage] = useState('');
+  const statusParam = searchParams.get('status');
+
+  // If coming from /auth/callback with confirmed status, show success immediately
+  const [status, setStatus] = useState<'pending' | 'verifying' | 'success' | 'error'>(
+    statusParam === 'confirmed' ? 'success'
+    : statusParam === 'error' ? 'error'
+    : 'pending'
+  );
+  const [errorMessage, setErrorMessage] = useState(
+    statusParam === 'error' ? 'Não foi possível confirmar sua conta. Tente se registrar novamente.' : ''
+  );
   const [resendCountdown, setResendCountdown] = useState(0);
 
   const verifyEmail = useCallback(async () => {

@@ -32,6 +32,7 @@ import RegisterPage from './routes/auth/Register'
 import ForgotPasswordPage from './routes/auth/ForgotPassword'
 import ChangePasswordPage from './routes/auth/ChangePassword'
 import EmailVerificationPage from './routes/auth/EmailVerification'
+import AuthCallbackPage from './routes/auth/AuthCallback'
 
 // App pages (protected)
 import DashboardPage from './routes/app/Dashboard'
@@ -43,7 +44,6 @@ import SuportePage from './routes/app/suporte/page'
 import TreinamentoPage from './routes/app/treinamento/page'
 
 // Campanhas sub-pages
-import CampanhasListPage from './routes/app/campanhas/CampanhasPage'
 import NovaCampanhaPage from './routes/app/campanhas/NovaCampanhaPage'
 import CampanhaTargetsPage from './routes/app/campanhas/CampanhaTargetsPage'
 import CampanhaDetailPage from './routes/app/campanhas/CampanhaDetailPage'
@@ -57,7 +57,6 @@ import TrilhasPage from './routes/learner/Trilhas'
 import CertificadoPage from './routes/learner/Certificado'
 
 // Usuarios sub-pages
-import UsersPage from './routes/app/usuarios/UsersPage'
 import GroupsPage from './routes/app/usuarios/GroupsPage'
 import ImportPage from './routes/app/usuarios/ImportPage'
 import UserDetailPage from './routes/app/usuarios/UserDetailPage'
@@ -122,6 +121,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
 {/* App - protected (requires auth) */}
         <Route element={<ProtectedRoute />}>
