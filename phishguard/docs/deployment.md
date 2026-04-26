@@ -312,86 +312,75 @@ O projeto usa GitHub Actions para deploy automático para Cloudflare Workers e P
 
 ### Workflow Structure
 
-O workflow está em `.github/workflows/deploy.yml` e contém 2 jobs:
+O workflow está em `.github/workflows/deploy.yml` (na **raiz** do monorepo, não em `phishguard/`) e contém 3 jobs:
 
-1. **validate**: TypeScript + Lint (só em pull requests)
-2. **github-push**: Log do push (Cloudflare faz deploy automaticamente)
+1. **deploy-workers**: Deploy Cloudflare Workers via `wrangler deploy`
+2. **deploy-pages**: Build frontend + deploy para Cloudflare Pages via `cloudflare/pages-action`
+3. **validate**: TypeScript + Lint (só em pull requests)
 
 ### Como Funciona
 
 ```
 1. Push para develop/main no GitHub
        ↓
-2. GitHub Actions notifica o Cloudflare
+2. GitHub Actions executa workflow
        ↓
-3. Cloudflare detecta mudança e faz auto-deploy
+3. Job "deploy-workers": wrangler deploy para Workers
        ↓
-4. Deploy em produção (main) ou staging (develop)
+4. Job "deploy-pages": vite build + cloudflare/pages-action upload
+       ↓
+5. Deploy em produção (main) ou staging (develop)
 ```
 
-**Importante**: O Cloudflare Pages deve estar configurado com **GitHub Integration** para detectar pushes automaticamente. Se não estiver, configure em:
-- Cloudflare Dashboard > Pages > seu projeto > Settings > Builds and deployments > GitHub
+### Secrets Necessários (GitHub → Settings → Secrets and variables → Actions)
 
-| Branch | Ambiente | Destino |
-|--------|----------|---------|
-| `develop` | Staging | Cloudflare Pages staging + Workers staging |
-| `main` | Production | Cloudflare Pages production + Workers production |
+| Secret | Valor |
+|--------|-------|
+| `CLOUDFLARE_API_TOKEN` | Token da API do Cloudflare (com permissões Workers + Pages) |
+| `CLOUDFLARE_ACCOUNT_ID` | `e83057be23e726bea29bb787b9fdd941` |
 
-### Cloudflare GitHub Integration
+### Variables Necessárias (GitHub → Settings → Variables → Actions)
 
-O deploy automático funciona via **GitHub Integration** no Cloudflare Pages:
+| Variable | Valor |
+|----------|-------|
+| `VITE_SUPABASE_URL` | `https://dqalvguekknmwrrkeibx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Chave anônima do Supabase |
 
-1. Acesse [dash.cloudflare.com/pages](https://dash.cloudflare.com/pages)
-2. Selecione seu projeto **phishguard**
-3. Vá em **Settings** > **Builds and deployments** > **GitHub**
-4. Clique em **Configure** e conecte ao repositório `Raoniq/Projeto-phishing`
-5. Configure para deploy em `main` (produção) e `develop` (staging)
+### Cloudflare Pages Project Name
 
-### Variáveis de Ambiente
+O `projectName` no workflow deve ser o nome EXATO do projeto no Cloudflare Dashboard. O projeto **não** se chama `phishguard-staging` — ambos os ambientes (develop e main) deployam para o mesmo projeto `phishguard`. O que diferencia é o branch GitHub.
 
-Para variáveis como `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, configure diretamente no Cloudflare Pages:
+### Erros Comuns e Soluções
 
-1. Vá em Settings > Environment variables
-2. Adicione as variáveis para produção e staging
-
-### Como Obter Tokens (para outras necessidades)
-
-#### Cloudflare API Token
-
-1. Acesse [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)
-2. Click "Create Token"
-3. Use template "Edit Workers" para workers ou crie custom com:
-   - `Zone:Edit` para Pages
-   - `Account:Workers:Edit` para Workers deployment
-
-#### Cloudflare Account ID
-
-1. Acesse o dashboard da Cloudflare
-2. Vá em Workers & Pages
-3. O Account ID aparece no canto direito da URL
-
-### Troubleshooting
-
-#### Error: `bun: command not found`
-**Solução**: O workflow já inclui `oven-sh/setup-bun@v2` para instalar bun automaticamente.
-
-#### Error: `npm ci` fails with lockfile error
-**Solução**: O workflow usa `bun install` ao invés de `npm ci` pois não há `package-lock.json`.
-
-#### Error: Cache path not found
-**Solução**: Removido cache do setup-node para evitar erros de path resolution.
-
-### Fluxo de Deploy (Simplificado)
-
+**`npm ci` fails - lock file out of sync**
+```bash
+# Locally:
+cd phishguard && npm install
+git add package-lock.json
+git commit -m "chore: sync package-lock.json"
+git push
 ```
-1. Push para develop/main no GitHub
-       ↓
-2. GitHub Actions loga o push
-       ↓
-3. Cloudflare detecta via GitHub Integration
-       ↓
-4. Cloudflare faz build e deploy automático
+
+**`Could not resolve "@/lib/..."` em Workers**
+- Workers não suportam path aliases do TypeScript
+- Use imports relativos: `import { X } from '../../lib/certificates/generateCertificate'`
+- Adicione ao `wrangler.toml`:
+```toml
+[alias]
+"@/lib" = "src/lib"
+"@/components" = "src/components"
+"@/workers" = "src/workers"
 ```
+
+**Node.js built-ins not found em Workers (`assert`, `buffer`, `stream`, `fs`)**
+- Adicione ao `wrangler.toml`: `compatibility_flags = ["nodejs_compat"]`
+
+**`No matching export in "..." for import "default"`**
+- Workers usam named exports, não default exports
+- Use `import { handleX } from './worker'` ao invés de `import worker from './worker'`
+
+**Cloudflare Pages "Project not found" (404)**
+- Verifique se `projectName` no workflow é `phishguard` (não `phishguard-staging`)
 
 ### Links Úteis
 

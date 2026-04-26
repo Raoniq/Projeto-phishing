@@ -242,6 +242,21 @@ npx wrangler pages deploy dist --project-name=phishguard
 **Problema: deploy não dispara no push para main**
 - Solução: Verifique se o workflow `.github/workflows/deploy.yml` existe na **raiz** do repo e se o Cloudflare Pages não está em build automático (desative em Settings → Builds & Deployments → Disable automatic builds)
 
+**Problema: `npm ci` fails with lock file out of sync**
+- Solução: Execute `npm install` localmente e commite o `package-lock.json` atualizado. Isso acontece quando o package.json muda sem regenerar o lock file.
+
+**Problema: `Could not resolve "@/lib/..."` em Workers**
+- Solução: Workers não suportam path aliases do TypeScript. Use imports relativos (`../../lib/...`) ao invés de `@/lib/...` nos arquivos dentro de `src/workers/` e `src/lib/` que são importados por workers.
+
+**Problema: Node.js built-ins not found em Workers (`assert`, `buffer`, `stream`, `fs`, etc.)**
+- Solução: Adicione `compatibility_flags = ["nodejs_compat"]` no `wrangler.toml`.
+
+**Problema: `No matching export in "..." for import "default"`**
+- Solução: Workers usam named exports, não default exports. Use `import { handleGenerate } from './generate'` ao invés de `import generateWorker from './generate'`.
+
+**Problema: Cloudflare Pages "Project not found" (404)**
+- Solução: O `projectName` no workflow deve ser o nome EXATO do projeto no Cloudflare Dashboard. Use `phishguard` (não `phishguard-staging`). O projeto staging é o mesmo `phishguard`, apenas o branch GitHub diferencia.
+
 ### KV Namespaces
 
 | Namespace | Production ID | Staging ID |
