@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { sections } from './AppSidebar';
 
 interface MobileDrawerProps {
@@ -12,6 +13,8 @@ interface MobileDrawerProps {
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const displayName = profile?.name || user?.email?.split('@')[0] || 'Usuário';
 
   // Close on escape key
   useEffect(() => {
@@ -132,7 +135,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
               M
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">Marlon Vieira</p>
+              <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{displayName}</p>
               <p className="truncate text-xs text-[var(--color-fg-tertiary)]">Administrador</p>
             </div>
           </div>

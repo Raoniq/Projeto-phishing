@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { AuthProvider } from '@/lib/auth/AuthContext'
 
 // Scroll to top on navigation
 function ScrollToTop() {
@@ -100,9 +101,10 @@ import ProtectedRoute from './routes/lib/ProtectedRoute'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
         {/* Marketing - public */}
         <Route element={<MarketingLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -200,5 +202,6 @@ export default function App() {
         <Route path="*" element={<HomePage />} />
       </Routes>
     </BrowserRouter>
+  </AuthProvider>
   )
 }

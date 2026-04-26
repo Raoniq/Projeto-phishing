@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppTopbar } from './AppTopbar';
 import { MobileDrawer } from './MobileDrawer';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface AppShellProps {
@@ -10,8 +11,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ className }: AppShellProps) {
+  const { user, profile, company, loading } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="w-10 h-10 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleLogout = useCallback(() => {
     // Clear session and redirect to login
@@ -31,7 +41,15 @@ export function AppShell({ className }: AppShellProps) {
     <div className={cn('flex min-h-screen bg-[var(--color-surface-0)]', className)}>
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
-        <AppSidebar onLogout={handleLogout} />
+        <AppSidebar
+          onLogout={handleLogout}
+          tenant={company ? {
+            name: company.name,
+            plan: company.plan,
+            userCount: 0,
+            initial: company.name[0]
+          } : undefined}
+        />
       </div>
 
       {/* Mobile Drawer */}
@@ -40,7 +58,16 @@ export function AppShell({ className }: AppShellProps) {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col">
         {/* Topbar */}
-        <AppTopbar onMenuToggle={handleMenuToggle} onLogout={handleLogout} />
+        <AppTopbar
+          onMenuToggle={handleMenuToggle}
+          onLogout={handleLogout}
+          user={user ? {
+            name: profile?.name || user.email?.split('@')[0] || 'User',
+            email: user.email || '',
+            role: profile?.role || 'member',
+            initial: (profile?.name || user.email || 'U')[0].toUpperCase()
+          } : undefined}
+        />
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">

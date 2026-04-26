@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, Search, Bell, ChevronDown, LogOut, User, Settings, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { CommandK } from './CommandK';
 
 interface AppTopbarProps {
@@ -19,18 +20,21 @@ interface AppTopbarProps {
 export function AppTopbar({
   onMenuToggle,
   onLogout,
-  user = {
-    name: 'Marlon Vieira',
-    email: 'marlon@example.com',
-    role: 'Administrador',
-    initial: 'M',
-  },
+  user,
   className,
 }: AppTopbarProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCommandKOpen, setIsCommandKOpen] = useState(false);
-  const [hasNotifications, setHasNotifications] = useState(true);
+  const [hasNotifications] = useState(true);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const { user: authUser, profile } = useAuth();
+  const displayUser = user || (authUser ? {
+    name: profile?.name || authUser.email?.split('@')[0] || 'User',
+    email: authUser.email || '',
+    role: profile?.role || 'member',
+    initial: (profile?.name || authUser.email || 'U')[0].toUpperCase()
+  } : undefined);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -42,7 +46,7 @@ export function AppTopbar({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isUserMenuOpen]);
 
   // Keyboard shortcut for CommandK
   useEffect(() => {
@@ -112,11 +116,11 @@ export function AppTopbar({
               aria-label="Abrir menu do usuário"
             >
               <div className="grid h-8 w-8 place-items-center rounded-full bg-[var(--color-accent)] font-display text-sm text-[var(--color-surface-0)]">
-                {user.initial}
+                {displayUser?.initial}
               </div>
               <div className="hidden min-w-0 md:block">
-                <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{user.name}</p>
-                <p className="truncate text-xs text-[var(--color-fg-tertiary)]">{user.role}</p>
+                <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{displayUser?.name}</p>
+                <p className="truncate text-xs text-[var(--color-fg-tertiary)]">{displayUser?.role}</p>
               </div>
               <ChevronDown
                 className={cn(
@@ -130,8 +134,8 @@ export function AppTopbar({
             {isUserMenuOpen && (
               <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-md border border-[var(--color-surface-3)] bg-[var(--color-surface-1)] py-1 shadow-lg">
                 <div className="border-b border-[var(--color-surface-3)] px-3 py-2">
-                  <p className="text-sm font-medium text-[var(--color-fg-primary)]">{user.name}</p>
-                  <p className="text-xs text-[var(--color-fg-tertiary)]">{user.email}</p>
+                  <p className="text-sm font-medium text-[var(--color-fg-primary)]">{displayUser?.name}</p>
+                  <p className="text-xs text-[var(--color-fg-tertiary)]">{displayUser?.email}</p>
                 </div>
 
                 <div className="py-1">

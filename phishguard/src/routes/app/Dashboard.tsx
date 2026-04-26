@@ -111,10 +111,7 @@ export default function DashboardPage() {
         if (queryErrors.length > 0) {
           const errorMessages = queryErrors.map(e => `${e.name}: ${e.error?.message}`).join(', ');
           console.error('Supabase query errors:', errorMessages);
-          setError(`Failed to fetch metrics: ${errorMessages}`);
-          // Fallback to mock data on query errors
-          await new Promise(resolve => setTimeout(resolve, 800));
-          setMetrics(mockMetrics);
+          setError(`Não foi possível carregar as métricas: ${errorMessages}`);
           setLoading(false);
           return;
         }
@@ -149,11 +146,8 @@ export default function DashboardPage() {
         setError(null);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching metrics:', err);
-        // Fallback to mock data on any error
-        setError('Failed to fetch dashboard data');
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setMetrics(mockMetrics);
+        console.error('Failed to fetch metrics:', err);
+        setError('Não foi possível carregar as métricas. Tente novamente.');
         setLoading(false);
       }
     };

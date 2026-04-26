@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // src/routes/app/notifications/page.tsx
 // Full notification list page with filter, mark as read, and realtime updates
 import { useState, useEffect, useCallback } from 'react';
@@ -18,8 +19,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getSession, isMockMode } from '@/lib/auth/session';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/components/notifications/NotificationBell';
@@ -92,7 +94,7 @@ const TYPE_LABELS = {
 const MOCK_NOTIFICATIONS: NotificationItem[] = [
   {
     id: '1',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Campanha "Phishing Q1" concluída',
     body: 'A campanha foi finalizada com 156 cliques e 48 reportes. Taxa de reporte: 38.4%.',
     type: 'campaign_completed',
@@ -102,7 +104,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '2',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Novo treinamento atribuído',
     body: 'Complete o módulo de "Reconhecimento de Phishing" até sexta-feira. Duração: 45 minutos.',
     type: 'training_assigned',
@@ -112,7 +114,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '3',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Certificado conquistado',
     body: 'Você completou o treinamento de Segurança Digital Básico! Baixe seu certificado.',
     type: 'certificate_earned',
@@ -122,7 +124,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '4',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Campanha "Simulação SMS" iniciada',
     body: 'A campanha de smishing foi iniciada com 200 alvos. Monitore os resultados em tempo real.',
     type: 'info',
@@ -132,7 +134,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '5',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Novo usuário registrado',
     body: 'Maria Silva foi adicionada à empresa. Complete o onboarding.',
     type: 'info',
@@ -142,7 +144,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
   },
   {
     id: '6',
-    user_id: 'mock',
+    user_id: user?.id || '',
     title: 'Relatório semanal disponível',
     body: 'Seu resumo semanal de phishing está pronto. Clique para visualizar.',
     type: 'campaign_completed',
@@ -157,6 +159,7 @@ const MOCK_NOTIFICATIONS: NotificationItem[] = [
 // ============================================================================
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -183,7 +186,7 @@ export default function NotificationsPage() {
         await new Promise(resolve => setTimeout(resolve, 600));
         setNotifications(MOCK_NOTIFICATIONS);
       } else if (userId) {
-        let query = supabase
+        const query = supabase
           .from('notifications')
           .select('*')
           .eq('user_id', userId)

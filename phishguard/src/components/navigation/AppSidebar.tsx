@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { useState } from 'react';
 
 export interface NavItem {
@@ -68,6 +70,15 @@ interface TenantSwitcherProps {
 
 function TenantSwitcher({ tenant }: TenantSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { company } = useAuth();
+  const displayTenant = tenant || (company ? {
+    name: company.name,
+    plan: company.plan,
+    userCount: 0,
+    initial: company.name[0]
+  } : null);
+
+  if (!displayTenant) return null;
 
   return (
     <div className="relative">
@@ -75,16 +86,16 @@ function TenantSwitcher({ tenant }: TenantSwitcherProps) {
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-label={`Empresa atual: ${tenant.name}. Clique para trocar.`}
+        aria-label={`Empresa atual: ${displayTenant.name}. Clique para trocar.`}
         className="mx-3 mt-3 flex w-full items-center gap-3 rounded-md border border-[var(--color-surface-3)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left transition-colors hover:border-[var(--color-accent-subtle)]"
       >
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded bg-[var(--color-accent)] font-display text-sm text-[var(--color-surface-0)]">
-          {tenant.initial}
+          {displayTenant.initial}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{tenant.name}</p>
+          <p className="truncate text-sm font-medium text-[var(--color-fg-primary)]">{displayTenant.name}</p>
           <p className="truncate text-xs text-[var(--color-fg-tertiary)]">
-            {tenant.plan} · {tenant.userCount.toLocaleString('pt-BR')} usuários
+            {displayTenant.plan} · {displayTenant.userCount.toLocaleString('pt-BR')} usuários
           </p>
         </div>
         <ChevronDown
@@ -148,20 +159,21 @@ interface AppSidebarProps {
     userCount: number;
     initial: string;
   };
-  onLogout?: () => void;
   className?: string;
 }
 
 export function AppSidebar({
-  tenant = {
-    name: 'Dannemann',
-    plan: 'Plano Business',
-    userCount: 1240,
-    initial: 'D',
-  },
-  onLogout,
+  tenant,
   className,
 }: AppSidebarProps) {
+  const { company } = useAuth();
+  const effectiveTenant = tenant || (company ? {
+    name: company.name,
+    plan: company.plan,
+    userCount: 0,
+    initial: company.name[0]
+  } : undefined);
+
   return (
     <aside
       className={cn(
@@ -182,7 +194,7 @@ export function AppSidebar({
 
       {/* Tenant switcher */}
       <div className="px-3 mt-3">
-        <TenantSwitcher tenant={tenant} />
+        <TenantSwitcher tenant={effectiveTenant} />
       </div>
 
       {/* Navigation */}
