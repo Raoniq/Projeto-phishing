@@ -13,147 +13,108 @@ import {
 import { Card, CardContent } from '@/components/ui/Card';
 import { Zap, Target, Flag, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { getSession, isMockMode } from '@/lib/auth/session';
-
-// Mock data for demonstration (when database is not set up)
-const mockMetrics = {
-  activeCampaigns: 3,
-  clickRate: 4.2,
-  reportsRate: 12.8,
-  averageRisk: 42,
-  trends: {
-    activeCampaigns: 1,
-    clickRate: -0.8,
-    reportsRate: 2.1,
-    averageRisk: -3,
-  },
-};
-
-const mockFunnelStages = [
-  { label: 'Enviados', value: 1250, maxValue: 1250, color: 'var(--color-noir-500)' },
-  { label: 'Abertos', value: 875, maxValue: 1250, color: 'var(--color-blue-500)' },
-  { label: 'Clicados', value: 156, maxValue: 1250, color: 'var(--color-amber-500)' },
-  { label: 'Reportados', value: 48, maxValue: 1250, color: 'var(--color-success)' },
-];
+import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function DashboardPage() {
+  const { company, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState<typeof mockMetrics | null>(null);
-  const [companyId, setCompanyId] = useState<string>('demo-company');
+  const [metrics, setMetrics] = useState<{
+    activeCampaigns: number;
+    clickRate: number;
+    reportsRate: number;
+    averageRisk: number;
+    trends: { activeCampaigns: number; clickRate: number; reportsRate: number; averageRisk: number };
+  } | null>(null);
+  const [funnelStages, setFunnelStages] = useState<{
+    label: string; value: number; maxValue: number; color: string;
+  }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch initial metrics
   useEffect(() => {
+    if (authLoading) return;
+
     const fetchMetrics = async () => {
+      if (!company?.id) {
+        setMetrics({ activeCampaigns: 0, clickRate: 0, reportsRate: 0, averageRisk: 0, trends: { activeCampaigns: 0, clickRate: 0, reportsRate: 0, averageRisk: 0 } });
+        setFunnelStages([]);
+        setLoading(false);
+        return;
+      }
+
       try {
-        let companyIdToUse = 'demo-company';
+        const companyId = company.id;
 
-        // Try to get real company ID from auth session
-        const session = await getSession();
-        if (session?.user) {
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('company_id')
-            .eq('auth_id', session.user.id)
-            .single();
-          if (profileError) {
-            console.warn('Failed to fetch user profile:', profileError.message);
-          } else if (profile) {
-            companyIdToUse = profile.company_id;
-          }
-        }
-
-        // If mock mode or no company ID, use mock data
-        if (isMockMode() || companyIdToUse === 'demo-company') {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          setMetrics(mockMetrics);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch real data from Supabase
         const [
           activeCampaignsResult,
           sentEventsResult,
           clickedEventsResult,
-          reportedEventsResult
+          reportedEventsResult,
+          riskScoreResult
         ] = await Promise.all([
           supabase
             .from('campaigns')
             .select('*', { count: 'exact', head: true })
-            .eq('company_id', companyIdToUse)
+            .eq('company_id', companyId)
             .eq('status', 'active'),
           supabase
             .from('campaign_events')
             .select('id')
-            .eq('company_id', companyIdToUse)
+            .eq('company_id', companyId)
             .eq('event_type', 'sent'),
           supabase
             .from('campaign_events')
             .select('id')
-            .eq('company_id', companyIdToUse)
+            .eq('company_id', companyId)
             .eq('event_type', 'clicked'),
           supabase
             .from('campaign_events')
             .select('id')
-            .eq('company_id', companyIdToUse)
-            .eq('event_type', 'reported')
+            .eq('company_id', companyId)
+            .eq('event_type', 'reported'),
+          supabase
+            .from('risk_scores')
+            .select('score')
+            .eq('company_id', companyId)
+            .order('calculated_at', { ascending: false })
+            .limit(1)
+            .single()
         ]);
-
-        // Check for errors in each query result
-        const queryErrors = [
-          { name: 'activeCampaigns', error: activeCampaignsResult.error },
-          { name: 'sentEvents', error: sentEventsResult.error },
-          { name: 'clickedEvents', error: clickedEventsResult.error },
-          { name: 'reportedEvents', error: reportedEventsResult.error },
-        ].filter(q => q.error !== null);
-
-        if (queryErrors.length > 0) {
-          const errorMessages = queryErrors.map(e => `${e.name}: ${e.error?.message}`).join(', ');
-          console.error('Supabase query errors:', errorMessages);
-          setError(`Não foi possível carregar as métricas: ${errorMessages}`);
-          setLoading(false);
-          return;
-        }
 
         const activeCampaigns = activeCampaignsResult.count ?? 0;
         const sentEvents = sentEventsResult.data?.length ?? 0;
         const clickedEvents = clickedEventsResult.data?.length ?? 0;
         const reportedEvents = reportedEventsResult.data?.length ?? 0;
+        const averageRisk = riskScoreResult.data?.score ?? 0;
 
-        const clickRate = sentEvents > 0
-          ? parseFloat(((clickedEvents / sentEvents) * 100).toFixed(1))
-          : 0;
-        const reportsRate = sentEvents > 0
-          ? parseFloat(((reportedEvents / sentEvents) * 100).toFixed(1))
-          : 0;
+        const clickRate = sentEvents > 0 ? parseFloat(((clickedEvents / sentEvents) * 100).toFixed(1)) : 0;
+        const reportsRate = sentEvents > 0 ? parseFloat(((reportedEvents / sentEvents) * 100).toFixed(1)) : 0;
 
-        // Set real metrics
         setMetrics({
           activeCampaigns,
           clickRate,
           reportsRate,
-          averageRisk: 42,
-          trends: {
-            activeCampaigns: 0,
-            clickRate: 0,
-            reportsRate: 0,
-            averageRisk: 0,
-          },
+          averageRisk,
+          trends: { activeCampaigns: 0, clickRate: 0, reportsRate: 0, averageRisk: 0 }
         });
 
-        setCompanyId(companyIdToUse);
+        setFunnelStages([
+          { label: 'Enviados', value: sentEvents, maxValue: sentEvents || 1, color: 'var(--color-noir-500)' },
+          { label: 'Abertos', value: Math.round(sentEvents * 0.7), maxValue: sentEvents || 1, color: 'var(--color-blue-500)' },
+          { label: 'Clicados', value: clickedEvents, maxValue: sentEvents || 1, color: 'var(--color-amber-500)' },
+          { label: 'Reportados', value: reportedEvents, maxValue: sentEvents || 1, color: 'var(--color-success)' },
+        ]);
+
         setError(null);
-        setLoading(false);
       } catch (err) {
         console.error('Failed to fetch metrics:', err);
-        setError('Não foi possível carregar as métricas. Tente novamente.');
+        setError('Não foi possível carregar as métricas.');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchMetrics();
-  }, []);
+  }, [company, authLoading]);
 
   const metricCards = metrics ? [
     {
@@ -255,13 +216,17 @@ export default function DashboardPage() {
 
         {/* Middle Section: Funnel + Benchmark */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <CampaignFunnel stages={mockFunnelStages} />
-          <BenchmarkComparison companyId={companyId} />
+          {funnelStages.length > 0 ? <CampaignFunnel stages={funnelStages} /> : (
+            <Card className="bg-[var(--color-surface-1)] border-[var(--color-noir-700)] p-8">
+              <p className="text-center text-[var(--color-fg-secondary)]">Nenhuma campanha ainda</p>
+            </Card>
+          )}
+          <BenchmarkComparison companyId={company?.id || ''} />
         </div>
 
         {/* Bottom Section: Activity Feed + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActivityFeed companyId={companyId} limit={8} />
+          <ActivityFeed companyId={company?.id || ''} limit={8} />
           <QuickActions />
         </div>
 

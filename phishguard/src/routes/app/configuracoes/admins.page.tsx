@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -40,6 +40,8 @@ import {
   type Role,
   CAMPAIGN_APPROVAL_REQUIRED_ADMINS,
 } from '@/lib/rbac';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface Admin {
   id: string;
@@ -69,44 +71,6 @@ const STATUS_CONFIG = {
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-// Generate mock admin data
-function generateMockAdmins(count: number): Admin[] {
-  const names = [
-    'Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Costa', 'Paula Souza',
-    'Roberto Lima', 'Fernanda Alves', 'Marcelo Ferreira', 'Juliana Pereira',
-    'Ricardo Gomes', 'Camila Rodrigues', 'Diego Martins', 'Beatriz Rocha',
-    'Fernando Castro', 'Isabella Ramos', 'Lucas Barbosa', 'Manuela Lopes',
-    'Thiago Mendes', 'Carolina Novaes', 'André Ribeiro',
-  ];
-
-  const roles: Role[] = ['super_admin', 'admin', 'manager', 'viewer'];
-  const statuses: Admin['status'][] = ['active', 'active', 'active', 'inactive', 'pending'];
-  const departments = ['TI', 'Financeiro', 'RH', 'Comercial', 'Operações'];
-
-  return Array.from({ length: count }, (_, i) => {
-    const name = names[Math.floor(Math.random() * names.length)];
-    const role = roles[Math.floor(Math.random() * roles.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const department = departments[Math.floor(Math.random() * departments.length)];
-    const daysAgo = Math.floor(Math.random() * 30);
-
-    return {
-      id: `admin-${i + 1}`,
-      name: `${name} ${String(i + 1).padStart(3, '0')}`,
-      email: `${name.toLowerCase().replace(' ', '.')}@empresa.com`,
-      role,
-      status,
-      department,
-      lastLogin: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - (daysAgo + 60) * 24 * 60 * 60 * 1000).toISOString(),
-      permissions: [],
-      approvalsGiven: Math.floor(Math.random() * 5),
-    };
-  });
-}
-
-const ALL_ADMINS = generateMockAdmins(24);
-
 type SortField = 'name' | 'email' | 'role' | 'status' | 'department' | 'lastLogin';
 type SortDirection = 'asc' | 'desc';
 
@@ -117,6 +81,54 @@ function SortIconComponent({ field, sortField, sortDirection }: { field: SortFie
 }
 
 export default function AdminsPage() {
+  const { company } = useAuth();
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch admins from Supabase
+  useEffect(() => {
+    if (!company?.id) {
+      setAdmins([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchAdmins = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, email, role, department, last_login_at, created_at')
+          .eq('company_id', company.id)
+          .in('role', ['super_admin', 'admin', 'manager', 'viewer']);
+
+        if (error) throw error;
+
+        const mapped: Admin[] = (data || []).map(u => ({
+          id: u.id,
+          name: u.name || u.email,
+          email: u.email,
+          role: u.role as Role,
+          status: u.last_login_at ? 'active' : 'pending',
+          department: u.department || 'Não definido',
+          lastLogin: u.last_login_at || '',
+          createdAt: u.created_at,
+          permissions: [],
+          approvalsGiven: 0,
+        }));
+
+        setAdmins(mapped);
+      } catch (err) {
+        console.error('[AdminsPage] Failed to fetch admins:', err);
+        setAdmins([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdmins();
+  }, [company]);
+
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<Admin['status'] | 'all'>('all');
@@ -150,13 +162,13 @@ export default function AdminsPage() {
 
   // Get unique departments
   const departments = useMemo(() => {
-    const depts = new Set(ALL_ADMINS.map(a => a.department));
+    const depts = new Set(admins.map(a => a.department));
     return Array.from(depts).sort();
-  }, []);
+  }, [admins]);
 
   // Filter and sort admins
   const filteredAdmins = useMemo(() => {
-    let result = [...ALL_ADMINS];
+    let result = [...admins];
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -300,10 +312,10 @@ export default function AdminsPage() {
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || departmentFilter !== 'all' || roleFilter !== 'all';
 
   // Stats
-  const totalAdmins = ALL_ADMINS.length;
-  const activeAdmins = ALL_ADMINS.filter(a => a.status === 'active').length;
-  const superAdmins = ALL_ADMINS.filter(a => a.role === 'super_admin').length;
-  const pendingAdmins = ALL_ADMINS.filter(a => a.status === 'pending').length;
+  const totalAdmins = admins.length;
+  const activeAdmins = admins.filter(a => a.status === 'active').length;
+  const superAdmins = admins.filter(a => a.role === 'super_admin').length;
+  const pendingAdmins = admins.filter(a => a.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">
