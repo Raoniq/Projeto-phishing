@@ -83,23 +83,25 @@ PhishGuard is a security awareness training platform that simulates phishing att
 
 1. `git push` para GitHub (branch main ou develop)
 2. GitHub Actions detecta o push
-3. Workflow `.github/workflows/deploy.yml` é executado
+3. Workflow `.github/workflows/deploy.yml` (na raiz do repo) é executado
 4. **Job 1 - Workers**: `wrangler deploy --env production|staging`
 5. **Job 2 - Pages**: `npm run build` + upload para Cloudflare Pages
 6. **Job 3 - Validate**: TypeScript + Lint (só em PRs)
+
+> **⚠️ Importante**: O workflow de deploy fica em `.github/workflows/deploy.yml` na **raiz** do repositório (monorepo). Não no subdiretório `phishguard/`. O GitHub Actions detecta todos os workflows na raiz `.github/`.
 
 ### Cloudflare Endpoints
 
 | Environment | Branch | Workers (API) | Pages (Frontend) |
 |-------------|--------|---------------|------------------|
-| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://<hash>.phishguard-6s0.pages.dev |
-| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://<hash>.phishguard-staging.raoni7249.workers.dev |
+| Production | `main` | https://phishguard-api.raoni7249.workers.dev | https://1adc1ed3.projeto-phishing.pages.dev |
+| Staging | `develop` | https://phishguard-api-staging.raoni7249.workers.dev | https://staging.phishguard.pages.dev |
 | Local | - | http://localhost:8787 | http://localhost:3000 |
 
-> **Nota**: O URL do Pages muda a cada deploy (hash único). Para descobrir o URL atual:
-> - Veja o último commit no GitHub Actions
-> - Ou faça deploy manual e use o URL retornado
-> - Acesse via Cloudflare Dashboard → Workers & Pages → seu projeto → View Details
+> **Nota**: O URL do Pages de staging muda a cada deploy (hash único). Para descobrir o URL atual:
+> - GitHub Actions → último run → Workers & Pages deploy → View Details
+> - Cloudflare Dashboard → Workers & Pages → phishguard-staging → View Details
+> - Production Pages URL é fixo: `https://1adc1ed3.projeto-phishing.pages.dev`
 
 ### Workflow de Deploy
 
@@ -196,33 +198,33 @@ npx wrangler deploy --env production
 
 # Deploy Pages para Production (direct upload - sem Git)
 npx wrangler pages deploy dist --project-name=phishguard
-
-# Ver o URL do deploy no output (ex: https://abc123.phishguard-6s0.pages.dev)
 ```
 
-> **Importante**: O token da Cloudflare está configurado localmente. Solicite ao dono do projeto se não tiver acesso.
+> **Importante**: O CLOUDFLARE_API_TOKEN de produção está nos Secrets do GitHub Actions (não está no ambiente local). Para deploy manual, solicite o token ao dono do projeto ou use o token de dev em `dash.cloudflare.com`.
 
 ### Configuração do Cloudflare Pages Dashboard
 
-O projeto usa **dois métodos de deploy** em paralelo:
+**Método atual**: GitHub Actions CI/CD (recomendado).
 
-1. **Cloudflare Pages Dashboard** (build automático)
-2. **GitHub Actions** (build via CI/CD)
-
-**Configurações obrigatórias no Dashboard** (se usar build automático):
+**Configurações do projeto Pages** (via Cloudflare Dashboard):
 
 | Setting | Valor |
 |---------|-------|
 | **Build command** | `npm run build` |
 | **Build output directory** | `phishguard/dist` |
-| **Root directory** | `.` (raiz do repositório) |
+| **Root directory** | `.` (raiz do monorepo) |
 
 > **Atenção**: O repositório tem estrutura de monorepo (`phishguard/` é o subdiretório do app). O build output vai para `phishguard/dist`, não para `dist` na raiz.
 
-**Se preferir usar apenas GitHub Actions**:
+**Se usar build automático (não recomendado)**:
+1. Vá em **Settings** → **Builds & Deployments**
+2. Configure **Build command** como `cd phishguard && npm run build`
+3. **Build output directory** como `phishguard/dist`
+
+**Recomendado — GitHub Actions**:
 1. Vá em **Settings** → **Builds & Deployments**
 2. Ative **Disable automatic builds**
-3. O GitHub Actions handles everything via `.github/workflows/deploy.yml`
+3. O GitHub Actions cuida de tudo via `.github/workflows/deploy.yml`
 
 ---
 
@@ -232,10 +234,13 @@ O projeto usa **dois métodos de deploy** em paralelo:
 - Solução: Verifique se **Build output directory** está como `phishguard/dist`
 
 **Problema: `vite: not found`**
-- Solução: Certifique-se que o **Build command** executa `npm install` antes do build
+- Solução: Build command deve executar `npm ci` ou `npm install` antes do build: `cd phishguard && npm ci && npx vite build`
 
 **Problema: ERESOLVE peer dependency**
-- Solução: Adicione `NPM_CONFIG_LEGACY_PEER_DEPS=true` nas Environment Variables do projeto
+- Solução: Adicione `NPM_CONFIG_LEGACY_PEER_DEPS=true` nas Environment Variables do GitHub Actions
+
+**Problema: deploy não dispara no push para main**
+- Solução: Verifique se o workflow `.github/workflows/deploy.yml` existe na **raiz** do repo e se o Cloudflare Pages não está em build automático (desative em Settings → Builds & Deployments → Disable automatic builds)
 
 ### KV Namespaces
 
