@@ -8,7 +8,7 @@
 
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
-import { createAdminClient } from '@/workers/_lib/supabase-admin';
+import { createAdminClient } from '../../workers/_lib/supabase-admin';
 
 // =============================================================================
 // TYPES

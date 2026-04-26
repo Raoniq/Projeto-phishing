@@ -1,6 +1,6 @@
 // workers/certificates/index.ts — certificates worker
-import generateWorker from './generate';
-import verifyWorker from './verify';
+import { handleGenerate } from './generate';
+import { handleVerify } from './verify';
 
 interface Env {
   SUPABASE_URL: string;
@@ -15,7 +15,7 @@ export default {
 
     // POST /api/certificates/generate — generate certificate
     if (pathname === '/api/certificates/generate' && request.method === 'POST') {
-      return generateWorker.handleGenerate(request, env, ctx);
+      return handleGenerate(request, env, ctx);
     }
 
     // GET /api/certificates/verify/:certificateNumber — verify certificate
@@ -27,7 +27,7 @@ export default {
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      return verifyWorker.handleVerify(request, env, ctx, certificateNumber);
+      return handleVerify(request, env, ctx, certificateNumber);
     }
 
     // OPTIONS for CORS preflight

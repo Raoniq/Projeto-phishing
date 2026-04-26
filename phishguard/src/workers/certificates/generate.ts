@@ -1,6 +1,6 @@
 // workers/certificates/generate.ts — handle certificate generation
 import { createAdminClient } from '../_lib/supabase-admin';
-import { generateCertificate, type CertificateData } from '@/lib/certificates/generateCertificate';
+import { generateCertificate, type CertificateData } from '../../lib/certificates/generateCertificate';
 
 interface Env {
   SUPABASE_URL: string;

@@ -1,6 +1,13 @@
 name = "phishguard-api"
 main = "src/workers/router.ts"
 compatibility_date = "2026-04-21"
+compatibility_flags = ["nodejs_compat"]
+
+# Alias for TypeScript paths (used by workers)
+[alias]
+"@/lib" = "src/lib"
+"@/components" = "src/components"
+"@/workers" = "src/workers"
 
 # Cron trigger: runs scheduler every minute
 [triggers]

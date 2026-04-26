@@ -1,5 +1,5 @@
 // workers/certificates/verify.ts — handle certificate verification
-import { verifyCertificate } from '@/lib/certificates/generateCertificate';
+import { verifyCertificate } from '../../lib/certificates/generateCertificate';
 
 interface Env {
   SUPABASE_URL: string;
