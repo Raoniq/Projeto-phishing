@@ -1,5 +1,4 @@
 import * as React from 'react'
-import * as SwitchPrimitive from '@radix-ui/react-switch'
 import { cn } from '@/lib/utils'
 
 interface CheckboxProps {
@@ -10,27 +9,37 @@ interface CheckboxProps {
   className?: string
 }
 
+/**
+ * Plain checkbox toggle component — no form library dependency.
+ * Uses native <input type="checkbox"> styled as a toggle.
+ * Compatible with React 19 (avoids Radix ref incompatibility in @radix-ui/react-switch).
+ */
 export function Checkbox({ id, checked, onChange, disabled, className }: CheckboxProps) {
   return (
-    <SwitchPrimitive.Root
-      id={id}
-      checked={checked}
-      onCheckedChange={onChange}
-      disabled={disabled}
-      className={cn(
-        'peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-0)]',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-noir-600)]',
-        className
-      )}
-    >
-      <SwitchPrimitive.Thumb
-        className={cn(
-          'pointer-events-none block h-4 w-4 rounded-full bg-[var(--color-surface-0)] shadow-lg ring-0 transition-transform',
-          'data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0'
-        )}
+    <label className={cn('relative inline-flex items-center cursor-pointer', disabled && 'opacity-50 cursor-not-allowed', className)}>
+      <input
+        type="checkbox"
+        id={id}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="sr-only peer"
       />
-    </SwitchPrimitive.Root>
+      <div
+        className={cn(
+          'peer inline-flex h-5 w-9 shrink-0 items-center rounded-full border-2 border-transparent transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-0)]',
+          'disabled:cursor-not-allowed',
+          checked ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-noir-600)]',
+        )}
+      >
+        <div
+          className={cn(
+            'pointer-events-none block h-4 w-4 rounded-full bg-[var(--color-surface-0)] shadow-lg ring-0 transition-transform',
+            checked ? 'translate-x-5' : 'translate-x-0'
+          )}
+        />
+      </div>
+    </label>
   )
 }
