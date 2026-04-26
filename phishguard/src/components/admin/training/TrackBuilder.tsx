@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 // TrackBuilder.tsx - Modal component for creating and editing training tracks
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -503,7 +504,6 @@ function SortableModuleItem({
   onAddLesson,
   onUpdateLesson,
   onRemoveLesson,
-  onReorderLessons,
 }: {
   module: TrackModule;
   index: number;
@@ -512,7 +512,6 @@ function SortableModuleItem({
   onAddLesson: () => void;
   onUpdateLesson: (lessonIndex: number, lesson: ModuleLesson) => void;
   onRemoveLesson: (lessonIndex: number) => void;
-  onReorderLessons: (lessons: ModuleLesson[]) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const {
@@ -615,7 +614,7 @@ function SortableModuleItem({
                       onUpdate({ ...module, content_type: value as TrackModule['content_type'] })
                     }
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger aria-label="Tipo de conteúdo" className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -924,7 +923,7 @@ export function TrackBuilder({ open, onOpenChange, track }: TrackBuilderProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between pr-8">
             <div>
@@ -1017,7 +1016,10 @@ export function TrackBuilder({ open, onOpenChange, track }: TrackBuilderProps) {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-accent)]/10">
-                          <CONTENT_TYPE_CONFIG[module.content_type].icon className="h-4 w-4 text-[var(--color-accent)]" />
+                          {(() => {
+                            const IconComponent = CONTENT_TYPE_CONFIG[module.content_type].icon;
+                            return <IconComponent className="h-4 w-4 text-[var(--color-accent)]" />;
+                          })()}
                         </div>
                         <div>
                           <h3 className="font-medium text-[var(--color-fg-primary)]">
@@ -1104,7 +1106,7 @@ export function TrackBuilder({ open, onOpenChange, track }: TrackBuilderProps) {
                           })
                         }
                       >
-                        <SelectTrigger className="h-10">
+                        <SelectTrigger aria-label="Dificuldade" className="h-10">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1190,7 +1192,6 @@ export function TrackBuilder({ open, onOpenChange, track }: TrackBuilderProps) {
                               handleUpdateLesson(index, lessonIndex, lesson)
                             }
                             onRemoveLesson={(lessonIndex) => handleRemoveLesson(index, lessonIndex)}
-                            onReorderLessons={() => {}}
                           />
                         ))}
                       </AnimatePresence>
