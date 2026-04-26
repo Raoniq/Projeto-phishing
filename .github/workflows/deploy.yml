@@ -15,7 +15,107 @@ env:
 
 jobs:
   # ============================================
-  # JOB: Validate on PR
+  # JOB 1: Deploy Workers (API)
+  # ============================================
+  deploy-workers:
+    name: Deploy Workers (API)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: phishguard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd phishguard
+          npm ci
+
+      - name: Deploy to Cloudflare Workers (Production)
+        if: github.ref == 'refs/heads/main'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ENVIRONMENT: production
+        run: |
+          cd phishguard
+          npx wrangler deploy --env production --force
+        continue-on-error: true
+
+      - name: Deploy to Cloudflare Workers (Staging)
+        if: github.ref == 'refs/heads/develop'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ENVIRONMENT: staging
+        run: |
+          cd phishguard
+          npx wrangler deploy --env staging --force
+        continue-on-error: true
+
+  # ============================================
+  # JOB 2: Deploy Pages (Frontend)
+  # ============================================
+  deploy-pages:
+    name: Deploy Pages (Frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      url: ${{ github.ref == 'refs/heads/main' && 'https://1adc1ed3.projeto-phishing.pages.dev' || 'https://staging.phishguard.pages.dev' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: phishguard/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd phishguard
+          npm ci
+
+      - name: Build frontend
+        run: cd phishguard && npx vite build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Cloudflare Pages (Production)
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: phishguard
+          directory: phishguard/dist
+          wranglerVersion: '3'
+        continue-on-error: false
+
+      - name: Deploy to Cloudflare Pages (Staging)
+        if: github.ref == 'refs/heads/develop'
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: phishguard-staging
+          directory: phishguard/dist
+          wranglerVersion: '3'
+        continue-on-error: false
+
+  # ============================================
+  # JOB 3: Type check & lint (PR validation)
   # ============================================
   validate:
     name: Validate Code
@@ -28,18 +128,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install bun
-        uses: oven-sh/setup-bun@v2
+          cache: 'npm'
+          cache-dependency-path: phishguard/package-lock.json
 
       - name: Install dependencies
         run: |
           cd phishguard
-          bun install
+          npm ci
 
       - name: TypeScript check
         run: |
@@ -50,32 +149,3 @@ jobs:
         run: |
           cd phishguard
           npm run lint
-
-  # ============================================
-  # JOB: Push to GitHub (triggers Cloudflare auto-deploy)
-  # ============================================
-  github-push:
-    name: Push to GitHub
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    # Only run on push to main/develop (not PR)
-    if: github.event_name == 'push'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Push commit info to GitHub
-        run: |
-          echo "Push detected to ${{ github.ref }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Cloudflare Pages will auto-deploy from this push"
-
-          # Log deployment info
-          if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "→ Deploying to PRODUCTION (main branch)"
-          elif [[ "${{ github.ref_name }}" == "develop" ]]; then
-            echo "→ Deploying to STAGING (develop branch)"
-          fi
