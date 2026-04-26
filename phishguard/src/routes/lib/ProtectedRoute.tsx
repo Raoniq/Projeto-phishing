@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getSession } from '@/lib/auth/session';
+import { getSession, hasMockSession, isMockMode } from '@/lib/auth/session';
 
 /**
  * Protected route wrapper that checks for active session.
@@ -13,15 +13,31 @@ export default function ProtectedRoute() {
   const location = useLocation();
 
   useEffect(() => {
-    getSession()
-      .then(session => {
-        setIsAuthenticated(!!session);
-        setIsChecking(false);
-      })
-      .catch(() => {
-        setIsAuthenticated(false);
-        setIsChecking(false);
-      });
+    const checkAuth = async () => {
+      try {
+        // In production with Supabase configured, check real session
+        if (!isMockMode()) {
+          const session = await getSession()
+          if (session) {
+            setIsAuthenticated(true)
+            setIsChecking(false)
+            return
+          }
+        }
+        // Check if demo session exists (localStorage-based)
+        if (hasMockSession()) {
+          setIsAuthenticated(true)
+          setIsChecking(false)
+          return
+        }
+        setIsAuthenticated(false)
+        setIsChecking(false)
+      } catch {
+        setIsAuthenticated(false)
+        setIsChecking(false)
+      }
+    }
+    checkAuth()
   }, []);
 
   if (isChecking) {

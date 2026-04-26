@@ -25,6 +25,21 @@ export function isMockMode(): boolean {
 }
 
 /**
+ * Check if a mock session exists (demo login was used)
+ * Used by ProtectedRoute to allow demo sessions in production
+ */
+export function hasMockSession(): boolean {
+  try {
+    const token = localStorage.getItem('mock-supabase-auth-token')
+    if (!token) return false
+    const session = JSON.parse(token)
+    return session && session.expires_at > Date.now()
+  } catch {
+    return false
+  }
+}
+
+/**
  * Get current session - prefers real Supabase, falls back to mock
  */
 export async function getSession() {
