@@ -18,6 +18,7 @@ interface AuthContextValue {
   profile: UserProfile | null
   company: Company | null
   loading: boolean
+  isInitialized: boolean
   signOut: () => Promise<void>
 }
 
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
+  // Track if initial session check completed (distinct from profile loading)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const fetchProfileAndCompany = async (authUser: User) => {
     const { data: profileData, error: profileError } = await supabase
@@ -80,6 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       setLoading(false)
+      setIsInitialized(true)
     }
 
     initAuth()
@@ -112,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, company, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, company, loading, signOut, isInitialized }}>
       {children}
     </AuthContext.Provider>
   )

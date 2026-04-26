@@ -11,11 +11,13 @@ interface AppShellProps {
 }
 
 export function AppShell({ className }: AppShellProps) {
-  const { user, profile, company, loading } = useAuth();
+  const { user, profile, company, loading, isInitialized } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
-  if (loading) {
+  // Wait for AuthContext to be initialized before showing spinner
+  // This prevents double-spinner with ProtectedRoute
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
         <div className="w-10 h-10 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />

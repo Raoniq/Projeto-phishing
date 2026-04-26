@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getSession, hasMockSession, isMockMode } from '@/lib/auth/session';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 /**
  * Protected route wrapper that checks for active session.
@@ -8,39 +9,13 @@ import { getSession, hasMockSession, isMockMode } from '@/lib/auth/session';
  * Shows loading spinner while checking session.
  */
 export default function ProtectedRoute() {
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading, isInitialized } = useAuth();
+  const [isChecking, setIsChecking] = useState(false);
   const location = useLocation();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // In production with Supabase configured, check real session
-        if (!isMockMode()) {
-          const session = await getSession()
-          if (session) {
-            setIsAuthenticated(true)
-            setIsChecking(false)
-            return
-          }
-        }
-        // Check if demo session exists (localStorage-based)
-        if (hasMockSession()) {
-          setIsAuthenticated(true)
-          setIsChecking(false)
-          return
-        }
-        setIsAuthenticated(false)
-        setIsChecking(false)
-      } catch {
-        setIsAuthenticated(false)
-        setIsChecking(false)
-      }
-    }
-    checkAuth()
-  }, []);
-
-  if (isChecking) {
+  // Use Supabase's built-in session management
+  // isInitialized means AuthContext has done its initial check
+  if (!isInitialized || loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -53,7 +28,7 @@ export default function ProtectedRoute() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user && !hasMockSession()) {
     return (
       <Navigate
         to={`/login?returnTo=${encodeURIComponent(location.pathname)}`}
