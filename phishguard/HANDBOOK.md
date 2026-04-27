@@ -386,3 +386,28 @@ Quando `VITE_SUPABASE_URL` não está configurado, o sistema usa **mock auth**:
 8. **Credential Harvesting** - SHA-256 hashed before storage
 9. **Audit Log** - Immutable append-only log
 10. **Domain Management** - Bait domain pool configuration
+
+---
+
+## 9. Test Credentials
+
+### Supabase (Production)
+| Tipo | Email | Senha | Role |
+|---|---|---|---|
+| Admin | `admin@phishguard.com.br` | (criar via Supabase Dashboard) | admin |
+| E2E Test | `e2e@phishguard.com.br` | (criar via Supabase Dashboard) | member |
+| Demo | `demo@phishguard.com.br` | (configurado anteriormente) | - |
+
+> Para criar senhas dos usuários: Supabase Dashboard → Authentication → Users → cada usuário → "Reset Password" ou "Add User" com senha.
+> 
+> Os usuários acima existem em `public.users`. Para login, precisam também existir em `auth.users` com senha configurada.
+
+### Dados Seed (já populados)
+| Tabela | Conteúdo |
+|---|---|
+| companies | PhishGuard Demo |
+| departments | TI, RH, Financeiro, Jurídico, Marketing |
+| roles | Admin, Manager, Learner, Viewer |
+| campaign_templates | 5 templates (segurança, login, boleto, RH, encomenda) |
+| training_tracks | 3 trilhas (Fundamentos, Phishing, Avançado) |
+| training_modules | 9 módulos (3 por trilha)
