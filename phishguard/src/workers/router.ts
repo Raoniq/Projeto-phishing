@@ -6,6 +6,7 @@ import emailWorker from './email/worker';
 import dashboardWorker from './dashboard';
 import credentialsWorker from './credentials';
 import certificatesWorker from './certificates';
+import campaignsWorker from './campaigns';
 import schedulerWorker from './scheduler';
 
 interface Env {
@@ -71,9 +72,52 @@ export default {
       return dashboardWorker.default.fetch(request, env, ctx);
     }
 
+    // Campaign routes
+    if (pathname.startsWith('/api/campaigns')) {
+      return campaignsWorker.fetch(request, env, ctx);
+    }
+
     // Certificate routes
     if (pathname.startsWith('/api/certificates/')) {
       return certificatesWorker.default.fetch(request, env, ctx);
+    }
+
+    // Domain routes - handled inline since domains module has named exports
+    if (pathname.startsWith('/api/domains')) {
+      const domainUrl = new URL(request.url);
+      const domainPath = domainUrl.pathname.replace('/api/domains', '') || '/';
+
+      // GET /api/domains - list domains (mock)
+      if (request.method === 'GET' && domainPath === '/') {
+        return new Response(JSON.stringify({ domains: [], total: 0 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ error: 'Not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Landing page routes
+    if (pathname.startsWith('/api/landings')) {
+      const landUrl = new URL(request.url);
+      const landPath = landUrl.pathname.replace('/api/landings', '') || '/';
+
+      // GET /api/landings - list (mock)
+      if (request.method === 'GET' && landPath === '/') {
+        return new Response(JSON.stringify({ landings: [], total: 0 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ error: 'Not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // 404 for unmatched routes

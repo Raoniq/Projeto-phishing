@@ -69,9 +69,26 @@ import DominiosPage from './routes/app/configuracoes/dominios.page'
 import NotificacoesPage from './routes/app/configuracoes/notificacoes.page'
 import PreferenciasNotificacoesPage from './routes/app/configuracoes/preferencias-notificacoes.page'
 
+// SMS pages
+import SMSDashboardPage from './routes/app/sms/SMSDashboardPage'
+import NovaCampanhaSMSPage from './routes/app/sms/NovaCampanhaSMSPage'
+
+// Quishing pages
+import QuishingDashboardPage from './routes/app/campanhas/QuishingDashboardPage'
+import NovaCampanhaQRPage from './routes/app/campanhas/NovaCampanhaQRPage'
+
 // Relatorios pages
 import RelatorioExecutivoPage from './routes/app/relatorios/RelatorioExecutivoPage'
 import RelatorioTecnicoPage from './routes/app/relatorios/RelatorioTecnicoPage'
+import SusceptibilityPage from './routes/app/relatorios/SusceptibilityPage'
+
+// Training pages
+import TrainingDashboardPage from './routes/app/training/TrainingDashboardPage'
+import AssignPage from './routes/app/training/assign/page'
+import AnalyticsPage from './routes/app/training/analytics/page'
+
+// Notifications page
+import NotificationsPage from './routes/app/notifications/page'
 
 // Templates page
 import TemplateEditorPage from './routes/app/templates/editor.page'
@@ -133,9 +150,13 @@ export default function App() {
             <Route path="/app/campanhas" element={<CampanhasPage />} />
             <Route path="/app/usuarios" element={<UsuariosPage />} />
             <Route path="/app/treinamento" element={<TreinamentoPage />} />
+            <Route path="/app/treinamento/gerenciar" element={<TrainingDashboardPage />} />
+            <Route path="/app/treinamento/atribuir" element={<AssignPage />} />
+            <Route path="/app/treinamento/analytics" element={<AnalyticsPage />} />
             <Route path="/app/configuracoes" element={<ConfiguracoesPage />} />
             <Route path="/app/auditoria" element={<AuditoriaPage />} />
             <Route path="/app/suporte" element={<SuportePage />} />
+            <Route path="/app/notificacoes" element={<NotificationsPage />} />
 
             {/* Campanhas sub-routes */}
             <Route path="/app/campanhas/nova" element={<NovaCampanhaPage />} />
@@ -143,6 +164,14 @@ export default function App() {
             <Route path="/app/campanhas/:id/targets" element={<CampanhaTargetsPage />} />
             <Route path="/app/campanhas/:id/analytics" element={<CampanhaAnalyticsPage />} />
             <Route path="/app/campanhas/:id/relatorio" element={<RelatorioPage />} />
+
+            {/* SMS */}
+            <Route path="/app/sms" element={<SMSDashboardPage />} />
+            <Route path="/app/sms/nova" element={<NovaCampanhaSMSPage />} />
+
+            {/* Quishing */}
+            <Route path="/app/quishing" element={<QuishingDashboardPage />} />
+            <Route path="/app/quishing/nova" element={<NovaCampanhaQRPage />} />
 
             {/* Usuarios sub-routes */}
             <Route path="/app/usuarios/groups" element={<GroupsPage />} />
@@ -160,6 +189,7 @@ export default function App() {
             <Route path="/app/relatorios" element={<Navigate to="/app/relatorios/executivo" replace />} />
             <Route path="/app/relatorios/executivo" element={<RelatorioExecutivoPage />} />
             <Route path="/app/relatorios/tecnico" element={<RelatorioTecnicoPage />} />
+            <Route path="/app/relatorios/suscetibilidade" element={<SusceptibilityPage />} />
 
             {/* Templates */}
             <Route path="/app/templates" element={<BibliotecaPage />} />
