@@ -174,8 +174,8 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
               </thead>
               <tbody className="divide-y divide-[var(--color-noir-700)]">
                 {Object.entries(permissionCategories).map(([category, permissions]) => (
-                  <>
-                    <tr key={`cat-${category}`} className="bg-[var(--color-surface-2)]">
+                  <React.Fragment key={category}>
+                    <tr className="bg-[var(--color-surface-2)]">
                       <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-[var(--color-fg-tertiary)] uppercase tracking-wider">
                         {category}
                       </td>
@@ -222,8 +222,8 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
                         })}
                       </tr>
                     ))}
-                  </>
-                ))}
+                </React.Fragment>
+              ))}
               </tbody>
             </table>
           </div>
