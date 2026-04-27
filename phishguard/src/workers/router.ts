@@ -6,22 +6,42 @@ import emailWorker from './email/worker';
 import dashboardWorker from './dashboard';
 import credentialsWorker from './credentials';
 import certificatesWorker from './certificates';
+import schedulerWorker from './scheduler';
 
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   RATE_LIMIT: KVNamespace;
   APP_URL: string;
+  ENVIRONMENT?: string;
   EMAIL_QUEUE?: KVNamespace;
   EMAIL_MAX_PER_MINUTE?: number;
   EMAIL_MAX_PER_HOUR?: number;
   EMAIL_MAX_PER_DAY?: number;
 }
 
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    // Health check
+    if (pathname === '/health' || pathname === '/api/health') {
+      return new Response(JSON.stringify({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: env.ENVIRONMENT || 'development',
+        version: '1.0.0',
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
 // Route to appropriate worker handler
     if (pathname.startsWith('/tracking/open/')) {
@@ -61,5 +81,10 @@ export default {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
     });
+  },
+
+  // Cron trigger handler - delegates to scheduler
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    return schedulerWorker.scheduled(controller, env, ctx);
   },
 };
