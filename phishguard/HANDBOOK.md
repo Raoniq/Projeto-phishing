@@ -283,7 +283,7 @@ npx wrangler pages deploy dist --project-name=phishguard
 |---|---|
 | `VITE_SUPABASE_URL` | `https://dqalvguekknmwrrkeibx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYWx2Z3Vla2tubXdycmtlaWJ4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjU0ODE4NiwiZXhwIjoyMDkyMTI0MTg2fQ._H3JPCTJqyzvTm0uK5DyyRlFMfwYiL0ad0_3kYcYIkU` |
-| `SUPABASE_PAT` | `sbp_64ddb7cc36273caa068dfc7be6c23fcdf84fc2bd` |
+| `SUPABASE_PAT` | `sbp_1828838b2b89d44d3144e2f747bffb57053fe060` |
 
 **Database host:** `db.dqalvguekknmwrrkeibx.supabase.co` (port 5432)
 
