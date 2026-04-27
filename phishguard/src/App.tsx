@@ -37,7 +37,7 @@ import AuthCallbackPage from './routes/auth/AuthCallback'
 
 // App pages (protected)
 import DashboardPage from './routes/app/Dashboard'
-import CampanhasPage from './routes/app/Campanhas'
+import CampanhasPage from './routes/app/campanhas/CampanhasPage'
 import UsuariosPage from './routes/app/Usuarios'
 import ConfiguracoesPage from './routes/app/Configuracoes'
 import AuditoriaPage from './routes/app/auditoria/page'

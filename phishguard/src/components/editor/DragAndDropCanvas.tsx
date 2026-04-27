@@ -7,6 +7,7 @@ interface DragAndDropCanvasProps {
   selectedBlockId: string | null;
   onBlocksChange: (blocks: Block[]) => void;
   onSelectBlock: (id: string | null) => void;
+  draggedBlockType?: BlockType | null;
   children: (block: Block, isSelected: boolean, onEdit: () => void) => React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export function DragAndDropCanvas({
   selectedBlockId,
   onBlocksChange,
   onSelectBlock,
+  draggedBlockType,
   children,
 }: DragAndDropCanvasProps) {
   const [dragState, setDragState] = useState<DragState>({
@@ -80,7 +82,8 @@ export function DragAndDropCanvas({
 
   const handleCanvasDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (!dragState.draggedBlock) {
+    const activeDraggedBlock = dragState.draggedBlock || draggedBlockType;
+    if (!activeDraggedBlock) {
       // This is a block reorder
       const blockId = e.dataTransfer.getData('text/plain');
       if (blockId && dragState.dragOverIndex !== null) {
@@ -92,9 +95,42 @@ export function DragAndDropCanvas({
           onBlocksChange(newBlocks);
         }
       }
+    } else {
+      // This is a new block from toolbar - use draggedBlockType if internal state not set
+      const blockType = dragState.draggedBlock || draggedBlockType;
+      if (!blockType) return;
+
+      const id = generateId();
+      let newBlock: Block;
+
+      switch (blockType) {
+        case 'text':
+          newBlock = defaultTextBlock(id);
+          break;
+        case 'image':
+          newBlock = defaultImageBlock(id);
+          break;
+        case 'button':
+          newBlock = defaultButtonBlock(id);
+          break;
+        case 'spacer':
+          newBlock = defaultSpacerBlock(id);
+          break;
+        case 'divider':
+          newBlock = defaultDividerBlock(id);
+          break;
+        default:
+          return;
+      }
+
+      const insertIndex = dragState.dragOverIndex !== null ? dragState.dragOverIndex : blocks.length;
+      const newBlocks = [...blocks];
+      newBlocks.splice(insertIndex, 0, newBlock);
+      onBlocksChange(newBlocks);
+      onSelectBlock(id);
     }
     handleDragEnd();
-  }, [dragState.draggedBlock, dragState.dragOverIndex, blocks, onBlocksChange, handleDragEnd]);
+  }, [dragState.draggedBlock, dragState.dragOverIndex, blocks, onBlocksChange, onSelectBlock, handleDragEnd, draggedBlockType]);
 
   const handleBlockDragStart = useCallback((e: React.DragEvent, blockId: string) => {
     e.dataTransfer.setData('text/plain', blockId);
@@ -226,9 +262,11 @@ export function DragAndDropCanvas({
 // Export toolbar component for adding new blocks
 interface BlockToolbarProps {
   onAddBlock: (type: BlockType) => void;
+  onDragStart?: (type: BlockType) => void;
+  onDragEnd?: () => void;
 }
 
-export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
+export function BlockToolbar({ onAddBlock, onDragStart, onDragEnd }: BlockToolbarProps) {
   const blockTypes: { type: BlockType; label: string; icon: string }[] = [
     { type: 'text', label: 'Texto', icon: 'T' },
     { type: 'image', label: 'Imagem', icon: '🖼' },
@@ -237,6 +275,10 @@ export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
     { type: 'divider', label: 'Divisor', icon: '—' },
   ];
 
+  const handleDragStart = (type: BlockType) => {
+    onDragStart?.(type);
+  };
+
   return (
     <div className="flex flex-wrap gap-2 p-4 bg-noir-900 rounded-lg border border-noir-700">
       {blockTypes.map(({ type, label, icon }) => (
@@ -244,6 +286,7 @@ export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
           key={type}
           draggable
           onDragStart={() => handleDragStart(type)}
+          onDragEnd={onDragEnd}
           onClick={() => onAddBlock(type)}
           className="
             flex items-center gap-2 px-3 py-2 rounded-md

@@ -13,6 +13,8 @@ interface EmailEditorProps {
   onSave?: (template: EmailTemplate) => void;
 }
 
+const MAX_HISTORY = 50;
+
 export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
   const [template, setTemplate] = useState<EmailTemplate>(() => {
     if (initialTemplate) {
@@ -28,14 +30,65 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
     };
   });
 
+  // Undo/redo history stack
+  const [history, setHistory] = useState<EmailTemplate[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showGallery, setShowGallery] = useState(false);
   const [templateName, setTemplateName] = useState(template.name);
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
   const [companyId, setCompanyId] = useState<string>('');
+  const [draggedBlockType, setDraggedBlockType] = useState<BlockType | null>(null);
 
   const selectedBlock = template.blocks.find(b => b.id === selectedBlockId) || null;
+
+  // Push current state to history when template changes
+  useEffect(() => {
+    if (historyIndex === -1 || history[historyIndex]?.id !== template.id ||
+        JSON.stringify(history[historyIndex]?.blocks) !== JSON.stringify(template.blocks)) {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push({ ...template });
+      if (newHistory.length > MAX_HISTORY) {
+        newHistory.shift();
+      }
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [template]);
+
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setTemplate({ ...history[historyIndex - 1] });
+    }
+  }, [history, historyIndex]);
+
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setTemplate({ ...history[historyIndex + 1] });
+    }
+  }, [history, historyIndex]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // Fetch company ID for category stats
   useEffect(() => {
@@ -175,11 +228,10 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
   const previewWidth = previewMode === 'mobile' ? 375 : '100%';
 
   // Filter templates by selected category
+  // Since templateGallery items don't have category info, show empty state for specific categories
   const filteredAndFilteredTemplates = templateGallery.filter(() => {
     if (selectedCategory === 'all') return true;
-    // For now, show all templates since we don't have category info in templateGallery
-    // In production, you'd fetch templates from campaign_templates table with category
-    return true;
+    return false;
   });
 
   return (
@@ -262,7 +314,11 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
           <h3 className="text-xs font-medium text-noir-400 uppercase tracking-wider mb-3">
             Blocos
           </h3>
-          <BlockToolbar onAddBlock={handleAddBlock} />
+          <BlockToolbar
+            onAddBlock={handleAddBlock}
+            onDragStart={(type) => setDraggedBlockType(type)}
+            onDragEnd={() => setDraggedBlockType(null)}
+          />
 
           {selectedBlock && (
             <div className="mt-6">
@@ -285,6 +341,7 @@ export function EmailEditor({ initialTemplate, onSave }: EmailEditorProps) {
               selectedBlockId={selectedBlockId}
               onBlocksChange={handleBlocksChange}
               onSelectBlock={setSelectedBlockId}
+              draggedBlockType={draggedBlockType}
             >
               {(block, isSelected, onEdit) => (
                 <div

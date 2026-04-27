@@ -1,12 +1,12 @@
 {
-  "active_plan": "C:\\Users\\raoni\\Meu Drive\\Documentos\\Site Antiphishing\\React\\.sisyphus\\plans\\mvp-final-verification.md",
-  "started_at": "2026-04-25T23:20:07.888Z",
+  "active_plan": "C:\\Users\\raoni\\Meu Drive\\Documentos\\Site Antiphishing\\React\\.sisyphus\\plans\\frontend-fix-plan.md",
+  "started_at": "2026-04-27T00:24:36.141Z",
   "session_ids": [
-    "ses_23b4a81fdffesc62R4mCW1V4lk"
+    "ses_2364a2ae2ffeKHQTlq2EN39pAH"
   ],
   "session_origins": {
-    "ses_23b4a81fdffesc62R4mCW1V4lk": "direct"
+    "ses_2364a2ae2ffeKHQTlq2EN39pAH": "direct"
   },
-  "plan_name": "mvp-final-verification",
+  "plan_name": "frontend-fix-plan",
   "agent": "atlas"
 }

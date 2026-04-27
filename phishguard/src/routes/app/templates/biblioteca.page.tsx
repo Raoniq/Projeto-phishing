@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, type Database } from '@/lib/supabase'
 import { useUser } from '@/hooks/useUser'
 import { Button } from '@/components/ui/Button'
@@ -46,6 +47,7 @@ interface TemplatePreview {
 
 export default function BibliotecaPage() {
   const { profile } = useUser()
+  const navigate = useNavigate()
   const [templates, setTemplates] = useState<CampaignTemplate[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<CampaignTemplate[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -387,6 +389,17 @@ export default function BibliotecaPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 h-7 text-xs"
+                    onClick={() => navigate(`/app/templates/editor?id=${template.id}`)}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Editar
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

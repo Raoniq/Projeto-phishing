@@ -1,6 +1,6 @@
 // routes/app/Configuracoes.tsx — Settings page with tabs
 import { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { PermissionMatrix } from '@/components/rbac/PermissionMatrix';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 
 export default function ConfiguracoesPage() {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { company } = useAuth();
   const [companyData, setCompanyData] = useState({ name: '', domain: '' });
   const [activeTab, setActiveTab] = useState<'general' | 'security' | 'notifications' | 'domains' | 'admins' | 'audit' | 'permissions'>('general');
@@ -24,6 +25,14 @@ export default function ConfiguracoesPage() {
       });
     }
   }, [company]);
+
+  // Sync active tab from URL params on mount
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'permissions' || tab === 'admins' || tab === 'audit' || tab === 'general' || tab === 'security' || tab === 'notifications' || tab === 'domains') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Determine active tab from URL
   const currentPath = location.pathname;
@@ -39,6 +48,15 @@ export default function ConfiguracoesPage() {
     { id: 'notifications', label: 'Notificações', icon: Bell },
     { id: 'domains', label: 'Domínios', icon: Globe },
   ] as const;
+
+  const handleTabChange = (tabId: typeof activeTab) => {
+    setActiveTab(tabId);
+    if (tabId === 'permissions' || tabId === 'admins' || tabId === 'audit') {
+      setSearchParams({ tab: tabId }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--color-surface-0)]">
@@ -74,7 +92,7 @@ export default function ConfiguracoesPage() {
             <Link
               key={tab.id}
               to={tab.id === 'general' || tab.id === 'security' || tab.id === 'notifications' || tab.id === 'permissions' ? '/app/configuracoes' : `/app/configuracoes/${tab.id === 'audit' ? 'audit-log' : tab.id === 'domains' ? 'dominios' : tab.id}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={cn(
                 'flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap',
                 activeTab === tab.id

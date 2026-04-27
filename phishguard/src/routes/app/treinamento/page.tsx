@@ -2,6 +2,7 @@
 // routes/app/treinamento/page.tsx — Employee Training Hub
 // Displays: Meus Treinamentos, XP/Level, Badges, Company Leaderboard
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router'
 import { motion } from 'motion/react'
 import {
   GraduationCap,
@@ -17,13 +18,15 @@ import {
   Sparkles,
   Award,
   RefreshCw,
+  AlertCircle,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUser } from '@/lib/auth/session'
+import { useSession } from '@/hooks/useSession'
+import { useCompany } from '@/hooks/useCompany'
 import { useUserEnrollments, useTrainingTracks } from '@/lib/hooks'
 import { formatPoints } from '@/lib/gamification/types'
 import { PointsDisplay, getLevelFromPoints, getLevelProgress } from '@/components/training/PointsDisplay'
@@ -181,9 +184,16 @@ function StatCard({
 // =============================================================================
 
 export default function TreinamentoPage() {
-  // Auth state
+  const navigate = useNavigate()
+
+  // Auth state from hooks
+  const { session, isLoading: authLoading } = useSession()
+  const { company } = useCompany()
+
+  // Local user state (derived from session)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   // Data state
   const [userXP, setUserXP] = useState(0)
@@ -196,35 +206,67 @@ export default function TreinamentoPage() {
 
   // Hooks
   const { enrollments, loading: enrollmentsLoading } = useUserEnrollments(currentUser?.id)
-  const { tracks: availableTracks } = useTrainingTracks()
+  const { tracks: availableTracks, loading: tracksLoading } = useTrainingTracks(company?.id)
 
-  // Fetch current user
+  // Initialize user from session with timeout
   useEffect(() => {
+    if (!session?.user) {
+      setCurrentUser(null)
+      setIsInitialized(true)
+      return
+    }
+
+    // Timeout fallback - if user fetch takes >5s, show error
+    const timeoutId = setTimeout(() => {
+      if (!currentUser) {
+        setFetchError('Tempo limite ao carregar usuário. Tente novamente.')
+        setIsInitialized(true)
+      }
+    }, 5000)
+
     async function fetchUser() {
       try {
-        const user = await getCurrentUser()
-        if (user) {
+        // Get user profile from users table
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_id', session.user.id)
+          .single()
+
+        clearTimeout(timeoutId)
+
+        if (profileError) {
+          console.error('Failed to fetch user profile:', profileError)
+          setFetchError('Erro ao carregar perfil do usuário.')
+          setCurrentUser(null)
+        } else if (profileData) {
           setCurrentUser({
-            id: user.id,
-            name: user.name || user.email || 'Usuário',
-            role: (user as any).role || 'member',
+            id: profileData.id,
+            name: profileData.name || profileData.email || 'Usuário',
+            role: profileData.role || 'member',
           })
         }
       } catch (err) {
+        clearTimeout(timeoutId)
         console.error('Failed to fetch user:', err)
+        setFetchError('Erro ao carregar dados do usuário.')
+        setCurrentUser(null)
       } finally {
-        setIsLoading(false)
+        setIsInitialized(true)
       }
     }
-    fetchUser()
-  }, [])
 
-  // Redirect admins to admin/training
+    fetchUser()
+
+    return () => clearTimeout(timeoutId)
+  }, [session?.user?.id])
+
+  // Redirect admins to admin/training using React Router
   useEffect(() => {
     if (currentUser && currentUser.role === 'admin') {
-      window.location.href = '/app/admin/training'
+      navigate('/app/admin/training')
     }
-  }, [currentUser])
+  }, [currentUser, navigate])
 
   // Fetch user XP from user_points table
   useEffect(() => {
@@ -378,9 +420,39 @@ export default function TreinamentoPage() {
   // Calculate stats
   const completedCount = enrollments.filter((e) => e.status === 'completed').length
   const inProgressCount = enrollments.filter((e) => e.status === 'in_progress' || e.status === 'assigned').length
-  
-  // Loading state
-  if (isLoading) {
+
+  // Error state - show error with retry
+  if (fetchError) {
+    return (
+      <div className="h-full bg-[var(--color-surface-0)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="border-[var(--color-noir-700)] bg-[var(--color-surface-1)]">
+            <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-error)]/10">
+                <AlertCircle className="h-8 w-8 text-[var(--color-error)]" />
+              </div>
+              <h3 className="font-display text-lg font-semibold text-[var(--color-fg-primary)] mb-2">
+                Erro ao carregar
+              </h3>
+              <p className="text-sm text-[var(--color-fg-secondary)] mb-6 max-w-sm">
+                {fetchError}
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Loading state - wait for auth initialization
+  if (authLoading || !isInitialized) {
     return (
       <div className="h-full bg-[var(--color-surface-0)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -392,11 +464,6 @@ export default function TreinamentoPage() {
         </div>
       </div>
     )
-  }
-
-  // Admin redirect handled in useEffect
-  if (currentUser?.role === 'admin') {
-    return null
   }
 
   return (

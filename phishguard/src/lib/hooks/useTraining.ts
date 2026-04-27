@@ -11,7 +11,7 @@ type TrainingTrack = Database['public']['Tables']['training_tracks']['Row']
 type TrainingModule = Database['public']['Tables']['training_modules']['Row']
 type UserEnrollment = Database['public']['Tables']['user_training_enrollments']['Row']
 
-export function useTrainingTracks() {
+export function useTrainingTracks(companyId?: string) {
   const [tracks, setTracks] = useState<TrainingTrack[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,10 +19,17 @@ export function useTrainingTracks() {
   const fetchTracks = useCallback(async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      let query = supabase
         .from('training_tracks')
         .select('*')
         .order('created_at', { ascending: false })
+
+      // Filter by company if provided (for employee view)
+      if (companyId) {
+        query = query.or(`company_id.eq.${companyId},company_id.is.null`)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
       setTracks(data || [])
@@ -31,7 +38,7 @@ export function useTrainingTracks() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [companyId])
 
   const createTrack = useCallback(async (track: {
     name: string
@@ -39,6 +46,7 @@ export function useTrainingTracks() {
     difficulty_level?: 'beginner' | 'intermediate' | 'advanced'
     estimated_duration_minutes?: number
     is_required?: boolean
+    company_id?: string
   }) => {
     const { data, error } = await supabase
       .from('training_tracks')

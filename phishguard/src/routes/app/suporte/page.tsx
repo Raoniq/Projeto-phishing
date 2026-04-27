@@ -1,7 +1,33 @@
 import { useState } from 'react';
-import { BookOpen, Target, Users, BarChart3, ChevronDown, Mail, Phone, Clock, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { BookOpen, Target, ChevronDown, Mail, Phone, Clock, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+
+const articles = [
+  {
+    icon: BookOpen,
+    title: 'Guia de início rápido',
+    description: 'Configure sua conta em 5 minutos',
+    steps: [
+      { title: 'Complete seu perfil', description: 'Adicione nome, cargo, foto' },
+      { title: 'Invite sua equipe', description: 'Convide colegas via email' },
+      { title: 'Crie sua primeira campanha', description: 'Escolha um template' },
+      { title: 'Analise os resultados', description: 'Veja métricas no dashboard' },
+    ],
+  },
+  {
+    icon: Target,
+    title: 'Como criar campanhas',
+    description: 'Passo a passo para sua primeira campanha',
+    steps: [
+      { title: 'Escolha o template', description: 'Navegue na biblioteca' },
+      { title: 'Defina os alvos', description: 'Selecione usuários ou importe CSV' },
+      { title: 'Agende ou envie', description: 'Agora ou agendado' },
+      { title: 'Monitore em tempo real', description: 'Acompanhe clicks e reports' },
+    ],
+  },
+];
 
 const faqs = [
   {
@@ -30,31 +56,9 @@ const faqs = [
   },
 ];
 
-const docCards = [
-  {
-    icon: BookOpen,
-    title: 'Guia de início rápido',
-    description: 'Configure sua conta em 5 minutos',
-  },
-  {
-    icon: Target,
-    title: 'Como criar campanhas',
-    description: 'Passo a passo para sua primeira campanha',
-  },
-  {
-    icon: Users,
-    title: 'Gerenciar usuários',
-    description: 'Importe e organize sua equipe',
-  },
-  {
-    icon: BarChart3,
-    title: 'Lendo relatórios',
-    description: 'Entenda métricas e indicadores',
-  },
-];
-
 export default function SuportePage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [openArticleIndex, setOpenArticleIndex] = useState<number | null>(null);
 
   return (
     <div className="text-white p-6">
@@ -70,22 +74,66 @@ export default function SuportePage() {
         {/* Documentação */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold mb-4">Documentação</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {docCards.map((card) => (
-              <Card
-                key={card.title}
-                className="cursor-pointer hover:border-[var(--color-accent)] hover:shadow-[0_0_20px_rgba(217,119,87,0.15)] transition-all duration-200"
+          <div className="space-y-3">
+            {articles.map((article, index) => (
+              <div
+                key={article.title}
+                className="rounded-lg border border-[var(--color-noir-700)] bg-[var(--color-surface-1)] overflow-hidden"
               >
-                <CardContent className="p-5">
-                  <card.icon className="w-8 h-8 text-[var(--color-accent)] mb-3" />
-                  <h3 className="font-semibold text-[var(--color-fg-primary)] mb-1">
-                    {card.title}
-                  </h3>
-                  <p className="text-sm text-[var(--color-fg-secondary)]">
-                    {card.description}
-                  </p>
-                </CardContent>
-              </Card>
+                <button
+                  onClick={() => setOpenArticleIndex(openArticleIndex === index ? null : index)}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-[var(--color-surface-2)] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <article.icon className="w-5 h-5 text-[var(--color-accent)]" />
+                    <div>
+                      <h3 className="font-medium text-[var(--color-fg-primary)]">
+                        {article.title}
+                      </h3>
+                      <p className="text-sm text-[var(--color-fg-secondary)]">
+                        {article.description}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      'w-5 h-5 text-[var(--color-fg-secondary)] transition-transform duration-200',
+                      openArticleIndex === index && 'rotate-180'
+                    )}
+                  />
+                </button>
+                <AnimatePresence>
+                  {openArticleIndex === index && article.steps && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-2">
+                        <div className="space-y-3 ml-8">
+                          {article.steps.map((step, stepIndex) => (
+                            <div key={stepIndex} className="flex items-start gap-3">
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[var(--color-accent)] text-white text-xs font-bold flex items-center justify-center">
+                                {stepIndex + 1}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-[var(--color-fg-primary)]">
+                                  {step.title}
+                                </p>
+                                <p className="text-xs text-[var(--color-fg-secondary)]">
+                                  {step.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ))}
           </div>
         </section>
