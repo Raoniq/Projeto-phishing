@@ -4,6 +4,8 @@ import { AppSidebar } from './AppSidebar';
 import { AppTopbar } from './AppTopbar';
 import { MobileDrawer } from './MobileDrawer';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useVersionCheck } from '@/lib/version/useVersionCheck';
+import { VersionUpdateRail } from '@/components/notifications/VersionUpdateRail';
 import { cn } from '@/lib/utils';
 
 interface AppShellProps {
@@ -14,6 +16,13 @@ export function AppShell({ className }: AppShellProps) {
   const { user, profile, company, loading, isInitialized } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Version update watcher — single instance across all routes
+  const { updateAvailable, remoteVersion, dismiss, update, loading: updateLoading } = useVersionCheck();
+
+  const handleDismiss = useCallback(() => {
+    if (remoteVersion) dismiss(remoteVersion);
+  }, [remoteVersion, dismiss]);
 
   // Wait for AuthContext to be initialized before showing spinner
   // This prevents double-spinner with ProtectedRoute
@@ -75,6 +84,14 @@ export function AppShell({ className }: AppShellProps) {
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
+
+        {/* Version Update Rail — fixed positioning, no layout shift */}
+        <VersionUpdateRail
+          open={updateAvailable}
+          onDismiss={handleDismiss}
+          onUpdate={update}
+          loading={updateLoading}
+        />
       </div>
     </div>
   );

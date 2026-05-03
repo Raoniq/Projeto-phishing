@@ -21,7 +21,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
+import { Badge as BadgeComponent } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -30,7 +30,8 @@ import { useCompany } from '@/hooks/useCompany'
 import { useUserEnrollments, useTrainingTracks } from '@/lib/hooks'
 import { formatPoints } from '@/lib/gamification/types'
 import { PointsDisplay, getLevelFromPoints, getLevelProgress } from '@/components/training/PointsDisplay'
-import { BADGE_CATALOG, type Badge } from '@/components/training/BadgeGrid'
+import { BADGE_CATALOG } from '@/components/training/BadgeGrid'
+import type { Badge as BadgeType } from '@/components/training/BadgeGrid'
 
 // Database types
 interface UserJourneyState {
@@ -197,7 +198,7 @@ export default function TreinamentoPage() {
 
   // Data state
   const [userXP, setUserXP] = useState(0)
-  const [userBadges, setUserBadges] = useState<Badge[]>([])
+  const [userBadges, setUserBadges] = useState<BadgeType[]>([])
   const [userStreak, setUserStreak] = useState(0)
   const [userLevel, setUserLevel] = useState(1)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -304,7 +305,7 @@ export default function TreinamentoPage() {
           .eq('user_id', currentUser.id)
 
         if (data) {
-          const badges: Badge[] = data.map((b: UserBadge) => ({
+          const badges: BadgeType[] = data.map((b: UserBadge) => ({
             id: b.id,
             type: b.badge_name as any,
             name: b.badge_name,
@@ -612,15 +613,15 @@ export default function TreinamentoPage() {
 
                                   {/* Status Badge */}
                                   {enrollment.status === 'in_progress' && (
-                                    <Badge variant="default" className="shrink-0">
-                                      Em progresso
-                                    </Badge>
+<BadgeComponent variant="default" className="shrink-0">
+                                       Em progresso
+                                     </BadgeComponent>
                                   )}
                                   {enrollment.status === 'completed' && (
-                                    <Badge variant="success" className="shrink-0">
-                                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                                      Concluído
-                                    </Badge>
+<BadgeComponent variant="success" className="shrink-0">
+                                       <CheckCircle2 className="h-3 w-3 mr-1" />
+                                       Concluído
+                                     </BadgeComponent>
                                   )}
                                 </div>
 

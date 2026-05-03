@@ -2,11 +2,26 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import fs from 'fs'
+
+const appVersion = Date.now().toString();
 
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react(), tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: 'generate-version-json',
+      writeBundle() {
+        fs.writeFileSync('dist/version.json', JSON.stringify({ version: appVersion }));
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
