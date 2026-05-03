@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, react-refresh/only-export-components */
+ 
 /**
  * LeaderboardTable Component
  *

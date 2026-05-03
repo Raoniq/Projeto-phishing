@@ -169,7 +169,7 @@ export default function UserDetailPage() {
         const mappedActivities: ActivityLog[] = (auditData || []).map((log, i) => {
           let type: ActivityLog['type'] = 'login';
           let title = log.action;
-          let description = log.table_name || '';
+          const description = log.table_name || '';
 
           if (log.action.includes('campaign') || log.table_name === 'campaign_targets') {
             type = 'campaign';
