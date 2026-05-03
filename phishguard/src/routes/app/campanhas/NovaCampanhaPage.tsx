@@ -183,7 +183,7 @@ export default function NovaCampanhaPage() {
         // Load templates
         const { data: templatesData } = await supabase
           .from('campaign_templates')
-          .select('id, name, category, subject, body_html, preview_text')
+          .select('id, name, category, subject, body_html')
           .eq('is_active', true)
           .order('name');
 
@@ -197,25 +197,33 @@ export default function NovaCampanhaPage() {
         // Load landing pages
         const { data: landingData } = await supabase
           .from('landing_pages')
-          .select('id, name, slug, category, html_content, css_variables')
+          .select('id, name, slug, category, body_html')
           .eq('is_active', true)
           .order('name');
 
         if (landingData) {
-          setLandingPages(landingData);
+          setLandingPages(landingData.map(lp => ({
+            ...lp,
+            html_content: lp.body_html, // normalize body_html -> html_content for component compatibility
+          })));
         }
 
-        // Load target groups
-        const { data: groupsData } = await supabase
-          .from('target_groups')
-          .select('id, name, type')
-          .order('name');
+        // Load target groups - table may not exist, use mock fallback
+        try {
+          const { data: groupsData } = await supabase
+            .from('target_groups')
+            .select('id, name, type')
+            .order('name');
 
-        if (groupsData) {
-          setTargetGroups(groupsData.map(g => ({
-            ...g,
-            count: Math.floor(Math.random() * 500) + 50,
-          })));
+          if (groupsData) {
+            setTargetGroups(groupsData.map(g => ({
+              ...g,
+              count: Math.floor(Math.random() * 500) + 50,
+            })));
+          }
+        } catch (err) {
+          // target_groups table may not exist - will use mock data
+          console.warn('target_groups query failed, using mock data:', err?.message);
         }
       } catch (err) {
         console.error('Error loading data:', err);
