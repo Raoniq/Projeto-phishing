@@ -69,43 +69,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   useEffect(() => {
+    console.log('[AuthContext] useEffect running')
     let cancelled = false
 
     const initAuth = async () => {
       try {
-        if (cancelled) return
+        if (cancelled) {
+          console.log('[AuthContext] initAuth skipped - cancelled')
+          return
+        }
+        console.log('[AuthContext] initAuth starting')
 
         // Get session with timeout fallback
         const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 5000))
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 3000))
 
         const result = await Promise.race([sessionPromise, timeoutPromise])
 
-        if (cancelled || result === 'timeout') {
-          if (!cancelled) {
-            // Timeout - session took too long, resolve with what we have
-            console.warn('[AuthContext] Session timeout - continuing without blocking')
-            setLoading(false)
-            setIsInitialized(true)
-          }
+        if (cancelled) {
+          console.log('[AuthContext] initAuth cancelled after race')
+          return
+        }
+
+        if (result === 'timeout') {
+          console.warn('[AuthContext] Session timeout after 3s - continuing')
+          setLoading(false)
+          setIsInitialized(true)
           return
         }
 
         const { data: { session } } = result as Awaited<typeof sessionPromise>
 
         if (session?.user) {
+          console.log('[AuthContext] Session found for user:', session.user.id)
           setUser(session.user)
           // Don't block loading on profile/company fetch failure
           fetchProfileAndCompany(session.user).catch(() => {
             // Silently handle profile fetch failure - user is still logged in
           })
         } else {
+          console.log('[AuthContext] No session found')
           setUser(null)
           setProfile(null)
           setCompany(null)
         }
       } finally {
         if (!cancelled) {
+          console.log('[AuthContext] initAuth complete, setting loading=false')
           setLoading(false)
           setIsInitialized(true)
         }
