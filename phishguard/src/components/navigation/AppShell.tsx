@@ -20,6 +20,16 @@ export function AppShell({ className }: AppShellProps) {
   // Version update watcher — single instance across all routes
   const { updateAvailable, remoteVersion, dismiss, update, loading: updateLoading } = useVersionCheck();
 
+  // Guard the version-update reload path — auth must be initialized before
+  // reloading, otherwise the reload can interrupt session restoration
+  const handleUpdate = useCallback(() => {
+    if (!isInitialized) {
+      console.warn('[AppShell] Update deferred — auth not yet initialized');
+      return;
+    }
+    update();
+  }, [isInitialized, update]);
+
   const handleDismiss = useCallback(() => {
     if (remoteVersion) dismiss(remoteVersion);
   }, [remoteVersion, dismiss]);
@@ -88,7 +98,7 @@ export function AppShell({ className }: AppShellProps) {
         <VersionUpdateRail
           open={updateAvailable}
           onDismiss={handleDismiss}
-          onUpdate={update}
+          onUpdate={handleUpdate}
           loading={updateLoading}
         />
       </div>

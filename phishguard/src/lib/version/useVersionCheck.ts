@@ -24,12 +24,16 @@ function cleanVersionParam(): void {
   }
 }
 
-cleanVersionParam()
-
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useVersionCheck() {
   const [state, setState] = useState<UpdateState>(INITIAL_STATE)
+
+  // Clean version param from URL on mount — moved from module-level to effect
+  // to avoid racing with auth initialization during module import
+  useEffect(() => {
+    cleanVersionParam()
+  }, [])
 
   const dispatch = useCallback((action: UpdateAction) => {
     setState(prev => {
