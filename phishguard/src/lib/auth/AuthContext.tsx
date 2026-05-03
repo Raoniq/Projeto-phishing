@@ -72,26 +72,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let cancelled = false
 
     const initAuth = async () => {
-      if (cancelled) return
-      setLoading(true)
+      try {
+        if (cancelled) return
+        setLoading(true)
 
-      const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession()
 
-      if (cancelled) return
+        if (cancelled) return
 
-      if (session?.user) {
-        setUser(session.user)
-        // Don't set loading=false yet — wait for profile/company
-        await fetchProfileAndCompany(session.user)
-      } else {
-        setUser(null)
-        setProfile(null)
-        setCompany(null)
+        if (session?.user) {
+          setUser(session.user)
+          // Don't block loading on profile/company fetch failure
+          fetchProfileAndCompany(session.user).catch(() => {
+            // Silently handle profile fetch failure - user is still logged in
+          })
+        } else {
+          setUser(null)
+          setProfile(null)
+          setCompany(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+          setIsInitialized(true)
+        }
       }
-
-      if (cancelled) return
-      setLoading(false)
-      setIsInitialized(true)
     }
 
     initAuth()
