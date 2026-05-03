@@ -13,7 +13,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ className }: AppShellProps) {
-  const { user, profile, company, loading, isInitialized } = useAuth();
+  const { user, profile, company, loading, isInitialized, signOut } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -34,11 +34,10 @@ export function AppShell({ className }: AppShellProps) {
     );
   }
 
-  const handleLogout = useCallback(() => {
-    // Clear session and redirect to login
-    localStorage.removeItem('supabase-auth-token');
+  const handleLogout = useCallback(async () => {
+    await signOut();
     navigate('/login');
-  }, [navigate]);
+  }, [navigate, signOut]);
 
   const handleMenuToggle = useCallback(() => {
     setIsMobileDrawerOpen(true);

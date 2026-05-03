@@ -74,6 +74,8 @@ export default function LoginPage() {
         setError(translateAuthError(error));
         return;
       }
+      // Small delay to let onAuthStateChange fire before navigation
+      await new Promise(r => setTimeout(r, 500));
       navigate('/app/dashboard');
     } catch {
       setError('Erro ao fazer login. Tente novamente.');
@@ -379,6 +381,8 @@ export default function LoginPage() {
                   type="button"
                   onClick={async () => {
                     await mockSupabaseAuth.signIn({ email: 'demo@phishguard.app', name: 'Demo User' });
+                    // Small delay to let onAuthStateChange fire before navigation
+                    await new Promise(r => setTimeout(r, 500));
                     navigate('/app/dashboard');
                   }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition-all duration-200"
