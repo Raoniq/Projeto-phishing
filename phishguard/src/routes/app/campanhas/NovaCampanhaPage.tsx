@@ -204,7 +204,7 @@ export default function NovaCampanhaPage() {
         if (landingData) {
           setLandingPages(landingData.map(lp => ({
             ...lp,
-            html_content: lp.body_html, // normalize body_html -> html_content for component compatibility
+            html_content: lp.body_html,
           })));
         }
 
@@ -377,6 +377,15 @@ export default function NovaCampanhaPage() {
       if (companyError) throw new Error('Failed to get company ID');
       const companyId = companyIdData;
 
+      // Calculate total targets INSIDE the callback to avoid TDZ
+      const calcTotalTargets = () => formData.targetType === 'csv'
+        ? formData.csvData.length
+        : formData.targetGroupIds.reduce((sum, id) => {
+            const group = targetGroups.find(g => g.id === id);
+            return sum + (group?.count || 0);
+          }, 0);
+      const theTotalTargets = calcTotalTargets();
+
       // Create campaign
       const scheduledAt = formData.scheduleType !== 'now'
         ? new Date(`${formData.scheduledDate}T${formData.scheduledTime}`).toISOString()
@@ -389,14 +398,14 @@ export default function NovaCampanhaPage() {
           name: formData.name,
           description: formData.description || null,
           template_id: formData.templateId,
-          landing_page_id: formData.landingPageId,
           status: formData.scheduleType === 'now' ? 'running' : 'scheduled',
           scheduled_at: scheduledAt,
-          target_count: totalTargets,
+          target_count: theTotalTargets,
           settings: {
             difficulty: formData.difficulty,
             target_type: formData.targetType,
             target_group_ids: formData.targetGroupIds,
+            landing_page_id: formData.landingPageId,
             timezone: formData.timezone,
             stagger_hours: formData.staggerHours,
             business_hours_only: formData.businessHoursOnly,
@@ -470,7 +479,7 @@ export default function NovaCampanhaPage() {
             campaign_id: campaign.id,
             scheduled_for: scheduledAt,
             batch_size: 50,
-            batch_interval_minutes: formData.staggerHours * 60 / Math.max(1, Math.ceil(totalTargets / 50)),
+            batch_interval_minutes: formData.staggerHours * 60 / Math.max(1, Math.ceil(theTotalTargets / 50)),
           });
 
         if (scheduleError) {
@@ -487,7 +496,7 @@ export default function NovaCampanhaPage() {
     } finally {
       setLoadingSubmit(false);
     }
-  }, [formData, totalTargets, navigate]);
+  }, [formData, targetGroups, navigate]);
 
   // Filter data
   const filteredTemplates = templates.filter(t =>
