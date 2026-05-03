@@ -1,3 +1,6 @@
-/manifest.json
-  Content-Type: application/json
-  Cache-Control: public, max-age=0, must-revalidate
+/*
+  X-Robots-Tag: noindex
+  X-Content-Type-Options: nosniff
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

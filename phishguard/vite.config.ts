@@ -8,7 +8,7 @@ const appVersion = Date.now().toString();
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: process.env.NODE_ENV === 'production' ? '/' : './',
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },
