@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -14,20 +14,41 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const exchangeToken = async () => {
-      // Supabase automatically detects #access_token in URL and exchanges it
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // detectSessionInUrl: false in supabase.ts means the SDK does NOT auto-detect
+      // the #access_token=... hash from Supabase redirects. We must parse it manually.
+      const hash = window.location.hash
+      const params = new URLSearchParams(hash.substring(1)) // strip leading '#'
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+
+      if (accessToken && refreshToken) {
+        // Manually establish session from the hash tokens
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+
+        if (setSessionError) {
+          console.warn('[AuthCallback] setSession failed:', setSessionError.message)
+          navigate('/verify-email?error=confirmation_failed', { replace: true })
+          return
+        }
+      }
+
+      // Now check if we have a valid session
+      const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error || !session) {
-        navigate('/verify-email?error=confirmation_failed', { replace: true });
-        return;
+        navigate('/verify-email?error=confirmation_failed', { replace: true })
+        return
       }
 
       // Session established — redirect to verify-email with success
-      navigate('/verify-email?status=confirmed', { replace: true });
-    };
+      navigate('/verify-email?status=confirmed', { replace: true })
+    }
 
-    exchangeToken();
-  }, [navigate]);
+    exchangeToken()
+  }, [navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-noir-950">

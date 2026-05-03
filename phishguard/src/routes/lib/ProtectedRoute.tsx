@@ -1,6 +1,4 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { getSession, hasMockSession, isMockMode } from '@/lib/auth/session';
 import { useAuth } from '@/lib/auth/AuthContext';
 
 /**
@@ -10,11 +8,9 @@ import { useAuth } from '@/lib/auth/AuthContext';
  */
 export default function ProtectedRoute() {
   const { user, loading, isInitialized } = useAuth();
-  const [isChecking, setIsChecking] = useState(false);
   const location = useLocation();
 
-  // Use Supabase's built-in session management
-  // isInitialized means AuthContext has done its initial check
+  // AuthContext guarantees loading=false and isInitialized=true within 8s (or timeout)
   if (!isInitialized || loading) {
     return (
       <div
@@ -28,7 +24,7 @@ export default function ProtectedRoute() {
     );
   }
 
-  if (!user && !hasMockSession()) {
+  if (!user) {
     return (
       <Navigate
         to={`/login?returnTo=${encodeURIComponent(location.pathname)}`}

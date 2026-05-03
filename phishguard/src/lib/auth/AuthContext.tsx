@@ -75,8 +75,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         if (cancelled) return
 
-        // Get session from cache (fast, no network call needed when session exists)
-        const { data: { session } } = await supabase.auth.getSession()
+        // Wrap getSession in a race with an 8-second timeout
+        // to prevent indefinite hangs (e.g. GoTrue lock warnings on production)
+        const getSessionWithTimeout = () => {
+          const timeout = new Promise<{ data: { session: null } }>((resolve) => {
+            setTimeout(() => {
+              console.warn('[AuthContext] getSession timed out after 8s — treating as unauthenticated')
+              resolve({ data: { session: null } })
+            }, 8000)
+          })
+          return Promise.race([supabase.auth.getSession(), timeout])
+        }
+
+        const { data: { session } } = await getSessionWithTimeout()
 
         if (cancelled) return
 
@@ -85,6 +96,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Fire-and-forget profile fetch - don't block loading on failure
           fetchProfileAndCompany(session.user).catch(() => {})
         } else {
+          setUser(null)
+          setProfile(null)
+          setCompany(null)
+        }
+      } catch {
+        if (!cancelled) {
+          console.warn('[AuthContext] initAuth failed, treating as unauthenticated')
           setUser(null)
           setProfile(null)
           setCompany(null)
