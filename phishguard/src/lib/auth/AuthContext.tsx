@@ -45,7 +45,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .single()
 
     if (profileError || !profileData) {
-      if (!quiet) console.error('[AuthContext] Failed to fetch profile:', profileError?.message)
+      // Profile fetch failed (406 = RLS policy issue, 404 = user not found)
+      // User is still logged in via session, just no profile/company data
       setProfile(null)
       setCompany(null)
       return
@@ -60,7 +61,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .single()
 
     if (companyError || !companyData) {
-      if (!quiet) console.error('[AuthContext] Failed to fetch company:', companyError?.message)
       setCompany(null)
       return
     }
@@ -69,53 +69,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   useEffect(() => {
-    console.log('[AuthContext] useEffect running')
     let cancelled = false
 
     const initAuth = async () => {
       try {
-        if (cancelled) {
-          console.log('[AuthContext] initAuth skipped - cancelled')
-          return
-        }
-        console.log('[AuthContext] initAuth starting')
+        if (cancelled) return
 
-        // Get session with timeout fallback
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 3000))
-
-        const result = await Promise.race([sessionPromise, timeoutPromise])
-
-        if (cancelled) {
-          console.log('[AuthContext] initAuth cancelled after race')
-          return
-        }
-
-        if (result === 'timeout') {
-          console.warn('[AuthContext] Session timeout after 3s - continuing')
-          setLoading(false)
-          setIsInitialized(true)
-          return
+        // Get session with a 3s timeout to prevent blocking on hard reload.
+        // On Cloudflare Pages, getSession() can hang if session detection
+        // triggers redirects. We resolve with null session on timeout.
+        let session = null
+        try {
+          const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<{ data: { session: null } }>(resolve =>
+              setTimeout(() => resolve({ data: { session: null } }), 3000)
+            )
+          ])
+          session = data.session
+        } catch {
+          session = null
         }
 
-        const { data: { session } } = result as Awaited<typeof sessionPromise>
+        if (cancelled) return
 
         if (session?.user) {
-          console.log('[AuthContext] Session found for user:', session.user.id)
           setUser(session.user)
-          // Don't block loading on profile/company fetch failure
-          fetchProfileAndCompany(session.user).catch(() => {
-            // Silently handle profile fetch failure - user is still logged in
-          })
+          // Fire-and-forget profile fetch - don't block loading on failure
+          fetchProfileAndCompany(session.user).catch(() => {})
         } else {
-          console.log('[AuthContext] No session found')
           setUser(null)
           setProfile(null)
           setCompany(null)
         }
       } finally {
         if (!cancelled) {
-          console.log('[AuthContext] initAuth complete, setting loading=false')
           setLoading(false)
           setIsInitialized(true)
         }
