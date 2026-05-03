@@ -34,6 +34,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { TemplatePreviewModal } from '@/components/templates/TemplatePreviewModal';
+import LandingPreview from '@/components/landing-builder/LandingPreview';
 
 // Step configuration with icons
 const STEPS = [
