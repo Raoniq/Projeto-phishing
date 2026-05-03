@@ -32,6 +32,7 @@ import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
 import { Switch } from '@/components/ui/Switch';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 // Step configuration with icons
