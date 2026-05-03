@@ -83,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const { data } = await Promise.race([
             supabase.auth.getSession(),
             new Promise<{ data: { session: null } }>(resolve =>
-              setTimeout(() => resolve({ data: { session: null } }), 3000)
+              setTimeout(() => resolve({ data: { session: null } }), 500)
             )
           ])
           session = data.session

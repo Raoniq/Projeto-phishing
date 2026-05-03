@@ -98,8 +98,9 @@ export function useVersionCheck() {
   }, [dispatch])
 
   const update = useCallback(() => {
-    const separator = window.location.search ? '&' : '?'
-    window.location.href = `${window.location.pathname}${window.location.search || ''}${separator}v=${Date.now()}`
+    // Force reload with cache busting via query param
+    // The ?v= param will be cleaned by cleanVersionParam() after reload
+    window.location.reload()
   }, [])
 
   // First check: 5 seconds after mount
