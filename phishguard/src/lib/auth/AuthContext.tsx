@@ -75,21 +75,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         if (cancelled) return
 
-        // Get session with a 3s timeout to prevent blocking on hard reload.
-        // On Cloudflare Pages, getSession() can hang if session detection
-        // triggers redirects. We resolve with null session on timeout.
-        let session = null
-        try {
-          const { data } = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<{ data: { session: null } }>(resolve =>
-              setTimeout(() => resolve({ data: { session: null } }), 500)
-            )
-          ])
-          session = data.session
-        } catch {
-          session = null
-        }
+        // Get session from cache (fast, no network call needed when session exists)
+        const { data: { session } } = await supabase.auth.getSession()
 
         if (cancelled) return
 

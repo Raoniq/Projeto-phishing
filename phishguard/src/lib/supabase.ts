@@ -25,7 +25,7 @@ export const supabase: SupabaseClient<Database> = createClient(supabaseUrl, supa
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: false,
   },
 })
 
