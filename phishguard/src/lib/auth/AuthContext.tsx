@@ -74,11 +74,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const initAuth = async () => {
       try {
         if (cancelled) return
-        setLoading(true)
 
-        const { data: { session } } = await supabase.auth.getSession()
+        // Get session with timeout fallback
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 5000))
 
-        if (cancelled) return
+        const result = await Promise.race([sessionPromise, timeoutPromise])
+
+        if (cancelled || result === 'timeout') {
+          if (!cancelled) {
+            // Timeout - session took too long, resolve with what we have
+            console.warn('[AuthContext] Session timeout - continuing without blocking')
+            setLoading(false)
+            setIsInitialized(true)
+          }
+          return
+        }
+
+        const { data: { session } } = result as Awaited<typeof sessionPromise>
 
         if (session?.user) {
           setUser(session.user)
@@ -99,6 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
+    setLoading(true)
     initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
