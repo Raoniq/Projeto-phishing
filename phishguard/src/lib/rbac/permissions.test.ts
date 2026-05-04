@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   hasPermission,
   hasAnyPermission,
@@ -9,6 +9,19 @@ import {
   isRoleHigherOrEqual,
   getDefaultRole,
 } from './config'
+import { requirePermission, getCampaignApprovalState } from './permissions'
+
+// Mock the auth session module
+vi.mock('../auth/session', () => ({
+  getAuthContext: vi.fn(),
+}))
+
+// Mock react-router-dom redirect
+vi.mock('react-router-dom', () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`Redirect to: ${url}`)
+  }),
+}))
 
 describe('RBAC Config', () => {
   describe('hasPermission', () => {
@@ -153,6 +166,37 @@ describe('RBAC Config', () => {
   describe('getDefaultRole', () => {
     it('returns viewer as default', () => {
       expect(getDefaultRole()).toBe('viewer')
+    })
+  })
+})
+
+describe('RBAC Helpers', () => {
+  describe('requirePermission', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      window.location = { href: 'http://localhost/app/dashboard' } as Location
+    })
+
+    it('redirects safely with unauthenticated context (no ReferenceError)', async () => {
+      const { getAuthContext } = await import('../auth/session')
+      vi.mocked(getAuthContext).mockResolvedValue(null)
+
+      // This should not throw ReferenceError for undefined 'args'
+      // It should throw redirect instead
+      await expect(requirePermission('create_campaign' as any)).rejects.toThrow('Redirect to:')
+    })
+  })
+
+  describe('getCampaignApprovalState', () => {
+    it('returns correct mock shape for a given campaign ID', async () => {
+      const result = await getCampaignApprovalState('cmp_123')
+      expect(result).toMatchObject({
+        requiredApprovals: expect.any(Number),
+        currentApprovals: expect.any(Number),
+        isApproved: expect.any(Boolean),
+        approvers: expect.any(Array),
+      })
+      expect(result.approvers).toBeInstanceOf(Array)
     })
   })
 })

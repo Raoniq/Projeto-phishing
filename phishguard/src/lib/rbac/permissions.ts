@@ -85,8 +85,7 @@ export async function requirePermission(
   if (!hasPerm) {
     const context = await getAuthContext();
     if (!context) {
-      const url = new URL(args?.request?.url ?? window.location.href);
-      const returnTo = options?.returnTo || url.pathname + url.search;
+      const returnTo = options?.returnTo ?? window.location.href;
       throw redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
     }
     throw redirect(options?.onUnauthorized || '/403');
@@ -198,7 +197,7 @@ export interface CampaignApprovalState {
  * Get campaign approval state
  */
 export async function getCampaignApprovalState(
-  
+  campaignId: string
 ): Promise<CampaignApprovalState> {
   const context = await getAuthContext();
   if (!context) {
