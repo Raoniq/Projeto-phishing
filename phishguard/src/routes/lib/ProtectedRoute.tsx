@@ -4,14 +4,16 @@ import { useAuth } from '@/lib/auth/AuthContext';
 /**
  * Protected route wrapper that checks for active session.
  * Redirects to /login if no session exists.
- * Shows loading spinner while checking session.
+ * Loading state is handled by AppShell (inside Outlet) to avoid double spinners.
  */
 export default function ProtectedRoute() {
-  const { user, loading, isInitialized } = useAuth();
+  const { user, isInitialized } = useAuth();
   const location = useLocation();
 
-  // AuthContext guarantees loading=false and isInitialized=true within 8s (or timeout)
-  if (!isInitialized || loading) {
+  // Wait for AuthContext to be initialized before rendering outlet.
+  // AppShell handles its own loading spinner, so we just render nothing
+  // (or a minimal placeholder) while waiting.
+  if (!isInitialized) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

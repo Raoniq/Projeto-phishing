@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { useVersionCheck } from '@/lib/version/useVersionCheck';
 import { VersionUpdateRail } from '@/components/notifications/VersionUpdateRail';
 import { cn } from '@/lib/utils';
+import ErrorBoundary from '@/routes/lib/ErrorBoundary';
 
 interface AppShellProps {
   className?: string;
@@ -20,8 +21,7 @@ export function AppShell({ className }: AppShellProps) {
   // Version update watcher — single instance across all routes
   const { updateAvailable, remoteVersion, dismiss, update, loading: updateLoading } = useVersionCheck();
 
-  // Guard the version-update reload path — auth must be initialized before
-  // reloading, otherwise the reload can interrupt session restoration
+  // ALL useCallback hooks MUST be declared before any early return (Rules of Hooks)
   const handleUpdate = useCallback(() => {
     if (!isInitialized) {
       console.warn('[AppShell] Update deferred — auth not yet initialized');
@@ -33,16 +33,6 @@ export function AppShell({ className }: AppShellProps) {
   const handleDismiss = useCallback(() => {
     if (remoteVersion) dismiss(remoteVersion);
   }, [remoteVersion, dismiss]);
-
-  // Wait for AuthContext to be initialized before showing spinner
-  // This prevents double-spinner with ProtectedRoute
-  if (!isInitialized || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
-        <div className="w-10 h-10 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   const handleLogout = useCallback(async () => {
     await signOut();
@@ -56,6 +46,16 @@ export function AppShell({ className }: AppShellProps) {
   const handleMobileDrawerClose = useCallback(() => {
     setIsMobileDrawerOpen(false);
   }, []);
+
+  // Wait for AuthContext to be initialized before showing spinner
+  // This prevents double-spinner with ProtectedRoute
+  if (!isInitialized || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-0)]">
+        <div className="w-10 h-10 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex min-h-screen bg-[var(--color-surface-0)]', className)}>
@@ -91,7 +91,9 @@ export function AppShell({ className }: AppShellProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* Version Update Rail — fixed positioning, no layout shift */}

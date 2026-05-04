@@ -9,6 +9,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
+import { isMockMode, hasMockSession } from './session'
+import { mockSupabaseAuth } from './mockAuth'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 type Company = Database['public']['Tables']['companies']['Row']
@@ -75,24 +77,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         if (cancelled) return
 
-        // Wrap getSession in a race with an 8-second timeout
-        // to prevent indefinite hangs (e.g. GoTrue lock warnings on production)
-        const getSessionWithTimeout = () => {
-          const timeout = new Promise<{ data: { session: null } }>((resolve) => {
-            setTimeout(() => {
-              console.warn('[AuthContext] getSession timed out after 8s — treating as unauthenticated')
-              resolve({ data: { session: null } })
-            }, 8000)
-          })
-          return Promise.race([supabase.auth.getSession(), timeout])
-        }
+        let session = null
 
-        const { data: { session } } = await getSessionWithTimeout()
+        // In mock mode, check for mock session first
+        if (isMockMode()) {
+          const hasMock = hasMockSession()
+          if (hasMock) {
+            const { data } = await mockSupabaseAuth.getSession()
+            session = data.session
+          }
+        } else {
+          // Wrap getSession in a race with an 8-second timeout
+          // to prevent indefinite hangs (e.g. GoTrue lock warnings on production)
+          const getSessionWithTimeout = () => {
+            let timeoutId: ReturnType<typeof setTimeout>
+            const timeout = new Promise<{ data: { session: null } }>((resolve) => {
+              timeoutId = setTimeout(() => {
+                console.warn('[AuthContext] getSession timed out after 8s')
+                resolve({ data: { session: null } })
+              }, 8000)
+            })
+            return Promise.race([supabase.auth.getSession(), timeout]).finally(() => clearTimeout(timeoutId))
+          }
+
+          const { data } = await getSessionWithTimeout()
+          session = data.session
+        }
 
         if (cancelled) return
 
         if (session?.user) {
-          setUser(session.user)
+          setUser(session.user as User)
           // Fire-and-forget profile fetch - don't block loading on failure
           fetchProfileAndCompany(session.user).catch(() => {})
         } else {
@@ -118,6 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(true)
     initAuth()
 
+    // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // Only handle SIGNED_IN and SIGNED_OUT for subsequent events
@@ -139,14 +155,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     )
 
+    // In mock mode, also subscribe to mock auth state changes
+    let mockUnsubscribe: (() => void) | null = null
+    if (isMockMode()) {
+      mockUnsubscribe = mockSupabaseAuth.onAuthStateChange(async (session) => {
+        if (cancelled) return
+        if (session?.user) {
+          setUser(session.user as User)
+          await fetchProfileAndCompany(session.user, true)
+        } else {
+          setUser(null)
+          setProfile(null)
+          setCompany(null)
+        }
+      })
+    }
+
     return () => {
       cancelled = true
       subscription.unsubscribe()
+      mockUnsubscribe?.()
     }
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    if (isMockMode()) {
+      await mockSupabaseAuth.signOut()
+    } else {
+      await supabase.auth.signOut()
+    }
     setUser(null)
     setProfile(null)
     setCompany(null)

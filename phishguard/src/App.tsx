@@ -87,6 +87,13 @@ import TrainingDashboardPage from './routes/app/training/TrainingDashboardPage'
 import AssignPage from './routes/app/training/assign/page'
 import AnalyticsPage from './routes/app/training/analytics/page'
 
+// Admin pages (orphaned — registered for completeness)
+import AdminUsuariosPage from './routes/app/admin/usuarios/page'
+import InviteUsersPage from './routes/app/admin/usuarios/invite/page'
+import AdminTrainingPage from './routes/app/admin/training/page'
+import AdminTrainingAnalyticsPage from './routes/app/admin/training/analytics/page'
+import AdminTrainingAssignPage from './routes/app/admin/training/assign/page'
+
 // Notifications page
 import NotificationsPage from './routes/app/notifications/page'
 
@@ -99,6 +106,9 @@ import CompliancePage from './routes/app/compliance/CompliancePage'
 
 // Inteligencia page
 import InteligenciaPage from './routes/app/inteligencia/page'
+
+// Dominios page
+import DomainPoolPage from './routes/app/dominios/DomainPoolPage'
 
 // Onboarding page
 import OnboardingPage from './routes/app/onboarding/Onboarding'
@@ -201,8 +211,18 @@ export default function App() {
             {/* Inteligencia */}
             <Route path="/app/inteligencia" element={<InteligenciaPage />} />
 
+            {/* Dominios (DomainPoolPage) */}
+            <Route path="/app/dominios" element={<DomainPoolPage />} />
+
             {/* Onboarding */}
             <Route path="/app/onboarding" element={<OnboardingPage />} />
+
+            {/* Admin pages (orphaned — registered for completeness) */}
+            <Route path="/app/admin/usuarios" element={<AdminUsuariosPage />} />
+            <Route path="/app/admin/usuarios/invite" element={<InviteUsersPage />} />
+            <Route path="/app/admin/training" element={<AdminTrainingPage />} />
+            <Route path="/app/admin/training/assign" element={<AdminTrainingAssignPage />} />
+            <Route path="/app/admin/training/analytics" element={<AdminTrainingAnalyticsPage />} />
           </Route>
         </Route>
 
