@@ -74,37 +74,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let cancelled = false
 
     const initAuth = async () => {
-      try {
-        if (cancelled) return
+    try {
+      if (cancelled) return
 
-        let session = null
+      let session = null
 
-        // In mock mode, check for mock session first
-        if (isMockMode()) {
-          const hasMock = hasMockSession()
-          if (hasMock) {
-            const { data } = await mockSupabaseAuth.getSession()
-            session = data.session
-          }
-        } else {
-          // Wrap getSession in a race with an 8-second timeout
-          // to prevent indefinite hangs (e.g. GoTrue lock warnings on production)
-          const getSessionWithTimeout = () => {
-            let timeoutId: ReturnType<typeof setTimeout>
-            const timeout = new Promise<{ data: { session: null } }>((resolve) => {
-              timeoutId = setTimeout(() => {
-                console.warn('[AuthContext] getSession timed out after 8s')
-                resolve({ data: { session: null } })
-              }, 8000)
-            })
-            return Promise.race([supabase.auth.getSession(), timeout]).finally(() => clearTimeout(timeoutId))
-          }
+      // In dev mode (VITE_DEV_MODE=true), prioritize mock session over Supabase
+      // This allows demo login to work even when Supabase is configured
+      const useMockSession = import.meta.env.VITE_DEV_MODE && hasMockSession()
 
-          const { data } = await getSessionWithTimeout()
+      if (isMockMode() || useMockSession) {
+        const hasMock = hasMockSession()
+        if (hasMock) {
+          const { data } = await mockSupabaseAuth.getSession()
           session = data.session
         }
+      }
 
-        if (cancelled) return
+      // Only try Supabase if no mock session was found
+      if (!session && !isMockMode()) {
+        // Wrap getSession in a race with an 8-second timeout
+        // to prevent indefinite hangs (e.g. GoTrue lock warnings on production)
+        const getSessionWithTimeout = () => {
+          let timeoutId: ReturnType<typeof setTimeout>
+          const timeout = new Promise<{ data: { session: null } }>((resolve) => {
+            timeoutId = setTimeout(() => {
+              console.warn('[AuthContext] getSession timed out after 8s')
+              resolve({ data: { session: null } })
+            }, 8000)
+          })
+          return Promise.race([supabase.auth.getSession(), timeout]).finally(() => clearTimeout(timeoutId))
+        }
+
+        const { data } = await getSessionWithTimeout()
+        session = data.session
+      }
+
+      if (cancelled) return
 
         if (session?.user) {
           setUser(session.user as User)
@@ -155,9 +161,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     )
 
-    // In mock mode, also subscribe to mock auth state changes
+    // In mock mode or dev mode, also subscribe to mock auth state changes
     let mockUnsubscribe: (() => void) | null = null
-    if (isMockMode()) {
+    if (isMockMode() || (import.meta.env.VITE_DEV_MODE && hasMockSession())) {
       mockUnsubscribe = mockSupabaseAuth.onAuthStateChange(async (session) => {
         if (cancelled) return
         if (session?.user) {
@@ -179,7 +185,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
 
   const signOut = async () => {
-    if (isMockMode()) {
+    // In dev mode, always sign out from mock auth first
+    if (import.meta.env.VITE_DEV_MODE) {
+      await mockSupabaseAuth.signOut()
+    } else if (isMockMode()) {
       await mockSupabaseAuth.signOut()
     } else {
       await supabase.auth.signOut()

@@ -53,7 +53,7 @@ interface PermissionMatrixProps {
 
 export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrixProps) {
   const [editMode, setEditMode] = useState(isEditing);
-  const [pendingChanges, setPendingChanges] = useState<Record<Role, Set<Permission>>(
+  const [pendingChanges, setPendingChanges] = useState<Record<Role, Set<Permission>>>(
     Object.fromEntries(
       (['super_admin', 'admin', 'manager', 'viewer'] as Role[]).map(role => [role, new Set(getPermissions(role))])
     )
