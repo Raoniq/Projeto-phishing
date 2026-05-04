@@ -8,6 +8,7 @@ import credentialsWorker from './credentials';
 import certificatesWorker from './certificates';
 import campaignsWorker from './campaigns';
 import schedulerWorker from './scheduler';
+import { createAdminClient } from './_lib/supabase-admin';
 
 interface Env {
   SUPABASE_URL: string;
@@ -74,7 +75,11 @@ export default {
 
     // Campaign routes
     if (pathname.startsWith('/api/campaigns')) {
-      return campaignsWorker.fetch(request, env, ctx);
+      // Rewrite path: /api/campaigns/* → /campaigns/*
+      const campaignUrl = new URL(request.url);
+      campaignUrl.pathname = pathname.replace('/api/campaigns', '/campaigns');
+      const rewrittenRequest = new Request(campaignUrl.toString(), request);
+      return campaignsWorker.fetch(rewrittenRequest, env, ctx);
     }
 
     // Certificate routes
@@ -87,9 +92,22 @@ export default {
       const domainUrl = new URL(request.url);
       const domainPath = domainUrl.pathname.replace('/api/domains', '') || '/';
 
-      // GET /api/domains - list domains (mock)
+      // GET /api/domains - list domains (DB-backed)
       if (request.method === 'GET' && domainPath === '/') {
-        return new Response(JSON.stringify({ domains: [], total: 0 }), {
+        const adminClient = createAdminClient(env);
+        const { data, error } = await adminClient
+          .from('domains')
+          .select('*')
+          .eq('company_id', '00000000-0000-0000-0000-000000000001');
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ domains: data, total: data?.length ?? 0 }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -106,9 +124,22 @@ export default {
       const landUrl = new URL(request.url);
       const landPath = landUrl.pathname.replace('/api/landings', '') || '/';
 
-      // GET /api/landings - list (mock)
+      // GET /api/landings - list (DB-backed)
       if (request.method === 'GET' && landPath === '/') {
-        return new Response(JSON.stringify({ landings: [], total: 0 }), {
+        const adminClient = createAdminClient(env);
+        const { data, error } = await adminClient
+          .from('landing_pages')
+          .select('*')
+          .eq('company_id', '00000000-0000-0000-0000-000000000001');
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ landings: data, total: data?.length ?? 0 }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
