@@ -143,9 +143,27 @@ jobs:
       - name: TypeScript check
         run: |
           cd phishguard
-          npx tsc --noEmit
+          npx tsc -p tsconfig.app.json --noEmit
 
       - name: Lint
         run: |
           cd phishguard
           npm run lint
+
+      - name: Build
+        run: |
+          cd phishguard
+          npx vite build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Unit tests
+        run: |
+          cd phishguard
+          npm run test:unit
+
+      - name: Auth E2E (scoped)
+        run: |
+          cd phishguard
+          npx playwright test --config playwright.config.ts tests/e2e/auth-failures-matrix.spec.ts --grep "Scenario A|Scenario B"

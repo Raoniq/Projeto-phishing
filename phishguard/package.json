@@ -9,7 +9,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:unit": "vitest run",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "test:e2e:auth": "playwright test --config playwright.config.ts tests/e2e/auth-failures-matrix.spec.ts",
+    "lint:stability": "eslint scripts/smoke/ tests/e2e/auth-failures-matrix.spec.ts .github/workflows/deploy.yml"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppTopbar } from './AppTopbar';
 import { MobileDrawer } from './MobileDrawer';
@@ -17,6 +17,7 @@ export function AppShell({ className }: AppShellProps) {
   const { user, profile, company, loading, isInitialized, signOut } = useAuth();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Version update watcher — single instance across all routes
   const { updateAvailable, remoteVersion, dismiss, update, loading: updateLoading } = useVersionCheck();
@@ -91,7 +92,7 @@ export function AppShell({ className }: AppShellProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <ErrorBoundary>
+          <ErrorBoundary key={location.pathname + location.search}>
             <Outlet />
           </ErrorBoundary>
         </main>
