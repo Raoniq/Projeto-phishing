@@ -24,17 +24,30 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error('Route Error:', error, errorInfo);
   }
 
+  resetError = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
   render(): ReactNode {
     if (this.state.hasError) {
-      return <RouteErrorView error={this.state.error} />;
+      return <RouteErrorView error={this.state.error} resetError={this.resetError} />;
     }
 
     return this.props.children;
   }
 }
 
-function RouteErrorView({ error }: { error: Error | null }) {
+function RouteErrorView({ error, resetError }: { error: Error | null; resetError: () => void }) {
   const navigate = useNavigate();
+
+  // Determine fallback destination based on current route
+  const getFallbackDestination = (): string => {
+    const pathname = window.location.pathname;
+    if (pathname.startsWith('/app')) {
+      return '/app/dashboard';
+    }
+    return '/';
+  };
 
   if (isRouteErrorResponse(error) && error.status === 404) {
     return (
@@ -48,7 +61,7 @@ function RouteErrorView({ error }: { error: Error | null }) {
             A página que você está procurando não existe.
           </p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(getFallbackDestination())}
             className="mt-6 rounded-lg bg-amber-500 px-6 py-3 font-semibold text-noir-950 hover:bg-amber-400 transition-colors"
           >
             Voltar ao início
@@ -92,13 +105,13 @@ function RouteErrorView({ error }: { error: Error | null }) {
         </p>
         <div className="mt-6 flex gap-4 justify-center">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(getFallbackDestination())}
             className="rounded-lg bg-amber-500 px-6 py-3 font-semibold text-noir-950 hover:bg-amber-400 transition-colors"
           >
             Voltar ao início
           </button>
           <button
-            onClick={() => window.location.reload()}
+            onClick={resetError}
             className="rounded-lg border border-noir-700 px-6 py-3 font-semibold hover:bg-noir-800 transition-colors"
           >
             Tentar novamente
