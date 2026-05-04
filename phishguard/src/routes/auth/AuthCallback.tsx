@@ -10,7 +10,6 @@ import { supabase } from '@/lib/supabase';
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const exchangeToken = async () => {

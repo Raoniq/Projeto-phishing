@@ -370,7 +370,7 @@ export default function LoginPage() {
               </form>
 
               <p className="mt-4 text-xs text-noir-500 text-center">
-                Enviaremos um link de acesso瞬Seu email. O link expira em 15 minutos.
+                Enviaremos um link de acesso para seu email. O link expira em 15 minutos.
               </p>
             </>
           )}
