@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { EmailEditor } from '@/components/editor/EmailEditor';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
 import type { EmailTemplate, Block } from '@/components/editor/types';
 import type { Database } from '@/lib/supabase';
 
@@ -14,7 +15,10 @@ export default function TemplateEditorPage() {
   const templateId = searchParams.get('id');
 
   const [initialTemplate, setInitialTemplate] = useState<EmailTemplate | undefined>();
+  const [templateType, setTemplateType] = useState<'global' | 'company' | null>(null);
+  const [originalCompanyId, setOriginalCompanyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGlobalBlocked, setIsGlobalBlocked] = useState(false);
 
   // Load template from Supabase when ID is present
   useEffect(() => {
@@ -27,11 +31,20 @@ export default function TemplateEditorPage() {
           .from('campaign_templates')
           .select('*')
           .eq('id', templateId)
-          .eq('company_id', company.id)
           .single();
 
         if (error) throw error;
         if (data) {
+          // Block editing for global templates
+          if (data.template_type === 'global') {
+            setIsGlobalBlocked(true);
+            setIsLoading(false);
+            return;
+          }
+          
+          setTemplateType(data.template_type || 'company');
+          setOriginalCompanyId(data.company_id);
+          
           // Convert stored template to EmailTemplate format
           const template: EmailTemplate = {
             id: data.id,
@@ -79,7 +92,6 @@ export default function TemplateEditorPage() {
     try {
       const bodyHtml = blocksToHtml(template.blocks);
       const templateData = {
-        company_id: company.id,
         name: template.name,
         subject: template.name, // Use name as subject if no subject field
         body_html: bodyHtml,
@@ -91,19 +103,22 @@ export default function TemplateEditorPage() {
       };
 
       if (templateId) {
-        // Update existing template
+        // Update existing template - preserve original company_id and template_type
         const { error } = await supabase
           .from('campaign_templates')
           .update(templateData)
-          .eq('id', templateId)
-          .eq('company_id', company.id);
+          .eq('id', templateId);
 
         if (error) throw error;
       } else {
-        // Insert new template
+        // Insert new template - use company scope
         const { error } = await supabase
           .from('campaign_templates')
-          .insert(templateData);
+          .insert({
+            ...templateData,
+            company_id: company.id,
+            template_type: 'company',
+          });
 
         if (error) throw error;
       }
@@ -117,6 +132,28 @@ export default function TemplateEditorPage() {
       window.dispatchEvent(event);
     }
   }, [company?.id, templateId]);
+
+  // Block editing of global templates
+  if (isGlobalBlocked) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)] gap-4">
+        <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+          <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <h2 className="text-xl font-display font-semibold text-[var(--color-fg-primary)]">Template Global</h2>
+          <p className="mt-2 text-sm text-[var(--color-fg-secondary)] max-w-md">
+            Templates globais não podem ser editados diretamente. Clone o template para criar uma cópia própria que você pode modificar.
+          </p>
+        </div>
+        <Button variant="primary" onClick={() => window.history.back()}>
+          Voltar
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

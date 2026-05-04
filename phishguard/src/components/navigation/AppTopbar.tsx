@@ -140,7 +140,7 @@ export function AppTopbar({
 
                 <div className="py-1">
                   <Link
-                    to="/app/configuracoes/perfil"
+                    to="/app/configuracoes"
                     className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--color-fg-secondary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-fg-primary)]"
                     onClick={() => setIsUserMenuOpen(false)}
                   >

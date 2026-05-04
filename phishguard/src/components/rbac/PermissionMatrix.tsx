@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Shield,
@@ -55,7 +55,7 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
   const [editMode, setEditMode] = useState(isEditing);
   const [pendingChanges, setPendingChanges] = useState<Record<Role, Set<Permission>>(
     Object.fromEntries(
-      (['super_admin', 'admin', 'manager', 'viewer'] as Role[]).map(role => [role, new Set(rolePermissions).get(role) || new Set()])
+      (['super_admin', 'admin', 'manager', 'viewer'] as Role[]).map(role => [role, new Set(getPermissions(role))])
     )
   );
 
@@ -80,7 +80,11 @@ export function PermissionMatrix({ isEditing = false, onSave }: PermissionMatrix
   };
 
   const handleCancel = () => {
-    setPendingChanges(rolePermissions);
+    setPendingChanges(
+      Object.fromEntries(
+        (['super_admin', 'admin', 'manager', 'viewer'] as Role[]).map(role => [role, new Set(getPermissions(role))])
+      )
+    );
     setEditMode(false);
   };
 

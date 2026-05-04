@@ -122,7 +122,6 @@ interface Template {
   subject: string;
   body_html: string;
   preview_text: string;
-  click_rate?: number;
 }
 
 interface LandingPage {
@@ -183,14 +182,15 @@ export default function NovaCampanhaPage() {
         // Load templates
         const { data: templatesData } = await supabase
           .from('campaign_templates')
-          .select('id, name, category, subject, body_html')
+          .select('id, name, category, subject, body_html, body_text')
           .eq('is_active', true)
           .order('name');
 
         if (templatesData) {
+          // Map body_text to preview_text for template preview modal
           setTemplates(templatesData.map(t => ({
             ...t,
-            click_rate: Math.random() * 20 + 5,
+            preview_text: t.body_text || t.subject,
           })));
         }
 
@@ -208,22 +208,14 @@ export default function NovaCampanhaPage() {
           })));
         }
 
-        // Load target groups - table may not exist, use mock fallback
-        try {
-          const { data: groupsData } = await supabase
-            .from('target_groups')
-            .select('id, name, type')
-            .order('name');
+        // Load target groups from view
+        const { data: groupsData } = await supabase
+          .from('target_groups')
+          .select('*')
+          .order('name');
 
-          if (groupsData) {
-            setTargetGroups(groupsData.map(g => ({
-              ...g,
-              count: Math.floor(Math.random() * 500) + 50,
-            })));
-          }
-        } catch (err) {
-          // target_groups table may not exist - will use mock data
-          console.warn('target_groups query failed, using mock data:', err?.message);
+        if (groupsData) {
+          setTargetGroups(groupsData);
         }
       } catch (err) {
         console.error('Error loading data:', err);
@@ -235,19 +227,6 @@ export default function NovaCampanhaPage() {
     loadData();
   }, []);
 
-  // If no templates from DB, use mock data
-  useEffect(() => {
-    if (templates.length === 0 && !loading) {
-      setTemplates([
-        { id: 'tpl-1', name: 'Black Friday Promo', category: 'Marketing', subject: '🎉 Black Friday: Oferta exclusiva!', body_html: '<html><body><h1>Promoção Especial</h1><p>Clique aqui para ver as ofertas</p></body></html>', preview_text: '🎉 Black Friday: Oferta exclusiva!' },
-        { id: 'tpl-2', name: 'LGPD Reminder', category: 'Compliance', subject: 'Atualize seus dados cadastrais', body_html: '<html><body><h1>LGPD</h1><p>Confirme seus dados para compliance</p></body></html>', preview_text: 'Atualize seus dados cadastrais' },
-        { id: 'tpl-3', name: 'Password Expiry', category: 'IT', subject: '⚠️ Sua senha expira em 24h', body_html: '<html><body><h1>Alerta de Segurança</h1><p>Renove sua senha imediatamente</p></body></html>', preview_text: '⚠️ Sua senha expira em 24h' },
-        { id: 'tpl-4', name: 'Invoice Due', category: 'Finance', subject: 'Fatura pendente - Ação necessária', body_html: '<html><body><h1>Fatura</h1><p>Confirme o pagamento da fatura</p></body></html>', preview_text: 'Fatura pendente - Ação necessária' },
-        { id: 'tpl-5', name: 'Security Update', category: 'IT', subject: 'Atualização obrigatória de segurança', body_html: '<html><body><h1>Segurança</h1><p>Instale a atualização do sistema</p></body></html>', preview_text: 'Atualização obrigatória de segurança' },
-      ]);
-    }
-  }, [loading, templates.length]);
-
   // If no landing pages from DB, use mock data
   useEffect(() => {
     if (landingPages.length === 0 && !loading) {
@@ -258,22 +237,6 @@ export default function NovaCampanhaPage() {
       ]);
     }
   }, [loading, landingPages.length]);
-
-  // If no target groups from DB, use mock data
-  useEffect(() => {
-    if (targetGroups.length === 0 && !loading) {
-      setTargetGroups([
-        { id: 'grp-1', name: 'Todos os usuários', count: 1240, type: 'all' },
-        { id: 'grp-2', name: 'Financeiro', count: 45, type: 'department' },
-        { id: 'grp-3', name: 'TI', count: 38, type: 'department' },
-        { id: 'grp-4', name: 'RH', count: 12, type: 'department' },
-        { id: 'grp-5', name: 'Diretoria', count: 8, type: 'role' },
-        { id: 'grp-6', name: 'Execução', count: 150, type: 'role' },
-        { id: 'grp-7', name: 'Alto risco', count: 89, type: 'risk' },
-        { id: 'grp-8', name: 'Novos funcionários', count: 34, type: 'tenure' },
-      ]);
-    }
-  }, [loading, targetGroups.length]);
 
   // Update form field
   const updateField = useCallback(<K extends keyof CampaignFormData>(key: K, value: CampaignFormData[K]) => {
@@ -1292,7 +1255,7 @@ export default function NovaCampanhaPage() {
                           <div>
                             <p className="text-sm text-[var(--color-fg-tertiary)]">Alvos estimados</p>
                             <p className="text-lg font-display font-bold text-[var(--color-fg-primary)]">
-                              {Math.floor(Math.random() * 500) + 100}
+                              {formData.targetGroupIds.length > 0 ? formData.targetGroupIds.reduce((acc, id) => acc + (targetGroups.find(g => g.id === id)?.count || 0), 0) : '—'}
                             </p>
                           </div>
                         </div>

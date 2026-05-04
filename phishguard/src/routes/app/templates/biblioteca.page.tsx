@@ -57,7 +57,7 @@ export default function BibliotecaPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
 
-  // Fetch templates
+  // Fetch templates (global + company-owned)
   const fetchTemplates = useCallback(async () => {
     if (!profile?.company_id) return
 
@@ -66,7 +66,7 @@ export default function BibliotecaPage() {
       const { data, error } = await supabase
         .from('campaign_templates')
         .select('*')
-        .eq('company_id', profile.company_id)
+        .or(`company_id.eq.${profile.company_id},template_type.eq.global`)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -104,18 +104,21 @@ export default function BibliotecaPage() {
     setFilteredTemplates(result)
   }, [templates, searchQuery, categoryFilter])
 
-  // Clone template
   const cloneTemplate = async (template: CampaignTemplate) => {
     try {
+      // When cloning a global template, create a company-owned copy
+      const isGlobalClone = template.template_type === 'global'
       const { data, error } = await supabase
         .from('campaign_templates')
         .insert({
-          company_id: template.company_id,
+          company_id: isGlobalClone ? profile.company_id : template.company_id,
+          template_type: isGlobalClone ? 'company' : template.template_type,
           name: `Cópia de ${template.name}`,
           category: template.category,
           subject: template.subject,
           body_html: template.body_html,
           body_text: template.body_text,
+          source_template_id: template.id,
         })
         .select()
         .single()
@@ -208,7 +211,8 @@ export default function BibliotecaPage() {
       }
 
       if (errors.length > 0) {
-        setToast({ message: `Falha ao importar: ${errors.join(', ')}`, type: 'error' });
+        const event = new CustomEvent('toast', { detail: { message: `Falha ao importar: ${errors.join(', ')}`, type: 'error' } });
+        window.dispatchEvent(event);
         return;
       }
 
@@ -227,6 +231,7 @@ export default function BibliotecaPage() {
       name: template.name,
       category: template.category,
       subject: template.subject,
+      preview_text: template.body_text || htmlToPreview(template.body_html),
       body_html: template.body_html,
     })
     setIsPreviewOpen(true)
@@ -373,15 +378,23 @@ export default function BibliotecaPage() {
                   >
                     {template.name}
                   </h3>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      'shrink-0 text-[10px] px-2 py-0',
-                      CATEGORY_COLORS[template.category] || 'bg-[var(--color-surface-2)] text-[var(--color-fg-secondary)] border-[var(--color-noir-600)]'
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Scope indicator for global templates */}
+                    {template.template_type === 'global' && (
+                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0">
+                        Sistema
+                      </Badge>
                     )}
-                  >
-                    {template.category}
-                  </Badge>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[10px] px-1.5 py-0',
+                        CATEGORY_COLORS[template.category] || 'bg-[var(--color-surface-2)] text-[var(--color-fg-secondary)] border-[var(--color-noir-600)]'
+                      )}
+                    >
+                      {template.category}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="text-xs text-[var(--color-fg-muted)] line-clamp-1 mb-3">
                   {template.subject}
@@ -393,7 +406,14 @@ export default function BibliotecaPage() {
                     variant="ghost"
                     size="sm"
                     className="flex-1 h-7 text-xs"
-                    onClick={() => navigate(`/app/templates/editor?id=${template.id}`)}
+                    onClick={() => {
+                      if (template.template_type === 'global') {
+                        const event = new CustomEvent('toast', { detail: { message: 'Templates globais não podem ser editados. Use Clonar para criar uma cópia.', type: 'warning' } });
+                        window.dispatchEvent(event);
+                        return;
+                      }
+                      navigate(`/app/templates/editor?id=${template.id}`)
+                    }}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
