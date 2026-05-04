@@ -32,6 +32,9 @@ export default function AuthCallbackPage() {
           navigate('/verify-email?error=confirmation_failed', { replace: true })
           return
         }
+
+        // Wait for auth state to propagate before checking session
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
 
       // Now check if we have a valid session

@@ -13,6 +13,11 @@ import {
   ArrowRight,
   X,
   Command,
+  Bell,
+  Shield,
+  QrCode,
+  Mail,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +38,12 @@ const searchIndex: SearchItem[] = [
   { id: '5', icon: BarChart3, label: 'Relatórios', description: 'Análises e relatórios detalhados', href: '/app/relatorios', category: 'Inteligência' },
   { id: '6', icon: FileText, label: 'Auditoria', description: 'Logs de auditoria e compliance', href: '/app/auditoria', category: 'Inteligência' },
   { id: '7', icon: Settings, label: 'Configurações', description: 'Configurações da plataforma', href: '/app/configuracoes', category: 'Sistema' },
+  { id: '8', icon: Mail, label: 'SMS', description: 'Campanhas de SMS phishing', href: '/app/sms', category: 'Operação' },
+  { id: '9', icon: QrCode, label: 'Quishing', description: 'Campanhas de QR Code phishing', href: '/app/quishing', category: 'Operação' },
+  { id: '10', icon: Brain, label: 'Inteligência', description: 'Inteligência de ameaças', href: '/app/inteligencia', category: 'Inteligência' },
+  { id: '11', icon: Bell, label: 'Notificações', description: 'Notificações e alertas', href: '/app/notificacoes', category: 'Sistema' },
+  { id: '12', icon: Shield, label: 'Compliance', description: 'Relatórios de compliance', href: '/app/compliance', category: 'Inteligência' },
+  { id: '13', icon: FileText, label: 'Editor de Templates', description: 'Editar templates de phishing', href: '/app/templates/editor', category: 'Operação' },
 ];
 
 interface CommandKProps {

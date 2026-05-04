@@ -5,6 +5,7 @@ import { LearnerTopbar } from './LearnerTopbar';
 import { LearnerMobileDrawer } from './LearnerMobileDrawer';
 import { NotificationsPanel } from './NotificationsPanel';
 import { cn } from '@/lib/utils';
+import { isMockMode } from '@/lib/auth/session';
 
 interface LearnerShellProps {
   companyLogo?: string;
@@ -55,7 +56,7 @@ export function LearnerShell({
   const navigate = useNavigate();
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('supabase-auth-token');
+    localStorage.removeItem(isMockMode() ? 'mock-supabase-auth-token' : 'supabase-auth-token');
     navigate('/login');
   }, [navigate]);
 

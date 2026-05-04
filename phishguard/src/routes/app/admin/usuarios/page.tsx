@@ -2,6 +2,7 @@
 // routes/app/admin/usuarios/page.tsx — User Management System
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router';
 import {
   Search,
   Edit,
@@ -329,6 +330,7 @@ export default function UsersManagementPage() {
   }, []);
 
   // Hooks
+  const navigate = useNavigate();
   const { users, loading, updateUser } = useUsers(companyId || undefined);
 
   // Local state for user data with additional fields
@@ -555,7 +557,7 @@ export default function UsersManagementPage() {
               variant="primary"
               size="lg"
               onClick={() => {
-                window.location.href = '/app/admin/usuarios/invite';
+                navigate('/app/admin/usuarios/invite');
               }}
             >
               <UserPlus className="h-4 w-4" />

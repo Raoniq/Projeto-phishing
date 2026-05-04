@@ -440,7 +440,11 @@ export default function TreinamentoPage() {
               </p>
               <Button
                 variant="primary"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  setFetchError(null)
+                  setIsInitialized(false)
+                  window.location.reload()
+                }}
               >
                 <RefreshCw className="h-4 w-4" />
                 Tentar novamente
@@ -651,7 +655,7 @@ export default function TreinamentoPage() {
                                     variant="primary"
                                     size="sm"
                                     className="flex-1"
-                                    onClick={() => window.location.href = `/app/training/${enrollment.track_id}`}
+                                    onClick={() => navigate(`/app/training/${enrollment.track_id}`)}
                                   >
                                     <Play className="h-4 w-4" />
                                     {enrollment.progress > 0 ? 'Continuar' : 'Iniciar'}
